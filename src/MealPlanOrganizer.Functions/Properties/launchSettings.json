@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "MealPlanOrganizer_Functions": {
+      "commandName": "Project",
+      "commandLineArgs": "--port 7202",
+      "launchBrowser": false
+    }
+  }
+}
