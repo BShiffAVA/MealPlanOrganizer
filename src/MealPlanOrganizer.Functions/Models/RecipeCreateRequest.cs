@@ -10,8 +10,14 @@ namespace MealPlanOrganizer.Functions.Models
         public int? PrepTimeMinutes { get; set; }
         public int? CookTimeMinutes { get; set; }
         public int? Servings { get; set; }
-        public IList<string>? Ingredients { get; set; }
+        public IList<IngredientInput>? Ingredients { get; set; }
         public IList<string>? Steps { get; set; }
         public string? ImageUrl { get; set; }
+    }
+
+    public class IngredientInput
+    {
+        public string? Name { get; set; }
+        public string? Quantity { get; set; }
     }
 }

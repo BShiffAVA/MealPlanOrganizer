@@ -12,17 +12,29 @@ post {
 
 body:json {
   {
-    "title": "Shiffman Pepperoni Pizza",
+    "title": "Shiffman Pepperoni Pizza 2",
     "description": "The best pepperoni pizza",
     "cuisineType": "Italian",
     "prepTimeMinutes": 5,
     "cookTimeMinutes": 8,
     "servings": 2,
     "ingredients": [
-      "mozzarella cheese",
-      "pepperoni",
-      "marinara sauce",
-      "naan"
+      {
+        "name": "mozzarella cheese",
+        "quantity": "1 cup"
+      },
+      {
+        "name": "pepperoni",
+        "quantity": "20 slices"
+      },
+      {
+        "name": "marinara sauce",
+        "quantity": "2 tbsp"
+      },
+      {
+        "name": "naan",
+        "quantity": "2 pieces"
+      }
     ],
     "steps": [
       "Warm oven to 425F",
@@ -46,7 +58,9 @@ docs {
   - `prepTimeMinutes` (optional): Preparation time in minutes
   - `cookTimeMinutes` (optional): Cooking time in minutes
   - `servings` (optional): Number of servings
-  - `ingredients` (optional): Array of ingredient names
+  - `ingredients` (optional): Array of ingredient objects with:
+    - `name` (required): Ingredient name
+    - `quantity` (optional): Amount (e.g., "1 cup", "2 tbsp", "1/2 tsp")
   - `steps` (optional): Array of cooking instructions
   - `imageUrl` (optional): URL to recipe image
   

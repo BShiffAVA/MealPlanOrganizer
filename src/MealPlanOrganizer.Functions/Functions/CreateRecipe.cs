@@ -60,9 +60,13 @@ namespace MealPlanOrganizer.Functions.Functions
 
                 if (model.Ingredients != null && model.Ingredients.Any())
                 {
-                    foreach (var ing in model.Ingredients.Where(i => !string.IsNullOrWhiteSpace(i)))
+                    foreach (var ing in model.Ingredients.Where(i => i != null && !string.IsNullOrWhiteSpace(i.Name)))
                     {
-                        recipe.Ingredients.Add(new RecipeIngredient { Name = ing.Trim() });
+                        recipe.Ingredients.Add(new RecipeIngredient 
+                        { 
+                            Name = ing.Name!.Trim(),
+                            Quantity = string.IsNullOrWhiteSpace(ing.Quantity) ? null : ing.Quantity!.Trim()
+                        });
                     }
                 }
 

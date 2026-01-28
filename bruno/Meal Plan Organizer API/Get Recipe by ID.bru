@@ -1,0 +1,85 @@
+meta {
+  name: Get Recipe by ID
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/recipes/{{recipeId}}
+  body: none
+  auth: none
+}
+
+params:query {
+  : 
+}
+
+vars:pre-request {
+  recipeId: 56a14079-b32b-43fd-bc26-a3bba611f4ac
+}
+
+docs {
+  # Get Recipe by ID
+  
+  Retrieves the complete details of a specific recipe including all ingredients and cooking steps.
+  
+  ## Path Parameters
+  - `id` (guid): The unique identifier of the recipe
+  
+  ## Response Fields
+  - `id` (guid): Recipe identifier
+  - `title` (string): Recipe name
+  - `description` (string): Recipe description
+  - `cuisineType` (string): Type of cuisine (e.g., "Italian", "Mexican")
+  - `prepTimeMinutes` (int): Preparation time in minutes
+  - `cookTimeMinutes` (int): Cooking time in minutes
+  - `servings` (int): Number of servings
+  - `imageUrl` (string): URL to recipe image
+  - `createdBy` (string): Creator username
+  - `createdUtc` (datetime): Creation timestamp
+  - `ingredients` (array): List of ingredient objects with:
+    - `name` (string): Ingredient name
+    - `quantity` (string): Amount/quantity
+  - `steps` (array): List of cooking step objects with:
+    - `stepNumber` (int): Step order
+    - `instruction` (string): Step description
+  
+  ## Example Response
+  ```json
+  {
+    "id": "11111111-1111-1111-1111-111111111111",
+    "title": "Sample Lasagna",
+    "description": "A delicious layered pasta dish",
+    "cuisineType": "Italian",
+    "prepTimeMinutes": 30,
+    "cookTimeMinutes": 45,
+    "servings": 8,
+    "imageUrl": "https://example.com/lasagna.jpg",
+    "createdBy": "system",
+    "createdUtc": "2026-01-28T12:00:00Z",
+    "ingredients": [
+      {
+        "name": "Ground Beef",
+        "quantity": "1 lb"
+      },
+      {
+        "name": "Lasagna Noodles",
+        "quantity": "12 sheets"
+      }
+    ],
+    "steps": [
+      {
+        "stepNumber": 1,
+        "instruction": "Brown the ground beef in a large skillet"
+      },
+      {
+        "stepNumber": 2,
+        "instruction": "Layer noodles, meat sauce, and cheese"
+      }
+    ]
+  }
+  ```
+  
+  ## Error Responses
+  - `404 Not Found`: Recipe with specified ID does not exist
+}
