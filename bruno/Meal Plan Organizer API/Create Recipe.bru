@@ -12,20 +12,25 @@ post {
 
 body:json {
   {
-    "title": "Tacos",
-    "description": "Simple and delicious tacos",
+    "title": "Shiffman Pepperoni Pizza",
+    "description": "The best pepperoni pizza",
+    "cuisineType": "Italian",
+    "prepTimeMinutes": 5,
+    "cookTimeMinutes": 8,
+    "servings": 2,
     "ingredients": [
-      "tortillas",
-      "ground beef",
-      "cheese",
-      "lettuce",
-      "tomatoes"
+      "mozzarella cheese",
+      "pepperoni",
+      "marinara sauce",
+      "naan"
     ],
     "steps": [
-      "Cook ground beef in skillet",
-      "Warm tortillas",
-      "Assemble tacos with toppings"
-    ]
+      "Warm oven to 425F",
+      "Grate mozzarella",
+      "Top naan with 1 large spoonful of marinara, mozzarella, lots of pepperoni",
+      "Bake on tray in oven for 8 minutes"
+    ],
+    "imageUrl": null
   }
 }
 
@@ -37,8 +42,13 @@ docs {
   ## Request Body
   - `title` (required): Recipe name
   - `description` (optional): Recipe description
+  - `cuisineType` (optional): Cuisine category (e.g., Mexican, Italian, Chinese)
+  - `prepTimeMinutes` (optional): Preparation time in minutes
+  - `cookTimeMinutes` (optional): Cooking time in minutes
+  - `servings` (optional): Number of servings
   - `ingredients` (optional): Array of ingredient names
   - `steps` (optional): Array of cooking instructions
+  - `imageUrl` (optional): URL to recipe image
   
   ## Response
   Returns 201 Created with:

@@ -6,6 +6,10 @@ namespace MealPlanOrganizer.Functions.Models
     {
         public string? Title { get; set; }
         public string? Description { get; set; }
+        public string? CuisineType { get; set; }
+        public int? PrepTimeMinutes { get; set; }
+        public int? CookTimeMinutes { get; set; }
+        public int? Servings { get; set; }
         public IList<string>? Ingredients { get; set; }
         public IList<string>? Steps { get; set; }
         public string? ImageUrl { get; set; }

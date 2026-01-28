@@ -49,7 +49,13 @@ namespace MealPlanOrganizer.Functions.Functions
                 var recipe = new Recipe
                 {
                     Title = model.Title!.Trim(),
-                    Description = string.IsNullOrWhiteSpace(model.Description) ? null : model.Description!.Trim()
+                    Description = string.IsNullOrWhiteSpace(model.Description) ? null : model.Description!.Trim(),
+                    CuisineType = string.IsNullOrWhiteSpace(model.CuisineType) ? null : model.CuisineType!.Trim(),
+                    PrepTimeMinutes = model.PrepTimeMinutes,
+                    CookTimeMinutes = model.CookTimeMinutes,
+                    Servings = model.Servings,
+                    ImageUrl = string.IsNullOrWhiteSpace(model.ImageUrl) ? null : model.ImageUrl!.Trim(),
+                    CreatedBy = "system" // TODO: Replace with actual authenticated user
                 };
 
                 if (model.Ingredients != null && model.Ingredients.Any())

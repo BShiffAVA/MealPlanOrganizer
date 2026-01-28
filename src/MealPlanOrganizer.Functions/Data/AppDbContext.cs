@@ -19,6 +19,9 @@ namespace MealPlanOrganizer.Functions.Data
                 b.HasKey(x => x.Id);
                 b.Property(x => x.Title).IsRequired().HasMaxLength(200);
                 b.Property(x => x.Description).HasMaxLength(2000);
+                b.Property(x => x.CuisineType).HasMaxLength(100);
+                b.Property(x => x.ImageUrl).HasMaxLength(500);
+                b.Property(x => x.CreatedBy).HasMaxLength(200);
                 b.Property(x => x.CreatedUtc).HasDefaultValueSql("GETUTCDATE()");
             });
 
