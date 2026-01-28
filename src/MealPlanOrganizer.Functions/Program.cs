@@ -23,11 +23,11 @@ builder.Services.AddDbContext<AppDbContext>((sp, options) =>
 });
 var app = builder.Build();
 
-// Ensure database created for local dev (replace with migrations later)
+// Apply EF Core migrations on startup (dev/local)
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.EnsureCreated();
+    db.Database.Migrate();
 }
 
 app.Run();
