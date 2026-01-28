@@ -1,0 +1,50 @@
+meta {
+  name: Rate Recipe
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/recipes/{{recipeId}}/ratings
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "rating": 5,
+    "comments": "This recipe was amazing! My family loved it."
+  }
+}
+
+vars:pre-request {
+  recipeId: 4535b576-cb9f-443c-970b-0571f5e10cfb
+}
+
+docs {
+  # Rate Recipe
+  
+  Submits or updates a rating for a recipe. Each user can only have one rating per recipe.
+  
+  ## Path Parameters
+  - `id` (guid): The unique identifier of the recipe
+  
+  ## Request Body
+  - `rating` (required): Integer between 1 and 5 representing the star rating
+  - `comments` (optional): Written review or comments (max 500 characters)
+  
+  ## Response Fields
+  - `message`: Confirmation message
+  - `rating`: The submitted rating value
+  - `averageRating`: Current average rating for the recipe (rounded to 1 decimal)
+  - `totalRatings`: Total number of ratings this recipe has received
+  
+  ## Behavior
+  - If the user has already rated this recipe, the existing rating is updated
+  - If this is the user's first rating for the recipe, a new rating is created
+  - The RatedUtc timestamp is automatically set to the current UTC time
+  
+  ## Error Responses
+  - `404 Not Found`: Recipe with specified ID does not exist
+  - `400 Bad Request`: Rating value is not between 1-5, or comments exceed 500 characters
+}

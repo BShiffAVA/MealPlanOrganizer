@@ -1,0 +1,60 @@
+meta {
+  name: Get Recipe Ratings
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/recipes/{{recipeId}}/ratings
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  recipeId: 4535b576-cb9f-443c-970b-0571f5e10cfb
+}
+
+docs {
+  # Get Recipe Ratings
+  
+  Retrieves all ratings for a specific recipe, including individual ratings and the calculated average.
+  
+  ## Path Parameters
+  - `id` (guid): The unique identifier of the recipe
+  
+  ## Response Fields
+  - `recipeId` (guid): The recipe identifier
+  - `totalRatings` (int): Total number of ratings for this recipe
+  - `averageRating` (decimal): Average rating rounded to 1 decimal place
+  - `ratings` (array): Array of individual rating objects containing:
+    - `userId` (string): The user who submitted the rating
+    - `rating` (int): The rating value (1-5)
+    - `comments` (string): Optional review/comments
+    - `ratedUtc` (datetime): When the rating was submitted
+  
+  ## Example Response
+  ```json
+  {
+    "recipeId": "11111111-1111-1111-1111-111111111111",
+    "totalRatings": 3,
+    "averageRating": 4.7,
+    "ratings": [
+      {
+        "userId": "john_doe",
+        "rating": 5,
+        "comments": "Delicious!",
+        "ratedUtc": "2026-01-28T15:30:00Z"
+      },
+      {
+        "userId": "jane_smith",
+        "rating": 4,
+        "comments": "Good, but a bit salty",
+        "ratedUtc": "2026-01-28T14:20:00Z"
+      }
+    ]
+  }
+  ```
+  
+  ## Error Responses
+  - `404 Not Found`: Recipe with specified ID does not exist
+}

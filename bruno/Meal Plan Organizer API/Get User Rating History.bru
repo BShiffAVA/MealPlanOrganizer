@@ -1,0 +1,55 @@
+meta {
+  name: Get User Rating History
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/api/ratings/me
+  body: none
+  auth: none
+}
+
+docs {
+  # Get User Rating History
+  
+  Retrieves all ratings submitted by the current user, showing their rating history across recipes.
+  
+  ## Response Fields
+  - `userId` (string): The authenticated user's ID
+  - `totalRatings` (int): Total number of ratings submitted by this user
+  - `ratings` (array): Array of the user's rating objects containing:
+    - `recipeId` (guid): The recipe being rated
+    - `recipeName` (string): The name of the recipe
+    - `rating` (int): The rating value (1-5)
+    - `comments` (string): Optional review/comments
+    - `ratedUtc` (datetime): When the rating was submitted
+  
+  ## Example Response
+  ```json
+  {
+    "userId": "john_doe",
+    "totalRatings": 5,
+    "ratings": [
+      {
+        "recipeId": "11111111-1111-1111-1111-111111111111",
+        "recipeName": "Sample Lasagna",
+        "rating": 5,
+        "comments": "Amazing!",
+        "ratedUtc": "2026-01-28T15:30:00Z"
+      },
+      {
+        "recipeId": "22222222-2222-2222-2222-222222222222",
+        "recipeName": "Chocolate Cake",
+        "rating": 4,
+        "comments": "Good but needs more sugar",
+        "ratedUtc": "2026-01-28T14:20:00Z"
+      }
+    ]
+  }
+  ```
+  
+  ## Notes
+  - Ratings are returned in reverse chronological order (most recent first)
+  - Currently uses placeholder "system" user - will be replaced with authenticated user once authentication is implemented
+}

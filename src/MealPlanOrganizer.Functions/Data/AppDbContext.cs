@@ -10,6 +10,7 @@ namespace MealPlanOrganizer.Functions.Data
         public DbSet<Recipe> Recipes => Set<Recipe>();
         public DbSet<RecipeIngredient> RecipeIngredients => Set<RecipeIngredient>();
         public DbSet<RecipeStep> RecipeSteps => Set<RecipeStep>();
+        public DbSet<RecipeRating> RecipeRatings => Set<RecipeRating>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -46,6 +47,21 @@ namespace MealPlanOrganizer.Functions.Data
                     .WithMany(x => x.Steps)
                     .HasForeignKey(x => x.RecipeId)
                     .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<RecipeRating>(b =>
+            {
+                b.ToTable("RecipeRatings");
+                b.HasKey(x => x.Id);
+                b.Property(x => x.UserId).IsRequired().HasMaxLength(200);
+                b.Property(x => x.Comments).HasMaxLength(500);
+                b.Property(x => x.RatedUtc).HasDefaultValueSql("GETUTCDATE()");
+                b.HasOne(x => x.Recipe)
+                    .WithMany(x => x.Ratings)
+                    .HasForeignKey(x => x.RecipeId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                // Enforce one rating per user per recipe
+                b.HasIndex(x => new { x.RecipeId, x.UserId }).IsUnique();
             });
 
             // Seed sample data via HasData
