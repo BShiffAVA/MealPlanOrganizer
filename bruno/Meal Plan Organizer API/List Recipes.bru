@@ -1,0 +1,24 @@
+meta {
+  name: List Recipes
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/recipes
+  body: none
+  auth: none
+}
+
+docs {
+  # List Recipes
+  
+  Retrieves all recipes ordered by creation date (most recent first).
+  Returns up to 50 recipes with basic fields.
+  
+  ## Response Fields
+  - `id`: Unique recipe identifier (GUID)
+  - `title`: Recipe name
+  - `description`: Recipe description (optional)
+  - `createdUtc`: Timestamp when recipe was created
+}

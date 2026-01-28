@@ -1,0 +1,48 @@
+meta {
+  name: Create Recipe
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/recipes
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "title": "Tacos",
+    "description": "Simple and delicious tacos",
+    "ingredients": [
+      "tortillas",
+      "ground beef",
+      "cheese",
+      "lettuce",
+      "tomatoes"
+    ],
+    "steps": [
+      "Cook ground beef in skillet",
+      "Warm tortillas",
+      "Assemble tacos with toppings"
+    ]
+  }
+}
+
+docs {
+  # Create Recipe
+  
+  Creates a new recipe with ingredients and cooking steps.
+  
+  ## Request Body
+  - `title` (required): Recipe name
+  - `description` (optional): Recipe description
+  - `ingredients` (optional): Array of ingredient names
+  - `steps` (optional): Array of cooking instructions
+  
+  ## Response
+  Returns 201 Created with:
+  - `id`: New recipe GUID
+  - `title`: Recipe name
+  - `Location` header pointing to the new recipe
+}
