@@ -62,7 +62,7 @@
   - **Azure SQL Database**: Primary data store
   - **Azure Storage**: For recipe images
   - **Azure Service Bus/SignalR**: Real-time notifications and updates (optional, for enhanced features)
-  - **Azure Identity/Azure AD B2C**: User authentication and management
+  - **Microsoft Entra External ID**: User authentication and management (CIAM in external tenant)
 
 ### Architecture Approach
 - RESTful API backend (or GraphQL as alternative)

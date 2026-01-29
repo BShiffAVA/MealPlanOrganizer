@@ -1,0 +1,30 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "value": "canadacentral"
+    },
+    "environment": {
+      "value": "prod"
+    },
+    "signalRName": {
+      "value": "signalr-mealplan-organizer"
+    },
+    "signalRSku": {
+      "value": "Free_F1"
+    },
+    "signalRCapacity": {
+      "value": 1
+    },
+    "logAnalyticsWorkspaceId": {
+      "value": "/subscriptions/46c4ffee-60f3-4055-813c-3037475e62ca/resourceGroups/rg-mealplan-organizer/providers/Microsoft.OperationalInsights/workspaces/log-mealplan-organizer"
+    },
+    "vnetId": {
+      "value": "/subscriptions/46c4ffee-60f3-4055-813c-3037475e62ca/resourceGroups/rg-mealplan-organizer/providers/Microsoft.Network/virtualNetworks/vnet-mealplan-organizer"
+    },
+    "keyVaultId": {
+      "value": "/subscriptions/46c4ffee-60f3-4055-813c-3037475e62ca/resourceGroups/rg-mealplan-organizer/providers/Microsoft.KeyVault/vaults/kv-mealplan-org"
+    }
+  }
+}

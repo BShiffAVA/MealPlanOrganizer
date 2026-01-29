@@ -1,0 +1,225 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.40.2.10011",
+      "templateHash": "8513694026756155400"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "canadacentral",
+      "metadata": {
+        "author": "Cloud Architecture Team",
+        "version": "1.0.0",
+        "description": "Azure region for resource deployment"
+      }
+    },
+    "environment": {
+      "type": "string",
+      "defaultValue": "prod",
+      "metadata": {
+        "description": "Environment name for tagging"
+      }
+    },
+    "signalRName": {
+      "type": "string",
+      "defaultValue": "signalr-mealplan-organizer",
+      "metadata": {
+        "description": "SignalR Service name"
+      }
+    },
+    "signalRSku": {
+      "type": "string",
+      "defaultValue": "Free_F1",
+      "allowedValues": [
+        "Free_F1",
+        "Standard_S1"
+      ],
+      "metadata": {
+        "description": "SignalR Service tier (Free_F1 or Standard_S1)"
+      }
+    },
+    "signalRCapacity": {
+      "type": "int",
+      "defaultValue": 1,
+      "metadata": {
+        "description": "SignalR Service capacity (units)"
+      }
+    },
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Log Analytics Workspace resource ID from Phase 1"
+      }
+    },
+    "vnetId": {
+      "type": "string",
+      "metadata": {
+        "description": "Virtual Network resource ID from Phase 1"
+      }
+    },
+    "keyVaultId": {
+      "type": "string",
+      "metadata": {
+        "description": "Key Vault resource ID from Phase 2"
+      }
+    }
+  },
+  "variables": {
+    "tags": {
+      "Environment": "[parameters('environment')]",
+      "Project": "MealPlanOrganizer",
+      "Phase": "4-RealTime",
+      "ManagedBy": "Bicep"
+    },
+    "keyVaultName": "[last(split(parameters('keyVaultId'), '/'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.SignalRService/signalR",
+      "apiVersion": "2024-03-01",
+      "name": "[parameters('signalRName')]",
+      "location": "[parameters('location')]",
+      "tags": "[variables('tags')]",
+      "sku": {
+        "name": "[parameters('signalRSku')]",
+        "capacity": "[parameters('signalRCapacity')]"
+      },
+      "kind": "SignalR",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "cors": {
+          "allowedOrigins": [
+            "*"
+          ]
+        },
+        "features": [
+          {
+            "flag": "ServiceMode",
+            "value": "Serverless"
+          },
+          {
+            "flag": "EnableConnectivityLogs",
+            "value": "true"
+          },
+          {
+            "flag": "EnableMessagingLogs",
+            "value": "true"
+          }
+        ],
+        "publicNetworkAccess": "Enabled",
+        "tls": {
+          "clientCertEnabled": false
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Insights/diagnosticSettings",
+      "apiVersion": "2021-05-01-preview",
+      "scope": "[resourceId('Microsoft.SignalRService/signalR', parameters('signalRName'))]",
+      "name": "[format('{0}-diag', parameters('signalRName'))]",
+      "properties": {
+        "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+        "logs": [
+          {
+            "categoryGroup": "allLogs",
+            "enabled": true
+          }
+        ],
+        "metrics": [
+          {
+            "category": "AllMetrics",
+            "enabled": true
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.SignalRService/signalR', parameters('signalRName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2024-04-01-preview",
+      "name": "[format('{0}/{1}', variables('keyVaultName'), 'SignalRConnectionString')]",
+      "properties": {
+        "value": "[format('Endpoint=https://{0};AccessKey={1};Version=1.0;', reference(resourceId('Microsoft.SignalRService/signalR', parameters('signalRName')), '2024-03-01').hostName, listKeys(resourceId('Microsoft.SignalRService/signalR', parameters('signalRName')), '2024-03-01').primaryKey)]",
+        "contentType": "text/plain",
+        "attributes": {
+          "enabled": true
+        }
+      },
+      "tags": "[variables('tags')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.SignalRService/signalR', parameters('signalRName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2024-04-01-preview",
+      "name": "[format('{0}/{1}', variables('keyVaultName'), 'SignalRPrimaryKey')]",
+      "properties": {
+        "value": "[listKeys(resourceId('Microsoft.SignalRService/signalR', parameters('signalRName')), '2024-03-01').primaryKey]",
+        "contentType": "text/plain",
+        "attributes": {
+          "enabled": true
+        }
+      },
+      "tags": "[variables('tags')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.SignalRService/signalR', parameters('signalRName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2024-04-01-preview",
+      "name": "[format('{0}/{1}', variables('keyVaultName'), 'SignalREndpoint')]",
+      "properties": {
+        "value": "[format('https://{0}', reference(resourceId('Microsoft.SignalRService/signalR', parameters('signalRName')), '2024-03-01').hostName)]",
+        "contentType": "text/plain",
+        "attributes": {
+          "enabled": true
+        }
+      },
+      "tags": "[variables('tags')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.SignalRService/signalR', parameters('signalRName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "signalRResourceId": {
+      "type": "string",
+      "metadata": {
+        "description": "SignalR Service resource ID"
+      },
+      "value": "[resourceId('Microsoft.SignalRService/signalR', parameters('signalRName'))]"
+    },
+    "signalRName": {
+      "type": "string",
+      "metadata": {
+        "description": "SignalR Service name"
+      },
+      "value": "[parameters('signalRName')]"
+    },
+    "signalRHostname": {
+      "type": "string",
+      "metadata": {
+        "description": "SignalR Service hostname"
+      },
+      "value": "[reference(resourceId('Microsoft.SignalRService/signalR', parameters('signalRName')), '2024-03-01').hostName]"
+    },
+    "signalREndpoint": {
+      "type": "string",
+      "metadata": {
+        "description": "SignalR Service endpoint URL"
+      },
+      "value": "[format('https://{0}', reference(resourceId('Microsoft.SignalRService/signalR', parameters('signalRName')), '2024-03-01').hostName)]"
+    }
+  }
+}

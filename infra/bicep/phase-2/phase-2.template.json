@@ -1,0 +1,233 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.40.2.10011",
+      "templateHash": "643685833349268316"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "canadacentral",
+      "metadata": {
+        "author": "Cloud Architecture Team",
+        "version": "1.0.0",
+        "description": "Azure region for resource deployment"
+      }
+    },
+    "environment": {
+      "type": "string",
+      "defaultValue": "prod",
+      "metadata": {
+        "description": "Environment name for tagging"
+      }
+    },
+    "keyVaultName": {
+      "type": "string",
+      "defaultValue": "kv-mealplan-org",
+      "metadata": {
+        "description": "Key Vault name"
+      }
+    },
+    "enablePurgeProtection": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Enable purge protection on Key Vault"
+      }
+    },
+    "enableRbacAuthorization": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Enable RBAC authorization on Key Vault"
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {
+        "Environment": "[parameters('environment')]",
+        "Application": "MealPlanOrganizer",
+        "ManagedBy": "Bicep",
+        "CostCenter": "Family",
+        "Region": "[parameters('location')]"
+      },
+      "metadata": {
+        "description": "Tags for all resources"
+      }
+    },
+    "vnetName": {
+      "type": "string",
+      "defaultValue": "vnet-mealplan-organizer",
+      "metadata": {
+        "description": "Phase 1 - Virtual Network name"
+      }
+    },
+    "subnetName": {
+      "type": "string",
+      "defaultValue": "snet-private-endpoints",
+      "metadata": {
+        "description": "Phase 1 - Private Endpoints subnet name"
+      }
+    },
+    "privateDnsZoneName": {
+      "type": "string",
+      "defaultValue": "privatelink.vaultcore.azure.net",
+      "metadata": {
+        "description": "Phase 1 - Key Vault Private DNS Zone name"
+      }
+    },
+    "logAnalyticsWorkspaceName": {
+      "type": "string",
+      "defaultValue": "log-mealplan-organizer",
+      "metadata": {
+        "description": "Phase 1 - Log Analytics Workspace name"
+      }
+    }
+  },
+  "variables": {
+    "subscriptionId": "[subscription().subscriptionId]",
+    "resourceGroupName": "[resourceGroup().name]",
+    "keyVaultSkuName": "standard",
+    "privateEndpointName": "[format('{0}-pe', parameters('keyVaultName'))]",
+    "diagnosticSettingsName": "[format('{0}-diag', parameters('keyVaultName'))]",
+    "vnetResourceId": "[format('/subscriptions/{0}/resourceGroups/{1}/providers/Microsoft.Network/virtualNetworks/{2}', variables('subscriptionId'), variables('resourceGroupName'), parameters('vnetName'))]",
+    "privateEndpointSubnetId": "[format('{0}/subnets/{1}', variables('vnetResourceId'), parameters('subnetName'))]",
+    "keyVaultPrivateDnsZoneId": "[format('/subscriptions/{0}/resourceGroups/{1}/providers/Microsoft.Network/privateDnsZones/{2}', variables('subscriptionId'), variables('resourceGroupName'), parameters('privateDnsZoneName'))]",
+    "logAnalyticsWorkspaceId": "[format('/subscriptions/{0}/resourceGroups/{1}/providers/Microsoft.OperationalInsights/workspaces/{2}', variables('subscriptionId'), variables('resourceGroupName'), parameters('logAnalyticsWorkspaceName'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.KeyVault/vaults",
+      "apiVersion": "2024-11-01",
+      "name": "[parameters('keyVaultName')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "tenantId": "[subscription().tenantId]",
+        "sku": {
+          "family": "A",
+          "name": "[variables('keyVaultSkuName')]"
+        },
+        "accessPolicies": [],
+        "enableRbacAuthorization": "[parameters('enableRbacAuthorization')]",
+        "enableSoftDelete": true,
+        "softDeleteRetentionInDays": 90,
+        "enablePurgeProtection": "[parameters('enablePurgeProtection')]",
+        "publicNetworkAccess": "Disabled",
+        "networkAcls": {
+          "bypass": "AzureServices",
+          "defaultAction": "Deny"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Network/privateEndpoints",
+      "apiVersion": "2024-05-01",
+      "name": "[variables('privateEndpointName')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "subnet": {
+          "id": "[variables('privateEndpointSubnetId')]"
+        },
+        "privateLinkServiceConnections": [
+          {
+            "name": "[format('{0}-connection', parameters('keyVaultName'))]",
+            "properties": {
+              "privateLinkServiceId": "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]",
+              "groupIds": [
+                "vault"
+              ]
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
+      "apiVersion": "2024-05-01",
+      "name": "[format('{0}/{1}', variables('privateEndpointName'), 'default')]",
+      "properties": {
+        "privateDnsZoneConfigs": [
+          {
+            "name": "keyvault-zone",
+            "properties": {
+              "privateDnsZoneId": "[variables('keyVaultPrivateDnsZoneId')]"
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/privateEndpoints', variables('privateEndpointName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Insights/diagnosticSettings",
+      "apiVersion": "2021-05-01-preview",
+      "scope": "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]",
+      "name": "[variables('diagnosticSettingsName')]",
+      "properties": {
+        "workspaceId": "[variables('logAnalyticsWorkspaceId')]",
+        "logs": [
+          {
+            "category": "AuditEvent",
+            "enabled": true
+          }
+        ],
+        "metrics": [
+          {
+            "category": "AllMetrics",
+            "enabled": true
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "keyVaultId": {
+      "type": "string",
+      "metadata": {
+        "description": "Key Vault ID"
+      },
+      "value": "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]"
+    },
+    "keyVaultName": {
+      "type": "string",
+      "metadata": {
+        "description": "Key Vault Name"
+      },
+      "value": "[parameters('keyVaultName')]"
+    },
+    "keyVaultUri": {
+      "type": "string",
+      "metadata": {
+        "description": "Key Vault URI"
+      },
+      "value": "[reference(resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName')), '2024-11-01').vaultUri]"
+    },
+    "privateEndpointId": {
+      "type": "string",
+      "metadata": {
+        "description": "Private Endpoint ID"
+      },
+      "value": "[resourceId('Microsoft.Network/privateEndpoints', variables('privateEndpointName'))]"
+    },
+    "privateEndpointName": {
+      "type": "string",
+      "metadata": {
+        "description": "Private Endpoint Name"
+      },
+      "value": "[variables('privateEndpointName')]"
+    }
+  }
+}

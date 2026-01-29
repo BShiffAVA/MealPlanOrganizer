@@ -1,0 +1,55 @@
+{
+    "$schema":  "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion":  "1.0.0.0",
+    "parameters":  {
+                       "location":  {
+                                        "value":  "canadacentral"
+                                    },
+                       "environment":  {
+                                           "value":  "prod"
+                                       },
+                       "sqlServerName":  {
+                                             "value":  "sql-mealplan-organizer"
+                                         },
+                       "sqlAdminLogin":  {
+                                             "value":  "mealplanadmin"
+                                         },
+                       "sqlAdminPassword":  {
+                                                "value":  "MealP!an@2024Secure"
+                                            },
+                       "sqlAadAdminObjectId":  {
+                                                   "value":  "b06b73c5-4a63-4ab4-957d-faa8a192e731"
+                                               },
+                       "sqlDatabaseName":  {
+                                               "value":  "MealPlanOrganizerDB"
+                                           },
+                       "storageAccountName":  {
+                                                  "value":  "stmealplanorg"
+                                              },
+                       "vnetName":  {
+                                        "value":  "vnet-mealplan-organizer"
+                                    },
+                       "subnetName":  {
+                                          "value":  "snet-private-endpoints"
+                                      },
+                       "sqlPrivateDnsZoneName":  {
+                                                     "value":  "privatelink.database.windows.net"
+                                                 },
+                       "blobPrivateDnsZoneName":  {
+                                                      "value":  "privatelink.blob.core.windows.net"
+                                                  },
+                       "logAnalyticsWorkspaceName":  {
+                                                         "value":  "log-mealplan-organizer"
+                                                     },
+                       "keyVaultName":  {
+                                            "value":  "kv-mealplan-org"
+                                        },
+                       "tags":  {
+                                    "value":  {
+                                                  "Phase":  "3-DataTier",
+                                                  "Environment":  "prod",
+                                                  "ManagedBy":  "Bicep"
+                                              }
+                                }
+                   }
+}

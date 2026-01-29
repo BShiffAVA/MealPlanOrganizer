@@ -1,0 +1,43 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "value": "canadacentral"
+    },
+    "environment": {
+      "value": "prod"
+    },
+    "keyVaultName": {
+      "value": "kv-mealplan-org"
+    },
+    "enablePurgeProtection": {
+      "value": true
+    },
+    "enableRbacAuthorization": {
+      "value": true
+    },
+    "tags": {
+      "value": {
+        "Environment": "prod",
+        "Application": "MealPlanOrganizer",
+        "ManagedBy": "Bicep",
+        "CostCenter": "Family",
+        "Phase": "2-Security-Secrets",
+        "Region": "CanadaCentral"
+      }
+    },
+    "vnetName": {
+      "value": "vnet-mealplan-organizer"
+    },
+    "subnetName": {
+      "value": "snet-private-endpoints"
+    },
+    "privateDnsZoneName": {
+      "value": "privatelink.vaultcore.azure.net"
+    },
+    "logAnalyticsWorkspaceName": {
+      "value": "log-mealplan-organizer"
+    }
+  }
+}

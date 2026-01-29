@@ -12,7 +12,7 @@ The Meal Plan Organizer is a mobile-first application for a single household (2 
 ## Core Components
 - Mobile Clients: .NET MAUI apps (iOS/Android) using MVVM
 - API Layer: Azure Functions (HTTP-triggered, .NET) — stateless REST endpoints
-- Authentication: Azure AD B2C (OIDC/JWT)
+- Authentication: Microsoft Entra External ID (OIDC/JWT, external tenant)
 - Database: Azure SQL Database (Basic tier)
 - Storage: Azure Blob Storage (images)
 - Observability: Azure Application Insights + Log Analytics
@@ -27,14 +27,14 @@ flowchart LR
         Sync[Sync Manager]
     end
 
-    AADB2C[Azure AD B2C<br/>OIDC/JWT]:::sec
+    ExternalID[Microsoft Entra External ID<br/>OIDC/JWT]:::sec
     AF[Azure Functions API<br/>HTTP Triggers]:::svc
     SQL[Azure SQL Database - Basic Tier]:::data
     BLOB[Azure Blob Storage - Recipe Images]:::data
     AI[Azure Application Insights]:::ops
     SIG[Azure SignalR Service]:::opt
 
-    UI -- Login --> AADB2C
+    UI -- Login --> ExternalID
     UI -- Auth REST --> AF
     Sync -- Background Sync --> AF
     AF -- Queries/CRUD --> SQL
@@ -57,15 +57,15 @@ flowchart LR
 sequenceDiagram
   participant User
   participant MAUI as MAUI App
-  participant B2C as Azure AD B2C
+  participant ExternalID as Microsoft Entra External ID
   participant API as Azure Functions
 
   User->>MAUI: Open app / Login
-  MAUI->>B2C: OIDC login (email+password)
-  B2C-->>MAUI: JWT access token
+  MAUI->>ExternalID: OIDC login (email+password)
+  ExternalID-->>MAUI: JWT access token
   MAUI->>API: Request (Authorization: Bearer JWT)
   API-->>MAUI: 200 OK + data
-  Note over MAUI: Token cached and refresh via B2C when needed
+  Note over MAUI: Token cached and refresh via External ID when needed
 ```
 
 ### Add Recipe & Image Upload
@@ -221,7 +221,7 @@ erDiagram
 ```
 
 ## API Surface (Mapped to Azure Functions)
-- Auth: `/auth/login` (B2C via OIDC), `/auth/refresh`
+- Auth: `/auth/login` (External ID via OIDC), `/auth/refresh`
 - Users: `GET/PUT /users/me`, `POST /households/invite`, `POST /households/join`
 - Recipes: `GET /recipes`, `GET /recipes/{id}`, `POST /recipes`, `PUT /recipes/{id}`, `DELETE /recipes/{id}`
 - Ratings: `PUT /recipes/{id}/ratings/my`, `GET /recipes/{id}/ratings`
@@ -231,10 +231,10 @@ erDiagram
 - Pantry: `GET/POST/PUT/DELETE /pantry/items`
 
 ## Security Architecture
-- Identity: Azure AD B2C for OIDC; tokens validated by Azure Functions middleware
+- Identity: Microsoft Entra External ID (external tenant) for OIDC; tokens validated by Azure Functions middleware
 - Authorization: Household-level access via `HouseholdId` scoping; server-side checks on all operations
 - Transport: HTTPS/TLS enforced; CORS restricted to mobile app origins
-- Data: Secrets in Azure Key Vault; passwords only in B2C; app uses parameterized queries
+- Data: Secrets in Azure Key Vault; passwords only in External ID; app uses parameterized queries
 - Threats: OWASP Top 10 mitigations; rate limiting on sensitive endpoints
 
 ## Reliability & Observability
@@ -257,7 +257,7 @@ erDiagram
 ## Deployment & Environments
 - CI/CD: GitHub Actions for build/test/deploy of Functions and MAUI
 - Config: Use environment variables and Key Vault
-- Environments: `dev` and `prod` with separate B2C, SQL, Storage
+- Environments: `dev` and `prod` with separate External ID tenants, SQL, Storage
 
 ## Risks & Mitigations
 - Real-time Costs: Start with background sync; enable SignalR only if needed

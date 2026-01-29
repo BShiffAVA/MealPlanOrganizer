@@ -1,0 +1,416 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.40.2.10011",
+      "templateHash": "14267576920451653811"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "canadacentral",
+      "metadata": {
+        "author": "Cloud Architecture Team",
+        "version": "1.0.0",
+        "description": "Azure region for resource deployment"
+      }
+    },
+    "environment": {
+      "type": "string",
+      "defaultValue": "prod",
+      "metadata": {
+        "description": "Environment name for tagging"
+      }
+    },
+    "logAnalyticsName": {
+      "type": "string",
+      "defaultValue": "log-mealplan-organizer",
+      "metadata": {
+        "description": "Log Analytics Workspace name"
+      }
+    },
+    "appInsightsName": {
+      "type": "string",
+      "defaultValue": "appi-mealplan-organizer",
+      "metadata": {
+        "description": "Application Insights name"
+      }
+    },
+    "vnetName": {
+      "type": "string",
+      "defaultValue": "vnet-mealplan-organizer",
+      "metadata": {
+        "description": "Virtual Network name"
+      }
+    },
+    "vnetAddressSpace": {
+      "type": "string",
+      "defaultValue": "10.0.0.0/16",
+      "metadata": {
+        "description": "Virtual Network address space"
+      }
+    },
+    "integrationSubnetName": {
+      "type": "string",
+      "defaultValue": "snet-integration",
+      "metadata": {
+        "description": "Integration subnet name (for App Service/Function App VNet integration)"
+      }
+    },
+    "integrationSubnetPrefix": {
+      "type": "string",
+      "defaultValue": "10.0.2.0/24",
+      "metadata": {
+        "description": "Integration subnet address prefix"
+      }
+    },
+    "privateEndpointSubnetName": {
+      "type": "string",
+      "defaultValue": "snet-private-endpoints",
+      "metadata": {
+        "description": "Private Endpoints subnet name"
+      }
+    },
+    "privateEndpointSubnetPrefix": {
+      "type": "string",
+      "defaultValue": "10.0.1.0/24",
+      "metadata": {
+        "description": "Private Endpoints subnet address prefix"
+      }
+    },
+    "logAnalyticsRetentionDays": {
+      "type": "int",
+      "defaultValue": 30,
+      "metadata": {
+        "description": "Log Analytics retention period in days"
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {
+        "Environment": "[parameters('environment')]",
+        "Application": "MealPlanOrganizer",
+        "ManagedBy": "Bicep",
+        "CreatedDate": "[utcNow('u')]",
+        "CostCenter": "Family"
+      },
+      "metadata": {
+        "description": "Tags for all resources"
+      }
+    },
+    "vnetLinkNameSql": {
+      "type": "string",
+      "defaultValue": "sql-link",
+      "metadata": {
+        "description": "VNet link name for SQL Database Private DNS Zone"
+      }
+    },
+    "vnetLinkNameKeyVault": {
+      "type": "string",
+      "defaultValue": "keyvault-link",
+      "metadata": {
+        "description": "VNet link name for Key Vault Private DNS Zone"
+      }
+    },
+    "vnetLinkNameBlob": {
+      "type": "string",
+      "defaultValue": "blob-link",
+      "metadata": {
+        "description": "VNet link name for Blob Storage Private DNS Zone"
+      }
+    },
+    "vnetLinkNameSignalR": {
+      "type": "string",
+      "defaultValue": "signalr-link",
+      "metadata": {
+        "description": "VNet link name for SignalR Private DNS Zone"
+      }
+    }
+  },
+  "variables": {
+    "logAnalyticsSkuName": "PerGB2018",
+    "appInsightsKind": "web",
+    "privateDnsZones": [
+      "privatelink.database.windows.net",
+      "privatelink.vaultcore.azure.net",
+      "privatelink.blob.core.windows.net",
+      "privatelink.signalr.net"
+    ]
+  },
+  "resources": [
+    {
+      "type": "Microsoft.OperationalInsights/workspaces",
+      "apiVersion": "2025-02-01",
+      "name": "[parameters('logAnalyticsName')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "sku": {
+          "name": "[variables('logAnalyticsSkuName')]"
+        },
+        "retentionInDays": "[parameters('logAnalyticsRetentionDays')]",
+        "publicNetworkAccessForIngestion": "Enabled",
+        "publicNetworkAccessForQuery": "Enabled",
+        "features": {
+          "enableLogAccessUsingOnlyResourcePermissions": true
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Insights/components",
+      "apiVersion": "2020-02-02",
+      "name": "[parameters('appInsightsName')]",
+      "location": "[parameters('location')]",
+      "kind": "[variables('appInsightsKind')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "Application_Type": "[variables('appInsightsKind')]",
+        "WorkspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('logAnalyticsName'))]",
+        "publicNetworkAccessForIngestion": "Enabled",
+        "publicNetworkAccessForQuery": "Enabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('logAnalyticsName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2024-05-01",
+      "name": "[parameters('vnetName')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[parameters('vnetAddressSpace')]"
+          ]
+        },
+        "dhcpOptions": {
+          "dnsServers": []
+        },
+        "subnets": [
+          {
+            "name": "[parameters('integrationSubnetName')]",
+            "properties": {
+              "addressPrefix": "[parameters('integrationSubnetPrefix')]",
+              "privateEndpointNetworkPolicies": "Enabled",
+              "privateLinkServiceNetworkPolicies": "Enabled",
+              "delegations": [],
+              "serviceEndpoints": [
+                {
+                  "service": "Microsoft.KeyVault"
+                },
+                {
+                  "service": "Microsoft.Sql"
+                },
+                {
+                  "service": "Microsoft.Storage"
+                }
+              ]
+            }
+          },
+          {
+            "name": "[parameters('privateEndpointSubnetName')]",
+            "properties": {
+              "addressPrefix": "[parameters('privateEndpointSubnetPrefix')]",
+              "privateEndpointNetworkPolicies": "Disabled",
+              "privateLinkServiceNetworkPolicies": "Enabled",
+              "delegations": [],
+              "serviceEndpoints": []
+            }
+          }
+        ],
+        "enableDdosProtection": false
+      }
+    },
+    {
+      "type": "Microsoft.Network/privateDnsZones",
+      "apiVersion": "2020-06-01",
+      "name": "[variables('privateDnsZones')[0]]",
+      "location": "global",
+      "tags": "[parameters('tags')]",
+      "properties": {}
+    },
+    {
+      "type": "Microsoft.Network/privateDnsZones",
+      "apiVersion": "2020-06-01",
+      "name": "[variables('privateDnsZones')[1]]",
+      "location": "global",
+      "tags": "[parameters('tags')]",
+      "properties": {}
+    },
+    {
+      "type": "Microsoft.Network/privateDnsZones",
+      "apiVersion": "2020-06-01",
+      "name": "[variables('privateDnsZones')[2]]",
+      "location": "global",
+      "tags": "[parameters('tags')]",
+      "properties": {}
+    },
+    {
+      "type": "Microsoft.Network/privateDnsZones",
+      "apiVersion": "2020-06-01",
+      "name": "[variables('privateDnsZones')[3]]",
+      "location": "global",
+      "tags": "[parameters('tags')]",
+      "properties": {}
+    },
+    {
+      "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+      "apiVersion": "2024-06-01",
+      "name": "[format('{0}/{1}', variables('privateDnsZones')[0], parameters('vnetLinkNameSql'))]",
+      "location": "global",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "registrationEnabled": false,
+        "virtualNetwork": {
+          "id": "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName'))]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/privateDnsZones', variables('privateDnsZones')[0])]",
+        "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+      "apiVersion": "2024-06-01",
+      "name": "[format('{0}/{1}', variables('privateDnsZones')[1], parameters('vnetLinkNameKeyVault'))]",
+      "location": "global",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "registrationEnabled": false,
+        "virtualNetwork": {
+          "id": "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName'))]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/privateDnsZones', variables('privateDnsZones')[1])]",
+        "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+      "apiVersion": "2024-06-01",
+      "name": "[format('{0}/{1}', variables('privateDnsZones')[2], parameters('vnetLinkNameBlob'))]",
+      "location": "global",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "registrationEnabled": false,
+        "virtualNetwork": {
+          "id": "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName'))]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/privateDnsZones', variables('privateDnsZones')[2])]",
+        "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+      "apiVersion": "2024-06-01",
+      "name": "[format('{0}/{1}', variables('privateDnsZones')[3], parameters('vnetLinkNameSignalR'))]",
+      "location": "global",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "registrationEnabled": false,
+        "virtualNetwork": {
+          "id": "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName'))]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/privateDnsZones', variables('privateDnsZones')[3])]",
+        "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Log Analytics Workspace ID"
+      },
+      "value": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('logAnalyticsName'))]"
+    },
+    "logAnalyticsWorkspaceName": {
+      "type": "string",
+      "metadata": {
+        "description": "Log Analytics Workspace Name"
+      },
+      "value": "[parameters('logAnalyticsName')]"
+    },
+    "applicationInsightsId": {
+      "type": "string",
+      "metadata": {
+        "description": "Application Insights ID"
+      },
+      "value": "[resourceId('Microsoft.Insights/components', parameters('appInsightsName'))]"
+    },
+    "applicationInsightsInstrumentationKey": {
+      "type": "string",
+      "metadata": {
+        "description": "Application Insights Instrumentation Key"
+      },
+      "value": "[reference(resourceId('Microsoft.Insights/components', parameters('appInsightsName')), '2020-02-02').InstrumentationKey]"
+    },
+    "virtualNetworkId": {
+      "type": "string",
+      "metadata": {
+        "description": "Virtual Network ID"
+      },
+      "value": "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName'))]"
+    },
+    "virtualNetworkName": {
+      "type": "string",
+      "metadata": {
+        "description": "Virtual Network Name"
+      },
+      "value": "[parameters('vnetName')]"
+    },
+    "integrationSubnetId": {
+      "type": "string",
+      "metadata": {
+        "description": "Integration Subnet ID"
+      },
+      "value": "[reference(resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName')), '2024-05-01').subnets[0].id]"
+    },
+    "privateEndpointSubnetId": {
+      "type": "string",
+      "metadata": {
+        "description": "Private Endpoints Subnet ID"
+      },
+      "value": "[reference(resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName')), '2024-05-01').subnets[1].id]"
+    },
+    "privateDnsZoneSqlId": {
+      "type": "string",
+      "metadata": {
+        "description": "Private DNS Zone SQL Database ID"
+      },
+      "value": "[resourceId('Microsoft.Network/privateDnsZones', variables('privateDnsZones')[0])]"
+    },
+    "privateDnsZonesKeyVaultId": {
+      "type": "string",
+      "metadata": {
+        "description": "Private DNS Zone Key Vault ID"
+      },
+      "value": "[resourceId('Microsoft.Network/privateDnsZones', variables('privateDnsZones')[1])]"
+    },
+    "privateDnsZonesBlobId": {
+      "type": "string",
+      "metadata": {
+        "description": "Private DNS Zone Blob Storage ID"
+      },
+      "value": "[resourceId('Microsoft.Network/privateDnsZones', variables('privateDnsZones')[2])]"
+    },
+    "privateDnsZonesSignalRId": {
+      "type": "string",
+      "metadata": {
+        "description": "Private DNS Zone SignalR ID"
+      },
+      "value": "[resourceId('Microsoft.Network/privateDnsZones', variables('privateDnsZones')[3])]"
+    }
+  }
+}

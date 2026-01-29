@@ -1,0 +1,48 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "value": "canadacentral"
+    },
+    "environment": {
+      "value": "prod"
+    },
+    "functionAppName": {
+      "value": "func-mealplan-organizer"
+    },
+    "appServicePlanName": {
+      "value": "asp-mealplan-organizer"
+    },
+    "functionStorageAccountName": {
+      "value": "stfuncmealplan"
+    },
+    "logAnalyticsWorkspaceId": {
+      "value": "/subscriptions/46c4ffee-60f3-4055-813c-3037475e62ca/resourceGroups/rg-mealplan-organizer/providers/Microsoft.OperationalInsights/workspaces/log-mealplan-organizer"
+    },
+    "vnetId": {
+      "value": "/subscriptions/46c4ffee-60f3-4055-813c-3037475e62ca/resourceGroups/rg-mealplan-organizer/providers/Microsoft.Network/virtualNetworks/vnet-mealplan-organizer"
+    },
+    "integrationSubnetId": {
+      "value": "/subscriptions/46c4ffee-60f3-4055-813c-3037475e62ca/resourceGroups/rg-mealplan-organizer/providers/Microsoft.Network/virtualNetworks/vnet-mealplan-organizer/subnets/snet-integration"
+    },
+    "appInsightsId": {
+      "value": "/subscriptions/46c4ffee-60f3-4055-813c-3037475e62ca/resourceGroups/rg-mealplan-organizer/providers/Microsoft.Insights/components/appi-mealplan-organizer"
+    },
+    "keyVaultId": {
+      "value": "/subscriptions/46c4ffee-60f3-4055-813c-3037475e62ca/resourceGroups/rg-mealplan-organizer/providers/Microsoft.KeyVault/vaults/kv-mealplan-org"
+    },
+    "sqlServerId": {
+      "value": "/subscriptions/46c4ffee-60f3-4055-813c-3037475e62ca/resourceGroups/rg-mealplan-organizer/providers/Microsoft.Sql/servers/sql-mealplan-organizer"
+    },
+    "sqlDatabaseName": {
+      "value": "MealPlanOrganizerDB"
+    },
+    "storageAccountId": {
+      "value": "/subscriptions/46c4ffee-60f3-4055-813c-3037475e62ca/resourceGroups/rg-mealplan-organizer/providers/Microsoft.Storage/storageAccounts/stmealplanorg"
+    },
+    "signalRServiceId": {
+      "value": "/subscriptions/46c4ffee-60f3-4055-813c-3037475e62ca/resourceGroups/rg-mealplan-organizer/providers/Microsoft.SignalRService/signalR/signalr-mealplan-organizer"
+    }
+  }
+}

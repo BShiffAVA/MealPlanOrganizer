@@ -578,7 +578,7 @@ This document contains user stories and requirements for the Meal Plan Organizer
 - [ ] Azure SQL Database provisioned
 - [ ] Azure Storage account created
 - [ ] Azure Functions configured
-- [ ] Azure AD B2C tenant (or alternative auth service) configured
+- [ ] Microsoft Entra External ID tenant configured
 - [ ] .NET MAUI development environment set up
 - [ ] iOS/Android development environments configured
 - [ ] GitHub repository created

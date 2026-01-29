@@ -1,0 +1,487 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.40.2.10011",
+      "templateHash": "1139616372483251026"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "canadacentral",
+      "allowedValues": [
+        "canadacentral",
+        "eastus",
+        "westus2",
+        "northeurope"
+      ],
+      "metadata": {
+        "description": "The Azure region where resources will be deployed"
+      }
+    },
+    "environment": {
+      "type": "string",
+      "defaultValue": "prod",
+      "allowedValues": [
+        "dev",
+        "prod",
+        "staging"
+      ],
+      "metadata": {
+        "description": "Environment name for resource naming and tagging"
+      }
+    },
+    "sqlServerName": {
+      "type": "string",
+      "defaultValue": "sql-mealplan-organizer",
+      "metadata": {
+        "description": "SQL Server name"
+      }
+    },
+    "sqlAdminLogin": {
+      "type": "string",
+      "defaultValue": "mealplanadmin",
+      "metadata": {
+        "description": "SQL Server administrator login name"
+      }
+    },
+    "sqlAdminPassword": {
+      "type": "securestring",
+      "defaultValue": "MealP!an@2024Secure",
+      "minLength": 8,
+      "metadata": {
+        "description": "SQL Server administrator password (must contain uppercase, lowercase, numbers, and special characters)"
+      }
+    },
+    "sqlAadAdminObjectId": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure AD principal object ID for SQL Server administrator"
+      }
+    },
+    "sqlDatabaseName": {
+      "type": "string",
+      "defaultValue": "MealPlanOrganizerDB",
+      "metadata": {
+        "description": "SQL database name"
+      }
+    },
+    "storageAccountName": {
+      "type": "string",
+      "defaultValue": "stmealplanorg",
+      "metadata": {
+        "description": "Storage account name"
+      }
+    },
+    "vnetName": {
+      "type": "string",
+      "defaultValue": "vnet-mealplan-organizer",
+      "metadata": {
+        "description": "VNet name from Phase 1"
+      }
+    },
+    "subnetName": {
+      "type": "string",
+      "defaultValue": "snet-private-endpoints",
+      "metadata": {
+        "description": "Private endpoints subnet name from Phase 1"
+      }
+    },
+    "sqlPrivateDnsZoneName": {
+      "type": "string",
+      "defaultValue": "privatelink.database.windows.net",
+      "metadata": {
+        "description": "SQL Server private DNS zone name"
+      }
+    },
+    "blobPrivateDnsZoneName": {
+      "type": "string",
+      "defaultValue": "privatelink.blob.core.windows.net",
+      "metadata": {
+        "description": "Blob storage private DNS zone name"
+      }
+    },
+    "logAnalyticsWorkspaceName": {
+      "type": "string",
+      "defaultValue": "log-mealplan-organizer",
+      "metadata": {
+        "description": "Log Analytics workspace name from Phase 1"
+      }
+    },
+    "keyVaultName": {
+      "type": "string",
+      "defaultValue": "kv-mealplan-org",
+      "metadata": {
+        "description": "Key Vault name from Phase 2"
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {
+        "Phase": "3-DataTier",
+        "Environment": "[parameters('environment')]",
+        "ManagedBy": "Bicep"
+      },
+      "metadata": {
+        "description": "Resource tags"
+      }
+    }
+  },
+  "variables": {
+    "subscriptionId": "[subscription().subscriptionId]",
+    "resourceGroupName": "[resourceGroup().name]",
+    "vnetResourceId": "[format('/subscriptions/{0}/resourceGroups/{1}/providers/Microsoft.Network/virtualNetworks/{2}', variables('subscriptionId'), variables('resourceGroupName'), parameters('vnetName'))]",
+    "privateEndpointSubnetId": "[format('{0}/subnets/{1}', variables('vnetResourceId'), parameters('subnetName'))]",
+    "sqlPrivateDnsZoneId": "[format('/subscriptions/{0}/resourceGroups/{1}/providers/Microsoft.Network/privateDnsZones/{2}', variables('subscriptionId'), variables('resourceGroupName'), parameters('sqlPrivateDnsZoneName'))]",
+    "blobPrivateDnsZoneId": "[format('/subscriptions/{0}/resourceGroups/{1}/providers/Microsoft.Network/privateDnsZones/{2}', variables('subscriptionId'), variables('resourceGroupName'), parameters('blobPrivateDnsZoneName'))]",
+    "logAnalyticsWorkspaceId": "[format('/subscriptions/{0}/resourceGroups/{1}/providers/Microsoft.OperationalInsights/workspaces/{2}', variables('subscriptionId'), variables('resourceGroupName'), parameters('logAnalyticsWorkspaceName'))]",
+    "keyVaultUri": "[format('https://{0}.vault.azure.net/', parameters('keyVaultName'))]",
+    "sqlServerFqdn": "[format('{0}.database.windows.net', parameters('sqlServerName'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Sql/servers",
+      "apiVersion": "2023-08-01-preview",
+      "name": "[parameters('sqlServerName')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "administratorLogin": "[parameters('sqlAdminLogin')]",
+        "administratorLoginPassword": "[parameters('sqlAdminPassword')]",
+        "minimalTlsVersion": "1.2",
+        "publicNetworkAccess": "Disabled"
+      }
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases",
+      "apiVersion": "2023-08-01-preview",
+      "name": "[format('{0}/{1}', parameters('sqlServerName'), parameters('sqlDatabaseName'))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "sku": {
+        "name": "Basic",
+        "tier": "Basic",
+        "capacity": 5
+      },
+      "properties": {
+        "collation": "SQL_Latin1_General_CP1_CI_AS",
+        "maxSizeBytes": 2147483648
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('sqlServerName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/privateEndpoints",
+      "apiVersion": "2024-05-01",
+      "name": "[format('{0}-pep-{1}', parameters('sqlServerName'), uniqueString(parameters('sqlServerName')))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "subnet": {
+          "id": "[variables('privateEndpointSubnetId')]"
+        },
+        "privateLinkServiceConnections": [
+          {
+            "name": "[format('{0}-plsc', parameters('sqlServerName'))]",
+            "properties": {
+              "privateLinkServiceId": "[resourceId('Microsoft.Sql/servers', parameters('sqlServerName'))]",
+              "groupIds": [
+                "sqlServer"
+              ]
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('sqlServerName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
+      "apiVersion": "2024-05-01",
+      "name": "[format('{0}/{1}', format('{0}-pep-{1}', parameters('sqlServerName'), uniqueString(parameters('sqlServerName'))), 'default')]",
+      "properties": {
+        "privateDnsZoneConfigs": [
+          {
+            "name": "privatelink-database-windows-net",
+            "properties": {
+              "privateDnsZoneId": "[variables('sqlPrivateDnsZoneId')]"
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/privateEndpoints', format('{0}-pep-{1}', parameters('sqlServerName'), uniqueString(parameters('sqlServerName'))))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Insights/diagnosticSettings",
+      "apiVersion": "2021-05-01-preview",
+      "scope": "[resourceId('Microsoft.Sql/servers', parameters('sqlServerName'))]",
+      "name": "[format('{0}-diag', parameters('sqlServerName'))]",
+      "properties": {
+        "workspaceId": "[variables('logAnalyticsWorkspaceId')]",
+        "metrics": [
+          {
+            "category": "AllMetrics",
+            "enabled": true
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('sqlServerName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2024-01-01",
+      "name": "[parameters('storageAccountName')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "kind": "StorageV2",
+      "sku": {
+        "name": "Standard_LRS"
+      },
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "accessTier": "Hot",
+        "allowBlobPublicAccess": false,
+        "allowCrossTenantReplication": false,
+        "allowSharedKeyAccess": false,
+        "defaultToOAuthAuthentication": true,
+        "encryption": {
+          "keySource": "Microsoft.Storage",
+          "services": {
+            "blob": {
+              "enabled": true
+            },
+            "file": {
+              "enabled": true
+            }
+          }
+        },
+        "minimumTlsVersion": "TLS1_2",
+        "networkAcls": {
+          "defaultAction": "Deny",
+          "bypass": "AzureServices"
+        },
+        "publicNetworkAccess": "Disabled",
+        "supportsHttpsTrafficOnly": true
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/blobServices",
+      "apiVersion": "2024-01-01",
+      "name": "[format('{0}/{1}', parameters('storageAccountName'), 'default')]",
+      "properties": {
+        "changeFeed": {
+          "enabled": true
+        },
+        "deleteRetentionPolicy": {
+          "enabled": true,
+          "days": 7
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+      "apiVersion": "2024-01-01",
+      "name": "[format('{0}/{1}/{2}', parameters('storageAccountName'), 'default', 'recipe-images')]",
+      "properties": {
+        "publicAccess": "None"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccountName'), 'default')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/managementPolicies",
+      "apiVersion": "2024-01-01",
+      "name": "[format('{0}/{1}', parameters('storageAccountName'), 'default')]",
+      "properties": {
+        "policy": {
+          "rules": [
+            {
+              "enabled": true,
+              "name": "DeleteOldBlobs",
+              "type": "Lifecycle",
+              "definition": {
+                "actions": {
+                  "baseBlob": {
+                    "delete": {
+                      "daysAfterCreationGreaterThan": 365
+                    }
+                  }
+                },
+                "filters": {
+                  "blobTypes": [
+                    "blockBlob"
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/privateEndpoints",
+      "apiVersion": "2024-05-01",
+      "name": "[format('{0}-blob-pep-{1}', parameters('storageAccountName'), uniqueString(parameters('storageAccountName')))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "subnet": {
+          "id": "[variables('privateEndpointSubnetId')]"
+        },
+        "privateLinkServiceConnections": [
+          {
+            "name": "[format('{0}-blob-plsc', parameters('storageAccountName'))]",
+            "properties": {
+              "privateLinkServiceId": "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]",
+              "groupIds": [
+                "blob"
+              ]
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
+      "apiVersion": "2024-05-01",
+      "name": "[format('{0}/{1}', format('{0}-blob-pep-{1}', parameters('storageAccountName'), uniqueString(parameters('storageAccountName'))), 'default')]",
+      "properties": {
+        "privateDnsZoneConfigs": [
+          {
+            "name": "privatelink-blob-core-windows-net",
+            "properties": {
+              "privateDnsZoneId": "[variables('blobPrivateDnsZoneId')]"
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/privateEndpoints', format('{0}-blob-pep-{1}', parameters('storageAccountName'), uniqueString(parameters('storageAccountName'))))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Insights/diagnosticSettings",
+      "apiVersion": "2021-05-01-preview",
+      "scope": "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccountName'), 'default')]",
+      "name": "[format('{0}-diag', parameters('storageAccountName'))]",
+      "properties": {
+        "workspaceId": "[variables('logAnalyticsWorkspaceId')]",
+        "logs": [
+          {
+            "category": "StorageRead",
+            "enabled": true
+          },
+          {
+            "category": "StorageWrite",
+            "enabled": true
+          },
+          {
+            "category": "StorageDelete",
+            "enabled": true
+          }
+        ],
+        "metrics": [
+          {
+            "category": "Transaction",
+            "enabled": true
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccountName'), 'default')]"
+      ]
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2024-11-01",
+      "name": "[format('{0}/{1}', parameters('keyVaultName'), 'sql-connection-string')]",
+      "properties": {
+        "value": "[format('Server=tcp:{0},1433;Initial Catalog={1};Persist Security Info=False;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication=Active Directory Integrated;', variables('sqlServerFqdn'), parameters('sqlDatabaseName'))]"
+      }
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2024-11-01",
+      "name": "[format('{0}/{1}', parameters('keyVaultName'), 'storage-connection-string')]",
+      "properties": {
+        "value": "[format('BlobEndpoint={0};SharedAccessSignature=placeholder', reference(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2024-01-01').primaryEndpoints.blob)]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2024-11-01",
+      "name": "[format('{0}/{1}', parameters('keyVaultName'), 'storage-access-key')]",
+      "properties": {
+        "value": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2024-01-01').keys[0].value]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "sqlServerFqdn": {
+      "type": "string",
+      "value": "[variables('sqlServerFqdn')]"
+    },
+    "sqlServerId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Sql/servers', parameters('sqlServerName'))]"
+    },
+    "sqlDatabaseId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Sql/servers/databases', parameters('sqlServerName'), parameters('sqlDatabaseName'))]"
+    },
+    "storageAccountId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+    },
+    "storageAccountName": {
+      "type": "string",
+      "value": "[parameters('storageAccountName')]"
+    },
+    "storageAccountBlobEndpoint": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2024-01-01').primaryEndpoints.blob]"
+    },
+    "keyVaultUri": {
+      "type": "string",
+      "value": "[variables('keyVaultUri')]"
+    },
+    "sqlConnectionStringSecretUri": {
+      "type": "string",
+      "value": "[format('{0}secrets/sql-connection-string', variables('keyVaultUri'))]"
+    },
+    "storageConnectionStringSecretUri": {
+      "type": "string",
+      "value": "[format('{0}secrets/storage-connection-string', variables('keyVaultUri'))]"
+    }
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "value": "canadacentral"
+    },
+    "environment": {
+      "value": "prod"
+    },
+    "logAnalyticsName": {
+      "value": "log-mealplan-organizer"
+    },
+    "appInsightsName": {
+      "value": "appi-mealplan-organizer"
+    },
+    "vnetName": {
+      "value": "vnet-mealplan-organizer"
+    },
+    "vnetAddressSpace": {
+      "value": "10.0.0.0/16"
+    },
+    "integrationSubnetName": {
+      "value": "snet-integration"
+    },
+    "integrationSubnetPrefix": {
+      "value": "10.0.2.0/24"
+    },
+    "privateEndpointSubnetName": {
+      "value": "snet-private-endpoints"
+    },
+    "privateEndpointSubnetPrefix": {
+      "value": "10.0.1.0/24"
+    },
+    "logAnalyticsRetentionDays": {
+      "value": 30
+    },
+    "tags": {
+      "value": {
+        "Environment": "prod",
+        "Application": "MealPlanOrganizer",
+        "ManagedBy": "Bicep",
+        "CostCenter": "Family",
+        "Phase": "1-Foundation-Networking",
+        "Region": "CanadaCentral"
+      }
+    },
+    "vnetLinkNameSql": {
+      "value": "sql-link"
+    },
+    "vnetLinkNameKeyVault": {
+      "value": "keyvault-link"
+    },
+    "vnetLinkNameBlob": {
+      "value": "blob-link"
+    },
+    "vnetLinkNameSignalR": {
+      "value": "signalr-link"
+    }
+  }
+}

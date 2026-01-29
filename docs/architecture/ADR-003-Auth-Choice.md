@@ -1,4 +1,4 @@
-# ADR-003: Authentication — Azure AD B2C
+# ADR-003: Authentication — Microsoft Entra External ID
 
 ## Status
 Accepted
@@ -13,14 +13,14 @@ Mobile clients need secure, standards-based authentication without building cust
 - Low maintenance and secure by default
 
 ## Options Considered
-1. Azure AD B2C (OIDC)
+1. Microsoft Entra External ID (OIDC)
 2. Custom auth (Identity + tokens)
 3. Third-party auth provider
 
 ## Decision
-Use Azure AD B2C with user flows and custom policies as needed.
+Use Microsoft Entra External ID (in external tenant) with user flows as needed.
 
 ## Consequences
-- Pros: Secure, scalable, compliant; built-in MFA and policies
-- Cons: Learning curve; tenant management overhead
-- Mitigation: Use standard user flows; document roles and scopes
+- Pros: Next-generation CIAM solution; secure, scalable, compliant; built-in MFA, Conditional Access, and MSAL support; better mobile integration; all Microsoft innovation on this platform
+- Cons: Requires external tenant configuration separate from workforce
+- Mitigation: Use standard user flows; document roles and scopes; leverage MSAL SDK for .NET MAUI
