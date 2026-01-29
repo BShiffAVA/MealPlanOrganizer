@@ -15,7 +15,7 @@ env:
   AZURE_FUNCTION_APP_NAME: func-mealplan-organizer
   AZURE_LOCATION: canadacentral
   DOTNET_VERSION: 8.0.x
-  BUILD_OUTPUT_PATH: ./output
+  BUILD_OUTPUT_PATH: ${{ github.workspace }}/output
 
 jobs:
   build-and-deploy:
@@ -54,9 +54,8 @@ jobs:
 
       - name: Publish Function App
         run: |
-          cd src/MealPlanOrganizer.Functions
           dotnet publish -c Release -o ${{ env.BUILD_OUTPUT_PATH }}
-        working-directory: ./
+        working-directory: ./src/MealPlanOrganizer.Functions
 
       - name: Azure Login (OIDC)
         uses: azure/login@v2
