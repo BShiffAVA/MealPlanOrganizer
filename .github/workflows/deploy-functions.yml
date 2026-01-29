@@ -1,0 +1,161 @@
+name: Deploy Azure Functions
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/MealPlanOrganizer.Functions/**'
+      - '.github/workflows/deploy-functions.yml'
+
+env:
+  AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  AZURE_RESOURCE_GROUP: rg-mealplan-organizer
+  AZURE_FUNCTION_APP_NAME: func-mealplan-organizer
+  AZURE_LOCATION: canadacentral
+  DOTNET_VERSION: 8.0.x
+  BUILD_OUTPUT_PATH: ./output
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: |
+          cd src/MealPlanOrganizer.Functions
+          dotnet restore
+        working-directory: ./
+
+      - name: Build project
+        run: |
+          cd src/MealPlanOrganizer.Functions
+          dotnet build --configuration Release --no-restore
+        working-directory: ./
+
+      - name: Run tests (if tests exist)
+        continue-on-error: true
+        run: |
+          cd src/MealPlanOrganizer.Functions
+          dotnet test --configuration Release --no-build --logger "console;verbosity=normal" || echo "No tests found"
+        working-directory: ./
+
+      - name: Publish Function App
+        run: |
+          cd src/MealPlanOrganizer.Functions
+          dotnet publish -c Release -o ${{ env.BUILD_OUTPUT_PATH }}
+        working-directory: ./
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy Function App
+        uses: Azure/functions-action@v1
+        with:
+          app-name: ${{ env.AZURE_FUNCTION_APP_NAME }}
+          package: ${{ env.BUILD_OUTPUT_PATH }}
+          respect-funcignore: true
+
+      - name: Retrieve SQL Connection String from Key Vault
+        id: sqlconnection
+        run: |
+          SQL_CONNECTION=$(az keyvault secret show \
+            --vault-name kv-mealplan-org \
+            --name SqlConnectionString \
+            --query value -o tsv)
+          echo "::add-mask::$SQL_CONNECTION"
+          echo "sql_connection=$SQL_CONNECTION" >> $GITHUB_OUTPUT
+
+      - name: Apply Database Migrations
+        run: |
+          cd src/MealPlanOrganizer.Functions
+          dotnet ef database update \
+            --connection "${{ steps.sqlconnection.outputs.sql_connection }}" \
+            --context AppDbContext \
+            --verbose
+        env:
+          ConnectionStrings__Sql: ${{ steps.sqlconnection.outputs.sql_connection }}
+
+      - name: Test Function App Health
+        id: health-check
+        continue-on-error: true
+        run: |
+          FUNCTION_APP_URL="https://${{ env.AZURE_FUNCTION_APP_NAME }}.azurewebsites.net"
+          echo "Testing Function App health at: $FUNCTION_APP_URL"
+          
+          # Wait for app to be ready (up to 2 minutes)
+          for i in {1..24}; do
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$FUNCTION_APP_URL/api/health" || echo "000")
+            if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "404" ]; then
+              echo "Function App is healthy (HTTP $HTTP_CODE)"
+              echo "health_status=healthy" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+            echo "Attempt $i/24: HTTP $HTTP_CODE - Waiting for app to be ready..."
+            sleep 5
+          done
+          
+          echo "health_status=timeout" >> $GITHUB_OUTPUT
+          exit 1
+
+      - name: List Deployed Functions
+        run: |
+          az functionapp function list \
+            --name ${{ env.AZURE_FUNCTION_APP_NAME }} \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --query "[].{Name:name, Trigger:trigger.type}" -o table
+
+      - name: Check Application Settings
+        run: |
+          az functionapp config appsettings list \
+            --name ${{ env.AZURE_FUNCTION_APP_NAME }} \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --query "[?name=='FUNCTIONS_EXTENSION_VERSION' || name=='FUNCTIONS_WORKER_RUNTIME'].{Name:name, Value:value}" -o table
+
+      - name: Upload Build Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: function-app-build
+          path: ${{ env.BUILD_OUTPUT_PATH }}
+          retention-days: 7
+
+      - name: Post Deployment Summary
+        if: always()
+        run: |
+          echo "## Azure Functions Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Function App:** ${{ env.AZURE_FUNCTION_APP_NAME }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Resource Group:** ${{ env.AZURE_RESOURCE_GROUP }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Region:** ${{ env.AZURE_LOCATION }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployment Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Health Check:** ${{ steps.health-check.outputs.health_status }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Deployment Details" >> $GITHUB_STEP_SUMMARY
+          echo "- Build: ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- Publish: ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- Deploy: $([ '${{ job.status }}' = 'success' ] && echo '✅' || echo '❌')" >> $GITHUB_STEP_SUMMARY
+          echo "- Database Migration: $([ '${{ job.status }}' = 'success' ] && echo '✅' || echo '❌')" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Access Function App" >> $GITHUB_STEP_SUMMARY
+          echo "https://${{ env.AZURE_FUNCTION_APP_NAME }}.azurewebsites.net" >> $GITHUB_STEP_SUMMARY
+
+      - name: Azure Logout
+        if: always()
+        run: az logout

@@ -1,0 +1,144 @@
+name: Deploy Infrastructure (Bicep)
+
+on:
+  workflow_dispatch:
+    inputs:
+      phase:
+        description: 'Phase to deploy (1-5 or all)'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - '1'
+          - '2'
+          - '3'
+          - '4'
+          - '5'
+          - 'all'
+  push:
+    branches:
+      - main
+    paths:
+      - 'infra/bicep/**'
+      - '.github/workflows/deploy-infrastructure.yml'
+
+env:
+  AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  AZURE_RESOURCE_GROUP: rg-mealplan-organizer
+  AZURE_LOCATION: canadacentral
+
+jobs:
+  deploy-infrastructure:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy Phase 1 - Foundation & Networking
+        if: github.event.inputs.phase == '1' || github.event.inputs.phase == 'all'
+        run: |
+          az deployment group create \
+            --name phase-1-foundation \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --template-file infra/bicep/phase-1/main.bicep \
+            --parameters infra/bicep/phase-1/phase-1.parameters.json \
+            --query properties.outputs -o json > phase-1-outputs.json
+          echo "Phase 1 deployment completed"
+          cat phase-1-outputs.json
+
+      - name: Deploy Phase 2 - Security & Secrets Management
+        if: github.event.inputs.phase == '2' || github.event.inputs.phase == 'all'
+        run: |
+          az deployment group create \
+            --name phase-2-security \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --template-file infra/bicep/phase-2/main.bicep \
+            --parameters infra/bicep/phase-2/phase-2.parameters.json \
+            --query properties.outputs -o json > phase-2-outputs.json
+          echo "Phase 2 deployment completed"
+          cat phase-2-outputs.json
+
+      - name: Deploy Phase 3 - Data Tier
+        if: github.event.inputs.phase == '3' || github.event.inputs.phase == 'all'
+        run: |
+          az deployment group create \
+            --name phase-3-data-tier \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --template-file infra/bicep/phase-3/main.bicep \
+            --parameters infra/bicep/phase-3/phase-3.parameters.json \
+            --query properties.outputs -o json > phase-3-outputs.json
+          echo "Phase 3 deployment completed"
+          cat phase-3-outputs.json
+
+      - name: Deploy Phase 4 - Real-Time Communication
+        if: github.event.inputs.phase == '4' || github.event.inputs.phase == 'all'
+        run: |
+          az deployment group create \
+            --name phase-4-realtime \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --template-file infra/bicep/phase-4/main.bicep \
+            --parameters infra/bicep/phase-4/phase-4.parameters.json \
+            --query properties.outputs -o json > phase-4-outputs.json
+          echo "Phase 4 deployment completed"
+          cat phase-4-outputs.json
+
+      - name: Deploy Phase 5 - Compute & Application Tier
+        if: github.event.inputs.phase == '5' || github.event.inputs.phase == 'all'
+        run: |
+          az deployment group create \
+            --name phase-5-compute-tier \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --template-file infra/bicep/phase-5/main.bicep \
+            --parameters infra/bicep/phase-5/phase-5.parameters.json \
+            --query properties.outputs -o json > phase-5-outputs.json
+          echo "Phase 5 deployment completed"
+          cat phase-5-outputs.json
+
+      - name: Validate Deployment
+        if: success()
+        run: |
+          echo "Validating deployed resources..."
+          az resource list \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --query "length(@)" -o tsv
+          echo "Resources deployed successfully"
+
+      - name: Upload Deployment Outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-outputs
+          path: phase-*-outputs.json
+          retention-days: 30
+
+      - name: Post Deployment Summary
+        if: always()
+        run: |
+          echo "## Infrastructure Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Resource Group:** ${{ env.AZURE_RESOURCE_GROUP }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Region:** ${{ env.AZURE_LOCATION }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Phase:** ${{ github.event.inputs.phase }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f phase-5-outputs.json ]; then
+            echo "### Function App Details" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
+            cat phase-5-outputs.json | jq '.functionAppEndpoint' >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Azure Logout
+        if: always()
+        run: az logout
