@@ -1,2 +1,6 @@
 <Solution>
+  <Folder Name="/src/">
+    <Project Path="src\MealPlanOrganizer.Functions\MealPlanOrganizer_Functions.csproj" />
+    <Project Path="src\MealPlanOrganizer.Mobile\MealPlanOrganizer.Mobile.csproj" />
+  </Folder>
 </Solution>
