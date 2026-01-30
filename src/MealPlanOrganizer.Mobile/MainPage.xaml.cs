@@ -1,26 +1,53 @@
 ﻿using System.Collections.ObjectModel;
+using MealPlanOrganizer.Mobile.Services;
 
 namespace MealPlanOrganizer.Mobile;
 
 public partial class MainPage : ContentPage
 {
+	private readonly IRecipeService _recipeService;
 	public ObservableCollection<RecipeCard> Recipes { get; } = new();
 
 	public MainPage()
 	{
 		InitializeComponent();
 		BindingContext = this;
-		LoadSampleRecipes();
+		
+		// Get service from dependency injection
+		_recipeService = IPlatformApplication.Current?.Services.GetService<IRecipeService>()
+			?? throw new InvalidOperationException("IRecipeService not registered");
 	}
 
-	private void LoadSampleRecipes()
+	protected override async void OnAppearing()
 	{
-		Recipes.Add(new RecipeCard("Classic Lasagna", "Italian", 25, 4.6));
-		Recipes.Add(new RecipeCard("Chicken Tikka Masala", "Indian", 30, 4.8));
-		Recipes.Add(new RecipeCard("Veggie Stir Fry", "Asian", 15, 4.2));
-		Recipes.Add(new RecipeCard("Beef Tacos", "Mexican", 20, 4.4));
-		Recipes.Add(new RecipeCard("Greek Salad", "Mediterranean", 10, 4.1));
-		Recipes.Add(new RecipeCard("Pizza", "Italian", 12, 5.0));
+		base.OnAppearing();
+		await LoadRecipesAsync();
+	}
+
+	private async Task LoadRecipesAsync()
+	{
+		try
+		{
+			var recipes = await _recipeService.GetRecipesAsync();
+			
+			// Clear existing recipes
+			Recipes.Clear();
+			
+			// Add fetched recipes to the collection
+			foreach (var recipe in recipes)
+			{
+				Recipes.Add(new RecipeCard(
+					recipe.Title,
+					recipe.CuisineType ?? "Unknown",
+					recipe.PrepTimeMinutes ?? 0,
+					recipe.AverageRating
+				));
+			}
+		}
+		catch (Exception ex)
+		{
+			await DisplayAlert("Error", $"Failed to load recipes: {ex.Message}", "OK");
+		}
 	}
 }
 

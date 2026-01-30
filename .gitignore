@@ -3,6 +3,10 @@
 .env.*.local
 .env
 
+# Local configuration with secrets
+appsettings.local.json
+appsettings.Development.json
+
 # Bruno Azure environment (contains function keys)
 bruno/**/environments/Azure.bru
 
