@@ -54,6 +54,16 @@ public class GetRecipeById
             createdUtc = recipe.CreatedUtc,
                         averageRating = recipe.Ratings.Count > 0 ? recipe.Ratings.Average(r => r.Rating) : 0.0,
                         ratingCount = recipe.Ratings.Count,
+            ratings = recipe.Ratings
+                .OrderByDescending(r => r.RatedUtc)
+                .Select(r => new
+                {
+                    userId = r.UserId,
+                    rating = r.Rating,
+                    comments = r.Comments,
+                    ratedUtc = r.RatedUtc
+                })
+                .ToList(),
             ingredients = recipe.Ingredients.Select(i => new
             {
                 name = i.Name,
