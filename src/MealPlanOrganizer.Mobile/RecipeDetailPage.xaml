@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="MealPlanOrganizer.Mobile.RecipeDetailPage"
+             Title="Recipe Details">
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="20">
+            
+            <!-- Loading Indicator -->
+            <ActivityIndicator x:Name="LoadingIndicator" 
+                             IsRunning="True" 
+                             IsVisible="True"
+                             Color="{StaticResource Primary}"
+                             HeightRequest="50"/>
+            
+            <!-- Content Container (hidden while loading) -->
+            <VerticalStackLayout x:Name="ContentContainer" IsVisible="False" Spacing="20">
+                
+                <!-- Header -->
+                <Frame BackgroundColor="{StaticResource Primary}" 
+                       Padding="20" 
+                       CornerRadius="10"
+                       HasShadow="True">
+                    <VerticalStackLayout Spacing="10">
+                        <Label x:Name="TitleLabel" 
+                               FontSize="24" 
+                               FontAttributes="Bold" 
+                               TextColor="White"/>
+                        <HorizontalStackLayout Spacing="15">
+                            <Label x:Name="CuisineLabel" 
+                                   FontSize="14" 
+                                   TextColor="White" 
+                                   VerticalOptions="Center"/>
+                            <Label x:Name="RatingLabel" 
+                                   FontSize="14" 
+                                   TextColor="White" 
+                                   VerticalOptions="Center"/>
+                        </HorizontalStackLayout>
+                    </VerticalStackLayout>
+                </Frame>
+
+                <!-- Description -->
+                <VerticalStackLayout Spacing="5">
+                    <Label Text="Description" 
+                           FontSize="18" 
+                           FontAttributes="Bold"/>
+                    <Label x:Name="DescriptionLabel" 
+                           FontSize="14" 
+                           TextColor="{StaticResource Gray600}"/>
+                </VerticalStackLayout>
+
+                <!-- Recipe Info -->
+                <Frame BorderColor="{StaticResource Gray200}" 
+                       BackgroundColor="#1A1A1A" 
+                       Padding="15" 
+                       CornerRadius="10">
+                    <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" RowSpacing="10">
+                        <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="5">
+                            <Label Text="Prep Time" FontSize="12" TextColor="{StaticResource Gray400}"/>
+                            <Label x:Name="PrepTimeLabel" FontSize="16" FontAttributes="Bold" TextColor="White"/>
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Grid.Row="0" Grid.Column="1" Spacing="5">
+                            <Label Text="Cook Time" FontSize="12" TextColor="{StaticResource Gray400}"/>
+                            <Label x:Name="CookTimeLabel" FontSize="16" FontAttributes="Bold" TextColor="White"/>
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Grid.Row="0" Grid.Column="2" Spacing="5">
+                            <Label Text="Servings" FontSize="12" TextColor="{StaticResource Gray400}"/>
+                            <Label x:Name="ServingsLabel" FontSize="16" FontAttributes="Bold" TextColor="White"/>
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Spacing="5">
+                            <Label Text="Created By" FontSize="12" TextColor="{StaticResource Gray400}"/>
+                            <Label x:Name="CreatorLabel" FontSize="14" TextColor="White"/>
+                        </VerticalStackLayout>
+                    </Grid>
+                </Frame>
+
+                <!-- Ingredients -->
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Ingredients" 
+                           FontSize="20" 
+                           FontAttributes="Bold"/>
+                    <CollectionView x:Name="IngredientsCollection">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Frame BorderColor="{StaticResource Gray600}" 
+                                       BackgroundColor="#1A1A1A"
+                                       Padding="12" 
+                                       Margin="0,2" 
+                                       CornerRadius="8">
+                                    <HorizontalStackLayout Spacing="10">
+                                        <Label Text="•" FontSize="16" VerticalOptions="Center" TextColor="White"/>
+                                        <Label FontSize="15" VerticalOptions="Center">
+                                            <Label.FormattedText>
+                                                <FormattedString>
+                                                    <Span Text="{Binding Quantity}" FontAttributes="Bold" TextColor="White"/>
+                                                    <Span Text=" " TextColor="White"/>
+                                                    <Span Text="{Binding Name}" TextColor="White"/>
+                                                </FormattedString>
+                                            </Label.FormattedText>
+                                        </Label>
+                                    </HorizontalStackLayout>
+                                </Frame>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+
+                <!-- Instructions -->
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Instructions" 
+                           FontSize="20" 
+                           FontAttributes="Bold"/>
+                    <CollectionView x:Name="StepsCollection">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Frame BorderColor="{StaticResource Primary}" 
+                                       Padding="15" 
+                                       Margin="0,5" 
+                                       CornerRadius="10"
+                                       BackgroundColor="#1A1A1A">
+                                    <HorizontalStackLayout Spacing="15">
+                                        <Frame BackgroundColor="{StaticResource Primary}" 
+                                               Padding="10" 
+                                               CornerRadius="20" 
+                                               WidthRequest="40" 
+                                               HeightRequest="40"
+                                               HasShadow="False">
+                                            <Label Text="{Binding StepNumber}" 
+                                                   FontSize="16" 
+                                                   FontAttributes="Bold" 
+                                                   TextColor="White" 
+                                                   HorizontalOptions="Center" 
+                                                   VerticalOptions="Center"/>
+                                        </Frame>
+                                        <Label Text="{Binding Instruction}" 
+                                               FontSize="15" 
+                                               VerticalOptions="Center" 
+                                               LineBreakMode="WordWrap"
+                                               TextColor="White"
+                                               HorizontalOptions="FillAndExpand"/>
+                                    </HorizontalStackLayout>
+                                </Frame>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+
+            </VerticalStackLayout>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

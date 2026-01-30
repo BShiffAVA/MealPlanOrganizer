@@ -28,6 +28,7 @@ public class GetRecipeById
         var recipe = await _context.Recipes
             .Include(r => r.Ingredients.OrderBy(i => i.Id))
             .Include(r => r.Steps.OrderBy(s => s.StepNumber))
+            .Include(r => r.Ratings)
             .FirstOrDefaultAsync(r => r.Id == id);
 
         if (recipe == null)
@@ -51,6 +52,8 @@ public class GetRecipeById
             imageUrl = recipe.ImageUrl,
             createdBy = recipe.CreatedBy,
             createdUtc = recipe.CreatedUtc,
+                        averageRating = recipe.Ratings.Count > 0 ? recipe.Ratings.Average(r => r.Rating) : 0.0,
+                        ratingCount = recipe.Ratings.Count,
             ingredients = recipe.Ingredients.Select(i => new
             {
                 name = i.Name,

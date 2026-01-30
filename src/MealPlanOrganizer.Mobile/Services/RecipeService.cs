@@ -48,4 +48,39 @@ public class RecipeService : IRecipeService
             return new List<RecipeDto>();
         }
     }
+
+    public async Task<RecipeDetailDto?> GetRecipeByIdAsync(Guid id)
+    {
+        try
+        {
+            _logger.LogInformation("Fetching recipe details for ID: {RecipeId}", id);
+
+            var url = $"{_baseUrl}/recipes/{id}?code={_functionKey}";
+            var response = await _httpClient.GetAsync(url);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                _logger.LogWarning("Recipe {RecipeId} not found", id);
+                return null;
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError("Failed to fetch recipe details: {StatusCode}", response.StatusCode);
+                return null;
+            }
+
+            var jsonContent = await response.Content.ReadAsStringAsync();
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var recipe = JsonSerializer.Deserialize<RecipeDetailDto>(jsonContent, options);
+
+            _logger.LogInformation("Successfully fetched recipe: {Title}", recipe?.Title);
+            return recipe;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception fetching recipe details for ID: {RecipeId}", id);
+            return null;
+        }
+    }
 }
