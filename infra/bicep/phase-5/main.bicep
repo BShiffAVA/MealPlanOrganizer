@@ -201,7 +201,7 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
       ]
       connectionStrings: [
         {
-          name: 'DefaultConnection'
+          name: 'Sql'
           connectionString: '@Microsoft.KeyVault(SecretUri=https://${keyVaultName}.vault.azure.net/secrets/SqlConnectionString/)'
           type: 'SQLAzure'
         }
