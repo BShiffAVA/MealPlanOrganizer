@@ -14,6 +14,7 @@ public class RecipeDto
     public string? CuisineType { get; set; }
     public int? PrepTimeMinutes { get; set; }
     public double AverageRating { get; set; }
+    public string? CreatedBy { get; set; }
 }
 
 public class RecipeDetailDto

@@ -38,6 +38,7 @@ namespace MealPlanOrganizer.Functions.Functions
                     cuisineType = r.CuisineType,
                     prepTimeMinutes = r.PrepTimeMinutes,
                     averageRating = r.Ratings.Count > 0 ? r.Ratings.Average(rt => rt.Rating) : 0.0,
+                    createdBy = r.CreatedBy,
                     createdUtc = r.CreatedUtc
                 })
                 .Take(50)

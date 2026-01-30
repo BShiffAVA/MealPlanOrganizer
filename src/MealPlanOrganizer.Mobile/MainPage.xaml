@@ -4,7 +4,7 @@
              x:Class="MealPlanOrganizer.Mobile.MainPage"
              Title="Meal Plan Organizer">
 
-    <Grid RowDefinitions="Auto,*"
+    <Grid RowDefinitions="Auto,Auto,*"
           Padding="16"
           RowSpacing="12">
         <VerticalStackLayout Spacing="4">
@@ -18,8 +18,37 @@
                 SemanticProperties.HeadingLevel="Level2" />
         </VerticalStackLayout>
 
+        <VerticalStackLayout Grid.Row="1" Spacing="10">
+            <SearchBar x:Name="SearchBar"
+                       Placeholder="Search recipes"
+                       TextChanged="OnSearchTextChanged" />
+
+            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="10">
+                <Picker x:Name="CuisinePicker"
+                        Title="Cuisine"
+                        Grid.Row="0"
+                        Grid.Column="0"
+                        SelectedIndexChanged="OnCuisineFilterChanged" />
+                <Picker x:Name="PrepTimePicker"
+                        Title="Prep Time"
+                        Grid.Row="0"
+                        Grid.Column="1"
+                        SelectedIndexChanged="OnPrepTimeFilterChanged" />
+                <Picker x:Name="RatingPicker"
+                        Title="Rating"
+                        Grid.Row="1"
+                        Grid.Column="0"
+                        SelectedIndexChanged="OnRatingFilterChanged" />
+                <Picker x:Name="CreatorPicker"
+                        Title="Creator"
+                        Grid.Row="1"
+                        Grid.Column="1"
+                        SelectedIndexChanged="OnCreatorFilterChanged" />
+            </Grid>
+        </VerticalStackLayout>
+
         <CollectionView
-            Grid.Row="1"
+            Grid.Row="2"
             ItemsSource="{Binding Recipes}"
             SelectionMode="None">
             <CollectionView.ItemTemplate>
