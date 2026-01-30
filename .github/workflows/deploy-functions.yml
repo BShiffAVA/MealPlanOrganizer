@@ -74,25 +74,10 @@ jobs:
           package: ${{ env.BUILD_OUTPUT_PATH }}
           respect-funcignore: true
 
-      - name: Retrieve SQL Connection String from Key Vault
-        id: sqlconnection
+      - name: Wait for Function App to Start
         run: |
-          SQL_CONNECTION=$(az keyvault secret show \
-            --vault-name kv-mealplan-org \
-            --name SqlConnectionString \
-            --query value -o tsv)
-          echo "::add-mask::$SQL_CONNECTION"
-          echo "sql_connection=$SQL_CONNECTION" >> $GITHUB_OUTPUT
-
-      - name: Apply Database Migrations
-        run: |
-          cd src/MealPlanOrganizer.Functions
-          dotnet ef database update \
-            --connection "${{ steps.sqlconnection.outputs.sql_connection }}" \
-            --context AppDbContext \
-            --verbose
-        env:
-          ConnectionStrings__Sql: ${{ steps.sqlconnection.outputs.sql_connection }}
+          echo "Waiting for Function App to start and apply migrations automatically..."
+          sleep 30
 
       - name: Test Function App Health
         id: health-check
