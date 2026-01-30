@@ -74,6 +74,50 @@
                     </Grid>
                 </Frame>
 
+                <!-- Ratings -->
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Ratings" 
+                           FontSize="20" 
+                           FontAttributes="Bold"/>
+                    <CollectionView x:Name="RatingsCollection">
+                        <CollectionView.EmptyView>
+                            <Label Text="No ratings yet" 
+                                   TextColor="White" 
+                                   FontSize="14"/>
+                        </CollectionView.EmptyView>
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Frame BorderColor="{StaticResource Gray600}" 
+                                       BackgroundColor="#1A1A1A"
+                                       Padding="12" 
+                                       Margin="0,4" 
+                                       CornerRadius="8">
+                                    <VerticalStackLayout Spacing="6">
+                                        <HorizontalStackLayout Spacing="10">
+                                            <Label Text="{Binding Rating}" 
+                                                   FontSize="14" 
+                                                   FontAttributes="Bold" 
+                                                   TextColor="White"/>
+                                            <Label Text="★" FontSize="14" TextColor="White"/>
+                                            <Label Text="{Binding UserId}" 
+                                                   FontSize="13" 
+                                                   TextColor="White"/>
+                                            <Label Text="•" FontSize="13" TextColor="White"/>
+                                            <Label Text="{Binding RatedUtc, StringFormat='{0:MMM d, yyyy}'}" 
+                                                   FontSize="13" 
+                                                   TextColor="White"/>
+                                        </HorizontalStackLayout>
+                                        <Label Text="{Binding Comments}" 
+                                               FontSize="14" 
+                                               TextColor="White"
+                                               LineBreakMode="WordWrap"/>
+                                    </VerticalStackLayout>
+                                </Frame>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+
                 <!-- Ingredients -->
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Ingredients" 

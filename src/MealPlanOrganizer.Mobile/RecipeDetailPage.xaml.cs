@@ -64,6 +64,7 @@ public partial class RecipeDetailPage : ContentPage
 			// Bind collections
 			IngredientsCollection.ItemsSource = recipe.Ingredients;
 			StepsCollection.ItemsSource = recipe.Steps;
+			RatingsCollection.ItemsSource = recipe.Ratings;
 
 			LoadingIndicator.IsVisible = false;
 			LoadingIndicator.IsRunning = false;

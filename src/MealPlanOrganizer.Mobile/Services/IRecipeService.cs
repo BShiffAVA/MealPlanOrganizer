@@ -30,6 +30,7 @@ public class RecipeDetailDto
     public DateTime CreatedUtc { get; set; }
     public List<RecipeIngredientDto> Ingredients { get; set; } = new();
     public List<RecipeStepDto> Steps { get; set; } = new();
+    public List<RecipeRatingDto> Ratings { get; set; } = new();
     public double AverageRating { get; set; }
     public int RatingCount { get; set; }
 }
@@ -44,4 +45,12 @@ public class RecipeStepDto
 {
     public int StepNumber { get; set; }
     public string Instruction { get; set; } = string.Empty;
+}
+
+public class RecipeRatingDto
+{
+    public string UserId { get; set; } = string.Empty;
+    public int Rating { get; set; }
+    public string? Comments { get; set; }
+    public DateTime RatedUtc { get; set; }
 }
