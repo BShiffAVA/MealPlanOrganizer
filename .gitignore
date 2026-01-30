@@ -3,6 +3,9 @@
 .env.*.local
 .env
 
+# Bruno Azure environment (contains function keys)
+bruno/**/environments/Azure.bru
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/

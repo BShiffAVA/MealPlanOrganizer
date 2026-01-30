@@ -5,15 +5,15 @@ meta {
 }
 
 post {
-  url: {{baseUrl}}/api/recipes/{{recipeId}}/ratings
+  url: {{baseUrl}}/api/recipes/{{recipeId}}/ratings?code={{functionKey}}
   body: json
   auth: none
 }
 
 body:json {
   {
-    "rating": 5,
-    "comments": "This recipe was amazing! My family loved it."
+    "rating": 3,
+    "comments": "This recipe was good! My family liked it."
   }
 }
 
