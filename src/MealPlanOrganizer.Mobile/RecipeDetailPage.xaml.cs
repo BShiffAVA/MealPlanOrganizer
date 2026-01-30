@@ -49,6 +49,16 @@ public partial class RecipeDetailPage : ContentPage
 			
 			DescriptionLabel.Text = recipe.Description ?? "No description available";
 			
+			if (!string.IsNullOrWhiteSpace(recipe.ImageUrl))
+			{
+				RecipeImage.Source = ImageSource.FromUri(new Uri(recipe.ImageUrl));
+				ImageFrame.IsVisible = true;
+			}
+			else
+			{
+				ImageFrame.IsVisible = false;
+			}
+			
 			PrepTimeLabel.Text = recipe.PrepTimeMinutes.HasValue 
 				? $"{recipe.PrepTimeMinutes} min" 
 				: "N/A";

@@ -16,6 +16,18 @@
             <!-- Content Container (hidden while loading) -->
             <VerticalStackLayout x:Name="ContentContainer" IsVisible="False" Spacing="20">
                 
+                  <!-- Recipe Image -->
+                  <Frame x:Name="ImageFrame"
+                      Padding="0"
+                      CornerRadius="12"
+                      HasShadow="False"
+                      IsVisible="False"
+                      BorderColor="{StaticResource Gray600}">
+                      <Image x:Name="RecipeImage"
+                          Aspect="AspectFill"
+                          HeightRequest="200" />
+                  </Frame>
+
                 <!-- Header -->
                 <Frame BackgroundColor="{StaticResource Primary}" 
                        Padding="20" 
