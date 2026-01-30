@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using MealPlanOrganizer.Mobile.Services;
@@ -80,6 +81,49 @@ public class RecipeService : IRecipeService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Exception fetching recipe details for ID: {RecipeId}", id);
+            return null;
+        }
+    }
+
+    public async Task<Guid?> CreateRecipeAsync(CreateRecipeDto recipe)
+    {
+        try
+        {
+            _logger.LogInformation("Creating new recipe: {Title}", recipe.Title);
+
+            var url = $"{_baseUrl}/recipes?code={_functionKey}";
+            var json = JsonSerializer.Serialize(recipe);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PostAsync(url, content);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError("Failed to create recipe: {StatusCode}", response.StatusCode);
+                var errorContent = await response.Content.ReadAsStringAsync();
+                _logger.LogError("Error details: {ErrorContent}", errorContent);
+                return null;
+            }
+
+            var responseContent = await response.Content.ReadAsStringAsync();
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            
+            // Parse response to get recipe ID
+            using var doc = System.Text.Json.JsonDocument.Parse(responseContent);
+            var root = doc.RootElement;
+            
+            if (root.TryGetProperty("id", out var idElement) && Guid.TryParse(idElement.GetString(), out var recipeId))
+            {
+                _logger.LogInformation("Successfully created recipe with ID: {RecipeId}", recipeId);
+                return recipeId;
+            }
+
+            _logger.LogWarning("Recipe created but no ID returned in response");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception creating recipe: {Title}", recipe.Title);
             return null;
         }
     }

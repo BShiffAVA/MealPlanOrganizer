@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="MealPlanOrganizer.Mobile.AddRecipePage"
+             Title="Add Recipe">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="12">
+            <Label
+                Text="Create New Recipe"
+                Style="{StaticResource Headline}"
+                SemanticProperties.HeadingLevel="Level1" />
+
+            <!-- Recipe Title -->
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Recipe Name *" FontAttributes="Bold" />
+                <Entry x:Name="TitleEntry"
+                       Placeholder="Enter recipe name"
+                       PlaceholderColor="#999999" />
+            </VerticalStackLayout>
+
+            <!-- Description -->
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Description" FontAttributes="Bold" />
+                <Editor x:Name="DescriptionEditor"
+                        Placeholder="Optional: Describe the recipe"
+                        HeightRequest="80"
+                        PlaceholderColor="#999999" />
+            </VerticalStackLayout>
+
+            <!-- Cuisine Type -->
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Cuisine Type" FontAttributes="Bold" />
+                <Entry x:Name="CuisineEntry"
+                       Placeholder="e.g., Italian, Mexican, Asian"
+                       PlaceholderColor="#999999" />
+            </VerticalStackLayout>
+
+            <!-- Prep Time -->
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Prep Time (minutes)" FontAttributes="Bold" />
+                <Entry x:Name="PrepTimeEntry"
+                       Placeholder="0"
+                       Keyboard="Numeric"
+                       PlaceholderColor="#999999" />
+            </VerticalStackLayout>
+
+            <!-- Cook Time -->
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Cook Time (minutes)" FontAttributes="Bold" />
+                <Entry x:Name="CookTimeEntry"
+                       Placeholder="0"
+                       Keyboard="Numeric"
+                       PlaceholderColor="#999999" />
+            </VerticalStackLayout>
+
+            <!-- Servings -->
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Servings" FontAttributes="Bold" />
+                <Entry x:Name="ServingsEntry"
+                       Placeholder="0"
+                       Keyboard="Numeric"
+                       PlaceholderColor="#999999" />
+            </VerticalStackLayout>
+
+            <!-- Creator Name -->
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Your Name" FontAttributes="Bold" />
+                <Entry x:Name="CreatorEntry"
+                       Placeholder="Enter your name"
+                       PlaceholderColor="#999999" />
+            </VerticalStackLayout>
+
+            <!-- Image URL -->
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Image URL" FontAttributes="Bold" />
+                <Entry x:Name="ImageUrlEntry"
+                       Placeholder="https://example.com/image.jpg"
+                       PlaceholderColor="#999999" />
+            </VerticalStackLayout>
+
+            <!-- Ingredients Section -->
+            <VerticalStackLayout Spacing="8" Margin="0,12,0,0">
+                <Label Text="Ingredients *" FontAttributes="Bold" FontSize="16" />
+                
+                <VerticalStackLayout x:Name="IngredientsContainer" Spacing="8">
+                    <!-- Ingredient items will be added dynamically -->
+                </VerticalStackLayout>
+
+                <Button Text="+ Add Ingredient"
+                        Clicked="OnAddIngredientClicked"
+                        BackgroundColor="#4CAF50"
+                        TextColor="White" />
+            </VerticalStackLayout>
+
+            <!-- Instructions Section -->
+            <VerticalStackLayout Spacing="8" Margin="0,12,0,0">
+                <Label Text="Instructions *" FontAttributes="Bold" FontSize="16" />
+                
+                <VerticalStackLayout x:Name="InstructionsContainer" Spacing="8">
+                    <!-- Instruction items will be added dynamically -->
+                </VerticalStackLayout>
+
+                <Button Text="+ Add Step"
+                        Clicked="OnAddStepClicked"
+                        BackgroundColor="#4CAF50"
+                        TextColor="White" />
+            </VerticalStackLayout>
+
+            <!-- Save Button -->
+            <Button x:Name="SaveButton"
+                    Text="Save Recipe"
+                    Clicked="OnSaveClicked"
+                    BackgroundColor="#2196F3"
+                    TextColor="White"
+                    Margin="0,20,0,0" />
+
+            <ActivityIndicator x:Name="LoadingIndicator"
+                               IsRunning="False"
+                               IsVisible="False"
+                               Color="#2196F3" />
+
+            <!-- Bottom Padding -->
+            <BoxView HeightRequest="20" />
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

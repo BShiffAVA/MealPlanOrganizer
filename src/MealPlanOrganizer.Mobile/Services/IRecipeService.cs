@@ -4,6 +4,7 @@ public interface IRecipeService
 {
     Task<List<RecipeDto>> GetRecipesAsync();
     Task<RecipeDetailDto?> GetRecipeByIdAsync(Guid id);
+    Task<Guid?> CreateRecipeAsync(CreateRecipeDto recipe);
 }
 
 public class RecipeDto
@@ -54,4 +55,22 @@ public class RecipeRatingDto
     public int Rating { get; set; }
     public string? Comments { get; set; }
     public DateTime RatedUtc { get; set; }
+}
+public class CreateRecipeDto
+{
+    public string Title { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public string? CuisineType { get; set; }
+    public int? PrepTimeMinutes { get; set; }
+    public int? CookTimeMinutes { get; set; }
+    public int? Servings { get; set; }
+    public string? ImageUrl { get; set; }
+    public List<IngredientInput> Ingredients { get; set; } = new();
+    public List<string> Steps { get; set; } = new();
+}
+
+public class IngredientInput
+{
+    public string Name { get; set; } = string.Empty;
+    public string? Quantity { get; set; }
 }

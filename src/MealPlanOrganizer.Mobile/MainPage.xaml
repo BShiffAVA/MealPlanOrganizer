@@ -7,16 +7,26 @@
     <Grid RowDefinitions="Auto,Auto,*"
           Padding="16"
           RowSpacing="12">
-        <VerticalStackLayout Spacing="4">
-            <Label
-                Text="Recipes"
-                Style="{StaticResource Headline}"
-                SemanticProperties.HeadingLevel="Level1" />
-            <Label
-                Text="Family favorites and recent additions"
-                Style="{StaticResource SubHeadline}"
-                SemanticProperties.HeadingLevel="Level2" />
-        </VerticalStackLayout>
+        <HorizontalStackLayout Spacing="12" HorizontalOptions="FillAndExpand">
+            <VerticalStackLayout Spacing="4" HorizontalOptions="FillAndExpand">
+                <Label
+                    Text="Recipes"
+                    Style="{StaticResource Headline}"
+                    SemanticProperties.HeadingLevel="Level1" />
+                <Label
+                    Text="Family favorites and recent additions"
+                    Style="{StaticResource SubHeadline}"
+                    SemanticProperties.HeadingLevel="Level2" />
+            </VerticalStackLayout>
+            <Button
+                Text="+ Add"
+                Clicked="OnAddRecipeClicked"
+                BackgroundColor="#4CAF50"
+                TextColor="White"
+                VerticalOptions="End"
+                Padding="16,8"
+                CornerRadius="8" />
+        </HorizontalStackLayout>
 
         <VerticalStackLayout Grid.Row="1" Spacing="10">
             <SearchBar x:Name="SearchBar"

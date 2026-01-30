@@ -31,6 +31,7 @@ namespace MealPlanOrganizer.Functions.Functions
 
             // Read request body (stub - validation/parsing only)
             var body = await req.ReadAsStringAsync();
+            _logger.LogInformation("Request body: {Body}", body);
             try
             {
                 var model = JsonSerializer.Deserialize<Models.RecipeCreateRequest>(body, new JsonSerializerOptions
@@ -41,10 +42,14 @@ namespace MealPlanOrganizer.Functions.Functions
                 // Minimal shape check (no persistence yet)
                 if (model == null || string.IsNullOrWhiteSpace(model.Title))
                 {
+                    _logger.LogWarning("Validation failed: model null or title empty");
                     var bad = req.CreateResponse(HttpStatusCode.BadRequest);
                     await bad.WriteStringAsync("Invalid request: 'title' is required.");
                     return bad;
                 }
+
+                _logger.LogInformation("Parsed recipe: Title={Title}, Ingredients={IngrCount}, Steps={StepCount}", 
+                    model.Title, model.Ingredients?.Count ?? 0, model.Steps?.Count ?? 0);
 
                 var recipe = new Recipe
                 {
@@ -68,6 +73,7 @@ namespace MealPlanOrganizer.Functions.Functions
                             Quantity = string.IsNullOrWhiteSpace(ing.Quantity) ? null : ing.Quantity!.Trim()
                         });
                     }
+                    _logger.LogInformation("Added {Count} ingredients", recipe.Ingredients.Count);
                 }
 
                 if (model.Steps != null && model.Steps.Any())
@@ -77,13 +83,20 @@ namespace MealPlanOrganizer.Functions.Functions
                     {
                         recipe.Steps.Add(new RecipeStep { StepNumber = stepNumber++, Instruction = step.Trim() });
                     }
+                    _logger.LogInformation("Added {Count} steps", recipe.Steps.Count);
+                }
+                else
+                {
+                    _logger.LogWarning("No valid steps found in request");
                 }
 
                 _db.Recipes.Add(recipe);
                 await _db.SaveChangesAsync();
+                _logger.LogInformation("Recipe saved with ID: {RecipeId}", recipe.Id);
 
                 var created = req.CreateResponse(HttpStatusCode.Created);
                 created.Headers.Add("Location", $"/api/recipes/{recipe.Id}");
+                created.Headers.Add("Content-Type", "application/json");
                 await created.WriteStringAsync(JsonSerializer.Serialize(new
                 {
                     id = recipe.Id,
@@ -91,11 +104,19 @@ namespace MealPlanOrganizer.Functions.Functions
                 }));
                 return created;
             }
-            catch (JsonException)
+            catch (JsonException ex)
             {
+                _logger.LogError(ex, "JSON deserialization error");
                 var bad = req.CreateResponse(HttpStatusCode.BadRequest);
-                await bad.WriteStringAsync("Invalid JSON payload.");
+                await bad.WriteStringAsync($"Invalid JSON payload: {ex.Message}");
                 return bad;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error creating recipe");
+                var error = req.CreateResponse(HttpStatusCode.InternalServerError);
+                await error.WriteStringAsync($"Internal error: {ex.Message}");
+                return error;
             }
         }
     }

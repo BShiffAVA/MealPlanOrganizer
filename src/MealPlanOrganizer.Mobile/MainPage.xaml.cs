@@ -156,6 +156,11 @@ public partial class MainPage : ContentPage
 			await Navigation.PushAsync(new RecipeDetailPage(recipe.Id));
 		}
 	}
+
+	private async void OnAddRecipeClicked(object? sender, EventArgs e)
+	{
+		await Navigation.PushAsync(new AddRecipePage());
+	}
 }
 
 public sealed class RecipeCard
