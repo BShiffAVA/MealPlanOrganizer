@@ -33,6 +33,9 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
+      - name: Install EF Core Tools
+        run: dotnet tool install --global dotnet-ef
+
       - name: Restore dependencies
         run: |
           cd src/MealPlanOrganizer.Functions
