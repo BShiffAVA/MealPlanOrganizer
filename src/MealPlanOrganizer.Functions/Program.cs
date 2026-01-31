@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using MealPlanOrganizer.Functions.Data;
 using Microsoft.Extensions.Configuration;
+using Azure.Storage.Blobs;
 
 var builder = FunctionsApplication.CreateBuilder(args);
 
@@ -20,6 +21,16 @@ builder.Services.AddDbContext<AppDbContext>((sp, options) =>
     var cfg = sp.GetRequiredService<IConfiguration>();
     var cs = cfg.GetConnectionString("Sql");
     options.UseSqlServer(cs);
+});
+
+// Configure Azure Blob Storage client
+builder.Services.AddSingleton(sp =>
+{
+    var cfg = sp.GetRequiredService<IConfiguration>();
+    var connectionString = cfg["BlobStorage:ConnectionString"];
+    var containerName = cfg["BlobStorage:ContainerName"];
+    var blobServiceClient = new BlobServiceClient(connectionString);
+    return blobServiceClient.GetBlobContainerClient(containerName);
 });
 var app = builder.Build();
 
