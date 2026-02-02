@@ -46,9 +46,17 @@ builder.Services.AddSingleton(sp =>
     }
     
     // Use Managed Identity (DefaultAzureCredential) for authentication
-    // This works with the Storage Blob Data Contributor role assigned in Bicep
+    // DefaultAzureCredential will use the Function App's system-assigned managed identity
     var blobServiceUri = new Uri($"https://{storageAccountName}.blob.core.windows.net");
-    var blobServiceClient = new BlobServiceClient(blobServiceUri, new DefaultAzureCredential());
+    
+    // Create credential with explicit options for debugging
+    var credentialOptions = new DefaultAzureCredentialOptions
+    {
+        // Exclude interactive browser login in Azure Function environment
+        ExcludeInteractiveBrowserCredential = true
+    };
+    
+    var blobServiceClient = new BlobServiceClient(blobServiceUri, new DefaultAzureCredential(credentialOptions));
     return blobServiceClient.GetBlobContainerClient(containerName);
 });
 var app = builder.Build();

@@ -3,6 +3,7 @@ using System.IO;
 using System.Net;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Azure;
 using Azure.Storage.Blobs;
 using Azure.Storage.Sas;
 using Microsoft.Azure.Functions.Worker;
@@ -125,16 +126,35 @@ namespace MealPlanOrganizer.Functions.Functions
                 // Ensure container exists
                 try
                 {
+                    _logger.LogInformation("Attempting to create/verify container with Uri: {ContainerUri}", _containerClient.Uri);
                     await _containerClient.CreateIfNotExistsAsync();
                     _logger.LogInformation("Container verified/created: {ContainerName}", _containerClient.Name);
                 }
-                catch (Exception containerEx)
+                catch (Azure.RequestFailedException rfe) when (rfe.Status == 403)
                 {
-                    _logger.LogError(containerEx, "Failed to create/verify container. Exception: {Message}", containerEx.Message);
+                    _logger.LogError("Authorization failure (403) accessing blob storage. This usually means:");
+                    _logger.LogError("1. Function App managed identity doesn't have Storage Blob Data Contributor role");
+                    _logger.LogError("2. Storage account firewall is blocking the request");
+                    _logger.LogError("3. The storage account name is incorrect");
+                    _logger.LogError("Status: {Status}, Message: {Message}", rfe.Status, rfe.Message);
+                    
                     var errResp = req.CreateResponse(HttpStatusCode.InternalServerError);
                     await errResp.WriteStringAsync(JsonSerializer.Serialize(new 
                     { 
-                        error = "Failed to access blob storage container. Check that the storage account exists and the Function App has the Storage Blob Data Contributor role.",
+                        error = "Storage authorization failed (403). Verify Function App has Storage Blob Data Contributor role on the storage account.",
+                        errorCode = rfe.ErrorCode,
+                        details = rfe.Message
+                    }));
+                    return errResp;
+                }
+                catch (Exception containerEx)
+                {
+                    _logger.LogError(containerEx, "Failed to create/verify container. Exception type: {ExceptionType}, Message: {Message}", 
+                        containerEx.GetType().Name, containerEx.Message);
+                    var errResp = req.CreateResponse(HttpStatusCode.InternalServerError);
+                    await errResp.WriteStringAsync(JsonSerializer.Serialize(new 
+                    { 
+                        error = "Failed to access blob storage container",
                         details = containerEx.Message
                     }));
                     return errResp;
