@@ -191,6 +191,14 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
           value: storageAccountName
         }
         {
+          name: 'BlobStorage__ConnectionString'
+          value: '@Microsoft.KeyVault(SecretUri=https://${keyVaultName}.vault.azure.net/secrets/StorageConnectionString/)'
+        }
+        {
+          name: 'BlobStorage__ContainerName'
+          value: 'recipe-images'
+        }
+        {
           name: 'SignalRServiceName'
           value: signalRServiceName
         }

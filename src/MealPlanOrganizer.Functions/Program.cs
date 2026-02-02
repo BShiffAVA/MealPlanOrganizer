@@ -29,6 +29,21 @@ builder.Services.AddSingleton(sp =>
     var cfg = sp.GetRequiredService<IConfiguration>();
     var connectionString = cfg["BlobStorage:ConnectionString"];
     var containerName = cfg["BlobStorage:ContainerName"];
+    
+    if (string.IsNullOrWhiteSpace(connectionString))
+    {
+        throw new InvalidOperationException(
+            "BlobStorage:ConnectionString (or BlobStorage__ConnectionString) is not configured. " +
+            "Please add this setting to Azure Function App Configuration.");
+    }
+    
+    if (string.IsNullOrWhiteSpace(containerName))
+    {
+        throw new InvalidOperationException(
+            "BlobStorage:ContainerName (or BlobStorage__ContainerName) is not configured. " +
+            "Please add this setting to Azure Function App Configuration.");
+    }
+    
     var blobServiceClient = new BlobServiceClient(connectionString);
     return blobServiceClient.GetBlobContainerClient(containerName);
 });

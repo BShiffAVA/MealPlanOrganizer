@@ -122,6 +122,24 @@ namespace MealPlanOrganizer.Functions.Functions
 
                 _logger.LogInformation("BlobContainerClient configured. Container: {ContainerName}", _containerClient.Name);
 
+                // Ensure container exists
+                try
+                {
+                    await _containerClient.CreateIfNotExistsAsync();
+                    _logger.LogInformation("Container verified/created: {ContainerName}", _containerClient.Name);
+                }
+                catch (Exception containerEx)
+                {
+                    _logger.LogError(containerEx, "Failed to create/verify container. Is Azurite running? Exception: {Message}", containerEx.Message);
+                    var errResp = req.CreateResponse(HttpStatusCode.InternalServerError);
+                    await errResp.WriteStringAsync(JsonSerializer.Serialize(new 
+                    { 
+                        error = "Blob storage service unavailable. Please ensure Azurite is running for local development.",
+                        details = containerEx.Message
+                    }));
+                    return errResp;
+                }
+
                 // Generate unique blob name: {recipeId}/{timestamp}-{random}.jpg
                 var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
                 var random = Guid.NewGuid().ToString("N").Substring(0, 8);
