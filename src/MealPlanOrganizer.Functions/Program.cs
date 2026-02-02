@@ -6,6 +6,7 @@ using Microsoft.Extensions.Hosting;
 using MealPlanOrganizer.Functions.Data;
 using Microsoft.Extensions.Configuration;
 using Azure.Storage.Blobs;
+using Azure.Identity;
 
 var builder = FunctionsApplication.CreateBuilder(args);
 
@@ -23,17 +24,17 @@ builder.Services.AddDbContext<AppDbContext>((sp, options) =>
     options.UseSqlServer(cs);
 });
 
-// Configure Azure Blob Storage client
+// Configure Azure Blob Storage client using Managed Identity
 builder.Services.AddSingleton(sp =>
 {
     var cfg = sp.GetRequiredService<IConfiguration>();
-    var connectionString = cfg["BlobStorage:ConnectionString"];
+    var storageAccountName = cfg["StorageAccountName"];
     var containerName = cfg["BlobStorage:ContainerName"];
     
-    if (string.IsNullOrWhiteSpace(connectionString))
+    if (string.IsNullOrWhiteSpace(storageAccountName))
     {
         throw new InvalidOperationException(
-            "BlobStorage:ConnectionString (or BlobStorage__ConnectionString) is not configured. " +
+            "StorageAccountName is not configured. " +
             "Please add this setting to Azure Function App Configuration.");
     }
     
@@ -44,7 +45,10 @@ builder.Services.AddSingleton(sp =>
             "Please add this setting to Azure Function App Configuration.");
     }
     
-    var blobServiceClient = new BlobServiceClient(connectionString);
+    // Use Managed Identity (DefaultAzureCredential) for authentication
+    // This works with the Storage Blob Data Contributor role assigned in Bicep
+    var blobServiceUri = new Uri($"https://{storageAccountName}.blob.core.windows.net");
+    var blobServiceClient = new BlobServiceClient(blobServiceUri, new DefaultAzureCredential());
     return blobServiceClient.GetBlobContainerClient(containerName);
 });
 var app = builder.Build();
