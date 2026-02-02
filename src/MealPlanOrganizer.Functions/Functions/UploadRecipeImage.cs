@@ -130,11 +130,11 @@ namespace MealPlanOrganizer.Functions.Functions
                 }
                 catch (Exception containerEx)
                 {
-                    _logger.LogError(containerEx, "Failed to create/verify container. Is Azurite running? Exception: {Message}", containerEx.Message);
+                    _logger.LogError(containerEx, "Failed to create/verify container. Exception: {Message}", containerEx.Message);
                     var errResp = req.CreateResponse(HttpStatusCode.InternalServerError);
                     await errResp.WriteStringAsync(JsonSerializer.Serialize(new 
                     { 
-                        error = "Blob storage service unavailable. Please ensure Azurite is running for local development.",
+                        error = "Failed to access blob storage container. Check that the storage account exists and the Function App has the Storage Blob Data Contributor role.",
                         details = containerEx.Message
                     }));
                     return errResp;
