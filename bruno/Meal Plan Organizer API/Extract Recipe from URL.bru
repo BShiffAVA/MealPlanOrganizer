@@ -1,0 +1,51 @@
+meta {
+  name: Extract Recipe from URL
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/api/recipes/extract?code={{functionKey}}
+  body: json
+  auth: none
+}
+
+params:query {
+  code: {{functionKey}}
+}
+
+body:json {
+  {
+    "inputType": "url",
+    "url": "https://www.allrecipes.com/recipe/10813/best-chocolate-chip-cookies/"
+  }
+}
+
+docs {
+  # Extract Recipe from URL
+  
+  Extracts structured recipe data from a recipe website URL using GenAI (Azure OpenAI GPT-4o).
+  
+  ## How It Works
+  1. Fetches the webpage content
+  2. Strips HTML tags and extracts text
+  3. Uses GPT-4o to parse and structure the recipe
+  
+  ## Supported URLs
+  - Any publicly accessible HTTP/HTTPS URL
+  - Works best with recipe websites (AllRecipes, Food Network, etc.)
+  - Can also work with blog posts containing recipes
+  
+  ## Constraints
+  - URL must be HTTP or HTTPS
+  - Page must be publicly accessible (no login required)
+  - Content is truncated to 15,000 characters if too long
+  
+  ## Response
+  Returns structured recipe with:
+  - name, description, cuisineType
+  - prepMinutes, cookMinutes, servings
+  - ingredients (with name, quantity, unit)
+  - steps (with stepNumber, instruction)
+  - confidence score (0.0 to 1.0)
+}

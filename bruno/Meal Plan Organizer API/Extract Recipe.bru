@@ -1,0 +1,22 @@
+meta {
+  name: Extract Recipe
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/api/recipes/extract?code={{functionKey}}
+  body: json
+  auth: none
+}
+
+params:query {
+  code: {{functionKey}}
+}
+
+body:json {
+  {
+    "inputType": "text",
+    "text": "Chocolate Chip Cookies\n\nIngredients:\n- 2 1/4 cups all-purpose flour\n- 1 tsp baking soda\n- 1 tsp salt\n- 1 cup butter, softened\n- 3/4 cup granulated sugar\n- 3/4 cup packed brown sugar\n- 2 large eggs\n- 2 tsp vanilla extract\n- 2 cups chocolate chips\n\nInstructions:\n1. Preheat oven to 375°F.\n2. Combine flour, baking soda and salt in small bowl.\n3. Beat butter, granulated sugar, brown sugar and vanilla extract in large mixer bowl until creamy.\n4. Add eggs, one at a time, beating well after each addition.\n5. Gradually beat in flour mixture. Stir in chocolate chips.\n6. Drop rounded tablespoon of dough onto ungreased baking sheets.\n7. Bake for 9 to 11 minutes or until golden brown.\n8. Cool on baking sheets for 2 minutes; remove to wire racks to cool completely.\n\nMakes about 5 dozen cookies."
+  }
+}
