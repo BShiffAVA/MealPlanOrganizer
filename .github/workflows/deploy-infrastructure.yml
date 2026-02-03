@@ -48,14 +48,12 @@ jobs:
       - name: Deploy Phase 1 - Foundation & Networking
         if: github.event.inputs.phase == '1' || github.event.inputs.phase == 'all'
         run: |
-          MODE="Incremental"
-          if [ "${{ github.event.inputs.phase }}" = "all" ]; then MODE="Complete"; fi
           az deployment group create \
             --name phase-1-foundation \
             --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
             --template-file infra/bicep/phase-1/main.bicep \
             --parameters infra/bicep/phase-1/phase-1.parameters.json \
-            --mode $MODE \
+            --mode Incremental \
             --query properties.outputs -o json > phase-1-outputs.json
           echo "Phase 1 deployment completed"
           cat phase-1-outputs.json
@@ -63,14 +61,12 @@ jobs:
       - name: Deploy Phase 2 - Security & Secrets Management
         if: github.event.inputs.phase == '2' || github.event.inputs.phase == 'all'
         run: |
-          MODE="Incremental"
-          if [ "${{ github.event.inputs.phase }}" = "all" ]; then MODE="Complete"; fi
           az deployment group create \
             --name phase-2-security \
             --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
             --template-file infra/bicep/phase-2/main.bicep \
             --parameters infra/bicep/phase-2/phase-2.parameters.json \
-            --mode $MODE \
+            --mode Incremental \
             --query properties.outputs -o json > phase-2-outputs.json
           echo "Phase 2 deployment completed"
           cat phase-2-outputs.json
@@ -78,14 +74,12 @@ jobs:
       - name: Deploy Phase 3 - Data Tier
         if: github.event.inputs.phase == '3' || github.event.inputs.phase == 'all'
         run: |
-          MODE="Incremental"
-          if [ "${{ github.event.inputs.phase }}" = "all" ]; then MODE="Complete"; fi
           az deployment group create \
             --name phase-3-data-tier \
             --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
             --template-file infra/bicep/phase-3/main.bicep \
             --parameters infra/bicep/phase-3/phase-3.parameters.json \
-            --mode $MODE \
+            --mode Incremental \
             --query properties.outputs -o json > phase-3-outputs.json
           echo "Phase 3 deployment completed"
           cat phase-3-outputs.json
@@ -122,14 +116,12 @@ jobs:
       - name: Deploy Phase 4 - Real-Time Communication
         if: github.event.inputs.phase == '4' || github.event.inputs.phase == 'all'
         run: |
-          MODE="Incremental"
-          if [ "${{ github.event.inputs.phase }}" = "all" ]; then MODE="Complete"; fi
           az deployment group create \
             --name phase-4-realtime \
             --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
             --template-file infra/bicep/phase-4/main.bicep \
             --parameters infra/bicep/phase-4/phase-4.parameters.json \
-            --mode $MODE \
+            --mode Incremental \
             --query properties.outputs -o json > phase-4-outputs.json
           echo "Phase 4 deployment completed"
           cat phase-4-outputs.json
@@ -137,14 +129,12 @@ jobs:
       - name: Deploy Phase 5 - Compute & Application Tier
         if: github.event.inputs.phase == '5' || github.event.inputs.phase == 'all'
         run: |
-          MODE="Incremental"
-          if [ "${{ github.event.inputs.phase }}" = "all" ]; then MODE="Complete"; fi
           az deployment group create \
             --name phase-5-compute-tier \
             --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
             --template-file infra/bicep/phase-5/main.bicep \
             --parameters infra/bicep/phase-5/phase-5.parameters.json \
-            --mode $MODE \
+            --mode Incremental \
             --query properties.outputs -o json > phase-5-outputs.json
           echo "Phase 5 deployment completed"
           cat phase-5-outputs.json
