@@ -243,15 +243,32 @@ Guidelines:
         {
             var chatClient = _openAIClient.GetChatClient(_deploymentName);
 
-            // Build message with image
-            var imageDataUri = $"data:{contentType};base64,{base64Image}";
+            // Decode base64 to bytes for direct image passing
+            byte[] imageBytes;
+            try
+            {
+                imageBytes = Convert.FromBase64String(base64Image);
+            }
+            catch (FormatException ex)
+            {
+                _logger.LogWarning(ex, "Invalid base64 image data");
+                return new RecipeExtractionResponse
+                {
+                    Success = false,
+                    Confidence = 0,
+                    ErrorMessage = "Invalid base64 image encoding."
+                };
+            }
+
+            // Create BinaryData from bytes for Azure OpenAI
+            var imageBinaryData = BinaryData.FromBytes(imageBytes);
             
             var messages = new List<ChatMessage>
             {
                 new SystemChatMessage(SystemPrompt),
                 new UserChatMessage(
                     ChatMessageContentPart.CreateTextPart("Extract the recipe from this image:"),
-                    ChatMessageContentPart.CreateImagePart(new Uri(imageDataUri))
+                    ChatMessageContentPart.CreateImagePart(imageBinaryData, contentType)
                 )
             };
 
