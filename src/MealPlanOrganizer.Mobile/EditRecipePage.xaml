@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="MealPlanOrganizer.Mobile.AddRecipePage"
-             Title="Add Recipe">
+             x:Class="MealPlanOrganizer.Mobile.EditRecipePage"
+             Title="Edit Recipe">
 
     <ScrollView>
         <VerticalStackLayout Padding="16" Spacing="12">
             <Label
-                Text="Create New Recipe"
+                Text="Edit Recipe"
                 Style="{StaticResource Headline}"
                 SemanticProperties.HeadingLevel="Level1" />
 
@@ -63,47 +63,46 @@
                        PlaceholderColor="#999999" />
             </VerticalStackLayout>
 
-            <!-- Creator Name -->
+            <!-- Created By -->
             <VerticalStackLayout Spacing="4">
-                <Label Text="Your Name" FontAttributes="Bold" />
-                <Entry x:Name="CreatorEntry"
-                       Placeholder="Enter your name"
-                       PlaceholderColor="#999999" />
+                <Label Text="Created By" FontAttributes="Bold" />
+                <Label x:Name="CreatedByLabel"
+                       TextColor="#999999" />
             </VerticalStackLayout>
 
-                 <!-- Recipe Photo -->
-                 <VerticalStackLayout Spacing="6">
-                  <Label Text="Recipe Photo" FontAttributes="Bold" />
-                  <HorizontalStackLayout Spacing="10">
-                      <Button Text="Take Photo"
-                        Clicked="OnTakePhotoClicked"
-                        BackgroundColor="#6C63FF"
-                        TextColor="White" />
-                      <Button Text="Choose Photo"
-                        Clicked="OnPickPhotoClicked"
-                        BackgroundColor="#6C63FF"
-                        TextColor="White" />
-                  </HorizontalStackLayout>
-                  <Image x:Name="RecipeImagePreview"
-                      HeightRequest="200"
-                      Aspect="AspectFill"
-                      IsVisible="False" />
-                  <Label x:Name="PhotoStatusLabel"
-                      Text="No photo selected"
-                      FontSize="12"
-                      TextColor="#888888" />
-                  <Label Text="Image URL (optional)"
-                      FontSize="12"
-                      TextColor="#888888" />
-                  <Entry x:Name="ImageUrlEntry"
-                      Placeholder="https://example.com/image.jpg"
-                      PlaceholderColor="#999999" />
-                 </VerticalStackLayout>
+            <!-- Recipe Photo -->
+            <VerticalStackLayout Spacing="6">
+                <Label Text="Recipe Photo" FontAttributes="Bold" />
+                <HorizontalStackLayout Spacing="10">
+                    <Button Text="Take Photo"
+                            Clicked="OnTakePhotoClicked"
+                            BackgroundColor="#6C63FF"
+                            TextColor="White" />
+                    <Button Text="Choose Photo"
+                            Clicked="OnPickPhotoClicked"
+                            BackgroundColor="#6C63FF"
+                            TextColor="White" />
+                </HorizontalStackLayout>
+                <Image x:Name="RecipeImagePreview"
+                       HeightRequest="200"
+                       Aspect="AspectFill"
+                       IsVisible="False" />
+                <Label x:Name="PhotoStatusLabel"
+                       Text="No photo selected"
+                       FontSize="12"
+                       TextColor="#888888" />
+                <Label Text="Image URL (optional)"
+                       FontSize="12"
+                       TextColor="#888888" />
+                <Entry x:Name="ImageUrlEntry"
+                       Placeholder="https://example.com/image.jpg"
+                       PlaceholderColor="#999999" />
+            </VerticalStackLayout>
 
             <!-- Ingredients Section -->
             <VerticalStackLayout Spacing="8" Margin="0,12,0,0">
                 <Label Text="Ingredients *" FontAttributes="Bold" FontSize="16" />
-                
+
                 <VerticalStackLayout x:Name="IngredientsContainer" Spacing="8">
                     <!-- Ingredient items will be added dynamically -->
                 </VerticalStackLayout>
@@ -117,7 +116,7 @@
             <!-- Instructions Section -->
             <VerticalStackLayout Spacing="8" Margin="0,12,0,0">
                 <Label Text="Instructions *" FontAttributes="Bold" FontSize="16" />
-                
+
                 <VerticalStackLayout x:Name="InstructionsContainer" Spacing="8">
                     <!-- Instruction items will be added dynamically -->
                 </VerticalStackLayout>
@@ -130,7 +129,7 @@
 
             <!-- Save Button -->
             <Button x:Name="SaveButton"
-                    Text="Save Recipe"
+                    Text="Save Changes"
                     Clicked="OnSaveClicked"
                     BackgroundColor="#2196F3"
                     TextColor="White"

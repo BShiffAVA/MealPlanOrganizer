@@ -24,40 +24,52 @@ builder.Services.AddDbContext<AppDbContext>((sp, options) =>
     options.UseSqlServer(cs);
 });
 
-// Configure Azure Blob Storage client using Managed Identity
+// Configure Azure Blob Storage client
+// For local development: uses connection string (BlobStorage:ConnectionString)
+// For Azure: uses Managed Identity (DefaultAzureCredential)
 builder.Services.AddSingleton(sp =>
 {
     var cfg = sp.GetRequiredService<IConfiguration>();
-    var storageAccountName = cfg["StorageAccountName"];
+    var connectionString = cfg["BlobStorage:ConnectionString"];
     var containerName = cfg["BlobStorage:ContainerName"];
-    
-    if (string.IsNullOrWhiteSpace(storageAccountName))
-    {
-        throw new InvalidOperationException(
-            "StorageAccountName is not configured. " +
-            "Please add this setting to Azure Function App Configuration.");
-    }
+    var storageAccountName = cfg["StorageAccountName"];
     
     if (string.IsNullOrWhiteSpace(containerName))
     {
         throw new InvalidOperationException(
-            "BlobStorage:ContainerName (or BlobStorage__ContainerName) is not configured. " +
-            "Please add this setting to Azure Function App Configuration.");
+            "BlobStorage:ContainerName is not configured. " +
+            "Please add this setting to configuration.");
     }
     
-    // Use Managed Identity (DefaultAzureCredential) for authentication
-    // DefaultAzureCredential will use the Function App's system-assigned managed identity
-    var blobServiceUri = new Uri($"https://{storageAccountName}.blob.core.windows.net");
+    BlobContainerClient containerClient;
     
-    // Create credential with explicit options for debugging
-    var credentialOptions = new DefaultAzureCredentialOptions
+    // Check if we're in local development (connection string with UseDevelopmentStorage)
+    if (!string.IsNullOrWhiteSpace(connectionString) && connectionString.Contains("UseDevelopmentStorage"))
     {
-        // Exclude interactive browser login in Azure Function environment
-        ExcludeInteractiveBrowserCredential = true
-    };
+        // Local development: use connection string
+        var blobServiceClient = new BlobServiceClient(connectionString);
+        containerClient = blobServiceClient.GetBlobContainerClient(containerName);
+    }
+    else if (!string.IsNullOrWhiteSpace(storageAccountName))
+    {
+        // Azure deployment: use Managed Identity
+        var blobServiceUri = new Uri($"https://{storageAccountName}.blob.core.windows.net");
+        var credentialOptions = new DefaultAzureCredentialOptions
+        {
+            ExcludeInteractiveBrowserCredential = true
+        };
+        
+        var blobServiceClient = new BlobServiceClient(blobServiceUri, new DefaultAzureCredential(credentialOptions));
+        containerClient = blobServiceClient.GetBlobContainerClient(containerName);
+    }
+    else
+    {
+        throw new InvalidOperationException(
+            "No blob storage configuration found. " +
+            "For local: set BlobStorage:ConnectionString. For Azure: set StorageAccountName.");
+    }
     
-    var blobServiceClient = new BlobServiceClient(blobServiceUri, new DefaultAzureCredential(credentialOptions));
-    return blobServiceClient.GetBlobContainerClient(containerName);
+    return containerClient;
 });
 var app = builder.Build();
 

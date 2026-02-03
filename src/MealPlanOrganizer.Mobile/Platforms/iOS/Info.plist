@@ -13,6 +13,12 @@
 	<array>
 		<string>arm64</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Allow Meal Plan Organizer to take recipe photos.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Allow Meal Plan Organizer to select recipe photos from your library.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Allow Meal Plan Organizer to save recipe photos.</string>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

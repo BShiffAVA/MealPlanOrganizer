@@ -24,6 +24,7 @@ namespace MealPlanOrganizer.Functions.Data
                 b.Property(x => x.ImageUrl).HasColumnType("nvarchar(max)");
                 b.Property(x => x.CreatedBy).HasMaxLength(200);
                 b.Property(x => x.CreatedUtc).HasDefaultValueSql("GETUTCDATE()");
+                b.Property(x => x.UpdatedUtc).HasColumnType("datetime2");
             });
 
             modelBuilder.Entity<RecipeIngredient>(b =>

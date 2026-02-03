@@ -1,45 +1,137 @@
-using System.Collections.ObjectModel;
 using System.IO;
-using Microsoft.Maui.Media;
+using System.Linq;
 using Microsoft.Extensions.Logging;
+using Microsoft.Maui.Media;
 using MealPlanOrganizer.Mobile.Services;
 
 namespace MealPlanOrganizer.Mobile;
 
-public partial class AddRecipePage : ContentPage
+public partial class EditRecipePage : ContentPage
 {
     private readonly IRecipeService _recipeService;
-    private readonly ILogger<AddRecipePage> _logger;
+    private readonly ILogger<EditRecipePage> _logger;
+    private readonly Guid _recipeId;
     private readonly List<(Entry nameEntry, Entry quantityEntry)> _ingredientEntries = new();
     private readonly List<Entry> _instructionEntries = new();
     private FileResult? _selectedPhoto;
+    private string? _existingImageUrl;
+    private bool _isLoaded;
 
-    public AddRecipePage()
+    public EditRecipePage(Guid recipeId)
     {
         InitializeComponent();
-        
-        // Get service from dependency injection
+        _recipeId = recipeId;
+
         _recipeService = IPlatformApplication.Current?.Services.GetService<IRecipeService>()
             ?? throw new InvalidOperationException("IRecipeService not registered");
-        
-        _logger = IPlatformApplication.Current?.Services.GetService<ILogger<AddRecipePage>>()
-            ?? throw new InvalidOperationException("ILogger<AddRecipePage> not registered");
+
+        _logger = IPlatformApplication.Current?.Services.GetService<ILogger<EditRecipePage>>()
+            ?? throw new InvalidOperationException("ILogger<EditRecipePage> not registered");
     }
 
-    private void OnAddIngredientClicked(object? sender, EventArgs e)
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
+
+        if (!_isLoaded)
+        {
+            await LoadRecipeAsync();
+            _isLoaded = true;
+        }
+    }
+
+    private async Task LoadRecipeAsync()
+    {
+        try
+        {
+            LoadingIndicator.IsRunning = true;
+            LoadingIndicator.IsVisible = true;
+
+            var recipe = await _recipeService.GetRecipeByIdAsync(_recipeId);
+
+            if (recipe == null)
+            {
+                await DisplayAlert("Error", "Recipe not found", "OK");
+                await Navigation.PopAsync();
+                return;
+            }
+
+            TitleEntry.Text = recipe.Title;
+            DescriptionEditor.Text = recipe.Description;
+            CuisineEntry.Text = recipe.CuisineType;
+            PrepTimeEntry.Text = recipe.PrepTimeMinutes?.ToString() ?? string.Empty;
+            CookTimeEntry.Text = recipe.CookTimeMinutes?.ToString() ?? string.Empty;
+            ServingsEntry.Text = recipe.Servings?.ToString() ?? string.Empty;
+            CreatedByLabel.Text = recipe.CreatedBy ?? "Unknown";
+
+            if (!string.IsNullOrWhiteSpace(recipe.ImageUrl))
+            {
+                _existingImageUrl = recipe.ImageUrl;
+                ImageUrlEntry.Text = recipe.ImageUrl;
+                RecipeImagePreview.Source = ImageSource.FromUri(new Uri(recipe.ImageUrl));
+                RecipeImagePreview.IsVisible = true;
+                PhotoStatusLabel.Text = "Using existing photo";
+            }
+
+            IngredientsContainer.Children.Clear();
+            InstructionsContainer.Children.Clear();
+            _ingredientEntries.Clear();
+            _instructionEntries.Clear();
+
+            if (recipe.Ingredients != null && recipe.Ingredients.Count > 0)
+            {
+                foreach (var ingredient in recipe.Ingredients)
+                {
+                    AddIngredientEntry(ingredient.Name, ingredient.Quantity);
+                }
+            }
+            else
+            {
+                AddIngredientEntry();
+            }
+
+            if (recipe.Steps != null && recipe.Steps.Count > 0)
+            {
+                foreach (var step in recipe.Steps.OrderBy(s => s.StepNumber))
+                {
+                    AddStepEntry(step.Instruction);
+                }
+            }
+            else
+            {
+                AddStepEntry();
+            }
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlert("Error", $"Failed to load recipe: {ex.Message}", "OK");
+            await Navigation.PopAsync();
+        }
+        finally
+        {
+            LoadingIndicator.IsRunning = false;
+            LoadingIndicator.IsVisible = false;
+        }
+    }
+
+    private void OnAddIngredientClicked(object? sender, EventArgs e) => AddIngredientEntry();
+
+    private void AddIngredientEntry(string? name = null, string? quantity = null)
     {
         var nameEntry = new Entry
         {
             Placeholder = "Ingredient name",
             PlaceholderColor = new Color(153, 153, 153),
-            HorizontalOptions = LayoutOptions.FillAndExpand
+            HorizontalOptions = LayoutOptions.FillAndExpand,
+            Text = name
         };
 
         var quantityEntry = new Entry
         {
             Placeholder = "Qty",
             PlaceholderColor = new Color(153, 153, 153),
-            HorizontalOptions = LayoutOptions.FillAndExpand
+            HorizontalOptions = LayoutOptions.FillAndExpand,
+            Text = quantity
         };
 
         var removeButton = new Button
@@ -94,14 +186,17 @@ public partial class AddRecipePage : ContentPage
         _ingredientEntries.Add((nameEntry, quantityEntry));
     }
 
-    private void OnAddStepClicked(object? sender, EventArgs e)
+    private void OnAddStepClicked(object? sender, EventArgs e) => AddStepEntry();
+
+    private void AddStepEntry(string? instruction = null)
     {
         var stepNumber = _instructionEntries.Count + 1;
         var instructionEntry = new Entry
         {
             Placeholder = $"Step {stepNumber} instructions",
             PlaceholderColor = new Color(153, 153, 153),
-            HorizontalOptions = LayoutOptions.FillAndExpand
+            HorizontalOptions = LayoutOptions.FillAndExpand,
+            Text = instruction
         };
 
         var removeButton = new Button
@@ -207,16 +302,35 @@ public partial class AddRecipePage : ContentPage
             LoadingIndicator.IsVisible = true;
             SaveButton.IsEnabled = false;
 
-            // First, create the recipe without the image
-            var recipe = new CreateRecipeDto
+            var imageUrl = !string.IsNullOrWhiteSpace(ImageUrlEntry.Text)
+                ? ImageUrlEntry.Text?.Trim()
+                : _existingImageUrl;
+
+            if (_selectedPhoto != null)
             {
-                Title = TitleEntry.Text,
+                PhotoStatusLabel.Text = "Uploading photo...";
+                var uploadedUrl = await _recipeService.UploadRecipeImageAsync(_selectedPhoto, _recipeId);
+
+                if (string.IsNullOrWhiteSpace(uploadedUrl))
+                {
+                    PhotoStatusLabel.Text = "Photo upload failed";
+                    await DisplayAlert("Error", "Image upload failed. Please try again.", "OK");
+                    return;
+                }
+
+                imageUrl = uploadedUrl;
+                PhotoStatusLabel.Text = "Photo uploaded successfully!";
+            }
+
+            var updateDto = new UpdateRecipeDto
+            {
+                Title = TitleEntry.Text?.Trim() ?? string.Empty,
                 Description = DescriptionEditor.Text,
                 CuisineType = CuisineEntry.Text,
                 PrepTimeMinutes = int.TryParse(PrepTimeEntry.Text, out var prepTime) ? prepTime : null,
                 CookTimeMinutes = int.TryParse(CookTimeEntry.Text, out var cookTime) ? cookTime : null,
                 Servings = int.TryParse(ServingsEntry.Text, out var servings) ? servings : null,
-                ImageUrl = null, // Will be set after upload if photo exists
+                ImageUrl = imageUrl,
                 Ingredients = _ingredientEntries
                     .Where(x => !string.IsNullOrWhiteSpace(x.nameEntry.Text))
                     .Select(x => new IngredientInput
@@ -231,89 +345,17 @@ public partial class AddRecipePage : ContentPage
                     .ToList()
             };
 
-            // If a photo was selected, upload it first
-            if (_selectedPhoto != null)
+            var success = await _recipeService.UpdateRecipeAsync(_recipeId, updateDto);
+
+            if (success)
             {
-                PhotoStatusLabel.Text = "Uploading photo...";
-                
-                // Create recipe first to get the ID for blob upload
-                var recipeId = await _recipeService.CreateRecipeAsync(recipe);
-
-                if (!recipeId.HasValue)
-                {
-                    PhotoStatusLabel.Text = "Recipe creation failed";
-                    await DisplayAlert("Error", "Failed to create recipe. Please try again.", "OK");
-                    return;
-                }
-
-                _logger.LogInformation("Recipe created with ID: {RecipeId}, now uploading image", recipeId.Value);
-
-                // Now upload the image to blob storage
-                var imageUrl = await _recipeService.UploadRecipeImageAsync(_selectedPhoto, recipeId.Value);
-
-                if (imageUrl != null)
-                {
-                    PhotoStatusLabel.Text = "Photo uploaded successfully!";
-                    _logger.LogInformation("Image uploaded successfully: {ImageUrl}", imageUrl);
-
-                    // Update the recipe with the image URL
-                    PhotoStatusLabel.Text = "Updating recipe with image...";
-                    var updateDto = new UpdateRecipeDto
-                    {
-                        Title = recipe.Title,
-                        Description = recipe.Description,
-                        CuisineType = recipe.CuisineType,
-                        PrepTimeMinutes = recipe.PrepTimeMinutes,
-                        CookTimeMinutes = recipe.CookTimeMinutes,
-                        Servings = recipe.Servings,
-                        ImageUrl = imageUrl,
-                        Ingredients = recipe.Ingredients,
-                        Steps = recipe.Steps
-                    };
-
-                    var updateSuccess = await _recipeService.UpdateRecipeAsync(recipeId.Value, updateDto);
-                    
-                    if (updateSuccess)
-                    {
-                        PhotoStatusLabel.Text = "Recipe updated with image!";
-                        _logger.LogInformation("Recipe updated with image URL: {RecipeId}", recipeId.Value);
-                        await DisplayAlert("Success", "Recipe created successfully with image!", "OK");
-                    }
-                    else
-                    {
-                        PhotoStatusLabel.Text = "Failed to update recipe with image URL";
-                        _logger.LogWarning("Failed to update recipe with image URL: {RecipeId}", recipeId.Value);
-                        await DisplayAlert("Partial Success", "Recipe and image created but failed to link them. Please try editing the recipe.", "OK");
-                    }
-                    
-                    await Navigation.PopAsync();
-                    return;
-                }
-                else
-                {
-                    PhotoStatusLabel.Text = "Photo upload failed";
-                    _logger.LogWarning("Image upload failed for recipe: {RecipeId}", recipeId.Value);
-                    
-                    // Photo upload failed, but recipe was created
-                    await DisplayAlert("Partial Success", "Recipe created but image upload failed. You can add an image later.", "OK");
-                    await Navigation.PopAsync();
-                    return;
-                }
+                _existingImageUrl = imageUrl;
+                await DisplayAlert("Success", "Recipe updated successfully!", "OK");
+                await Navigation.PopAsync();
             }
             else
             {
-                // No photo selected, just create recipe
-                var recipeId = await _recipeService.CreateRecipeAsync(recipe);
-
-                if (recipeId.HasValue)
-                {
-                    await DisplayAlert("Success", "Recipe created successfully!", "OK");
-                    await Navigation.PopAsync();
-                }
-                else
-                {
-                    await DisplayAlert("Error", "Failed to create recipe. Please try again.", "OK");
-                }
+                await DisplayAlert("Error", "Failed to update recipe. Please try again.", "OK");
             }
         }
         catch (Exception ex)
@@ -330,20 +372,13 @@ public partial class AddRecipePage : ContentPage
 
     private bool ValidateForm()
     {
-        // Title is required
         if (string.IsNullOrWhiteSpace(TitleEntry.Text))
             return false;
 
-        // At least one ingredient is required
         if (_ingredientEntries.Count == 0 || _ingredientEntries.All(x => string.IsNullOrWhiteSpace(x.nameEntry.Text)))
             return false;
 
-        // At least one instruction is required
         if (_instructionEntries.Count == 0 || _instructionEntries.All(x => string.IsNullOrWhiteSpace(x.Text)))
-            return false;
-
-        // Creator name is required
-        if (string.IsNullOrWhiteSpace(CreatorEntry.Text))
             return false;
 
         return true;

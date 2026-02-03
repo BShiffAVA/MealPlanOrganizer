@@ -1,0 +1,60 @@
+meta {
+  name: Update Recipe
+  type: http
+  seq: 7
+}
+
+put {
+  url: {{baseUrl}}/api/recipes/{{recipeId}}?code={{functionKey}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "title": "Updated Recipe Title",
+    "description": "Updated description",
+    "cuisineType": "Italian",
+    "prepTimeMinutes": 10,
+    "cookTimeMinutes": 15,
+    "servings": 4,
+    "imageUrl": "https://example.com/updated-image.jpg",
+    "ingredients": [
+      {
+        "name": "mozzarella cheese",
+        "quantity": "1 cup"
+      },
+      {
+        "name": "pepperoni",
+        "quantity": "20 slices"
+      }
+    ],
+    "steps": [
+      "Warm oven to 425F",
+      "Top naan with marinara, cheese, and pepperoni",
+      "Bake for 8 minutes"
+    ]
+  }
+}
+
+docs {
+  # Update Recipe
+
+  Updates an existing recipe with new fields, ingredients, and steps.
+
+  ## Request Body
+  - `title` (required): Recipe name
+  - `description` (optional): Recipe description
+  - `cuisineType` (optional): Cuisine category (e.g., Mexican, Italian, Chinese)
+  - `prepTimeMinutes` (optional): Preparation time in minutes
+  - `cookTimeMinutes` (optional): Cooking time in minutes
+  - `servings` (optional): Number of servings
+  - `imageUrl` (optional): URL to recipe image
+  - `ingredients` (optional): Array of ingredient objects with:
+    - `name` (required): Ingredient name
+    - `quantity` (optional): Amount (e.g., "1 cup", "2 tbsp", "1/2 tsp")
+  - `steps` (optional): Array of cooking instructions
+
+  ## Response
+  Returns 200 OK with updated recipe fields.
+}

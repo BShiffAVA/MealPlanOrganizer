@@ -5,6 +5,8 @@ public interface IRecipeService
     Task<List<RecipeDto>> GetRecipesAsync();
     Task<RecipeDetailDto?> GetRecipeByIdAsync(Guid id);
     Task<Guid?> CreateRecipeAsync(CreateRecipeDto recipe);
+    Task<bool> UpdateRecipeAsync(Guid recipeId, UpdateRecipeDto recipe);
+    Task<string?> UploadRecipeImageAsync(FileResult photo, Guid recipeId);
 }
 
 public class RecipeDto

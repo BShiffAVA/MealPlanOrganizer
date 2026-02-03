@@ -85,6 +85,36 @@ public class RecipeService : IRecipeService
         }
     }
 
+    public async Task<bool> UpdateRecipeAsync(Guid recipeId, UpdateRecipeDto recipe)
+    {
+        try
+        {
+            _logger.LogInformation("Updating recipe: {RecipeId}", recipeId);
+
+            var url = $"{_baseUrl}/recipes/{recipeId}?code={_functionKey}";
+            var json = JsonSerializer.Serialize(recipe);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PutAsync(url, content);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError("Failed to update recipe: {StatusCode}", response.StatusCode);
+                var errorContent = await response.Content.ReadAsStringAsync();
+                _logger.LogError("Error details: {ErrorContent}", errorContent);
+                return false;
+            }
+
+            _logger.LogInformation("Successfully updated recipe: {RecipeId}", recipeId);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception updating recipe: {RecipeId}", recipeId);
+            return false;
+        }
+    }
+
     public async Task<Guid?> CreateRecipeAsync(CreateRecipeDto recipe)
     {
         try
@@ -124,6 +154,81 @@ public class RecipeService : IRecipeService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Exception creating recipe: {Title}", recipe.Title);
+            return null;
+        }
+    }
+
+    public async Task<string?> UploadRecipeImageAsync(FileResult photo, Guid recipeId)
+    {
+        try
+        {
+            _logger.LogInformation("Starting image upload for recipe: {RecipeId}", recipeId);
+
+            if (photo == null)
+            {
+                _logger.LogWarning("Photo is null");
+                return null;
+            }
+
+            var url = $"{_baseUrl}/recipes/{recipeId}/upload-image?code={_functionKey}";
+            _logger.LogInformation("Upload URL: {Url}", url);
+
+            // Read photo file
+            _logger.LogInformation("Opening photo file: {FileName}", photo.FileName);
+            using var stream = await photo.OpenReadAsync();
+            using var memoryStream = new MemoryStream();
+            await stream.CopyToAsync(memoryStream);
+            var fileBytes = memoryStream.ToArray();
+
+            _logger.LogInformation("Photo loaded, size: {Size} bytes, ContentType: {ContentType}", fileBytes.Length, photo.ContentType);
+
+            // Create multipart form data
+            using var content = new MultipartFormDataContent();
+            var fileContent = new ByteArrayContent(fileBytes);
+            fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/jpeg");
+            content.Add(fileContent, "file", photo.FileName);
+
+            _logger.LogInformation("Sending multipart POST request to {Url}", url);
+            var response = await _httpClient.PostAsync(url, content);
+
+            _logger.LogInformation("Upload response status: {StatusCode}", response.StatusCode);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError("Failed to upload image: {StatusCode}", response.StatusCode);
+                var errorContent = await response.Content.ReadAsStringAsync();
+                _logger.LogError("Error details: {ErrorContent}", errorContent);
+                return null;
+            }
+
+            var responseContent = await response.Content.ReadAsStringAsync();
+            _logger.LogInformation("Upload response content: {Response}", responseContent);
+
+            // Parse response to get image URL
+            try
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(responseContent);
+                var root = doc.RootElement;
+
+                if (root.TryGetProperty("imageUrl", out var urlElement))
+                {
+                    var imageUrl = urlElement.GetString();
+                    _logger.LogInformation("Successfully uploaded image, URL: {ImageUrl}", imageUrl);
+                    return imageUrl;
+                }
+
+                _logger.LogWarning("Image uploaded but no imageUrl in response. Response: {Response}", responseContent);
+                return null;
+            }
+            catch (Exception parseEx)
+            {
+                _logger.LogError(parseEx, "Failed to parse upload response: {Response}", responseContent);
+                return null;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception uploading recipe image for recipe: {RecipeId}. Exception: {ExceptionMessage}", recipeId, ex.Message);
             return null;
         }
     }

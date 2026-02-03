@@ -23,6 +23,11 @@ public partial class RecipeDetailPage : ContentPage
 		await LoadRecipeAsync();
 	}
 
+	private async void OnEditClicked(object? sender, EventArgs e)
+	{
+		await Navigation.PushAsync(new EditRecipePage(_recipeId));
+	}
+
 	private async Task LoadRecipeAsync()
 	{
 		try

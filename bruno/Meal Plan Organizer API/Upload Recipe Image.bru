@@ -1,0 +1,55 @@
+meta {
+  name: Upload Recipe Image
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/api/recipes/{{recipeId}}/upload-image?code={{functionKey}}
+  body: multipartForm
+  auth: none
+}
+
+body:multipart-form {
+  file: @file(Screenshot 2025-10-27 113054.png)
+}
+
+vars:pre-request {
+  recipeId: 00000000-0000-0000-0000-000000000000
+}
+
+docs {
+  # Upload Recipe Image
+  
+  Uploads an image for a recipe to Azure Blob Storage.
+  
+  ## Request
+  - **Method:** POST
+  - **Endpoint:** `/api/recipes/{recipeId}/upload-image`
+  - **Content-Type:** multipart/form-data
+  
+  ## Parameters
+  - `recipeId` (path, required) - GUID of the recipe to upload image for
+  - `file` (form-data, required) - Image file to upload (max 5MB, JPEG/PNG)
+  
+  ## Response
+  Returns the blob storage URL where the image was uploaded.
+  
+  ```json
+  {
+    "imageUrl": "https://...",
+    "blobName": "recipe-id/timestamp-random.jpg"
+  }
+  ```
+  
+  ## Example
+  1. Replace `{{recipeId}}` variable with an actual recipe GUID from Create Recipe response
+  2. Update the file path in body to point to an actual image file on your system
+  3. Execute the request
+  
+  ## Notes
+  - Requires Azurite running locally for development
+  - File size limit: 5 MB
+  - Supported formats: JPEG, PNG (saved as .jpg)
+  - Images are stored in blob storage at: `{recipeId}/{timestamp}-{random}.jpg`
+}

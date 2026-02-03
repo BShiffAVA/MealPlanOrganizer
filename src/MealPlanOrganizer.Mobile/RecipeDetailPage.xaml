@@ -51,6 +51,14 @@
                     </VerticalStackLayout>
                 </Frame>
 
+                <HorizontalStackLayout Spacing="10">
+                    <Button x:Name="EditButton"
+                            Text="Edit Recipe"
+                            Clicked="OnEditClicked"
+                            BackgroundColor="#FF9800"
+                            TextColor="White" />
+                </HorizontalStackLayout>
+
                 <!-- Description -->
                 <VerticalStackLayout Spacing="5">
                     <Label Text="Description" 
