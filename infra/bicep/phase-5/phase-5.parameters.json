@@ -48,7 +48,7 @@
       "value": true
     },
     "openAILocation": {
-      "value": "canadacentral"
+      "value": "eastus2"
     },
     "gpt4Capacity": {
       "value": 10
