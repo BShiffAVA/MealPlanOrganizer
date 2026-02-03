@@ -85,11 +85,12 @@ resource openAI 'Microsoft.CognitiveServices/accounts@2024-10-01' = {
 }
 
 // GPT-4o with Vision deployment
+// Note: GPT-4o requires GlobalStandard SKU in most regions including Canada Central
 resource gpt4oDeployment 'Microsoft.CognitiveServices/accounts/deployments@2024-10-01' = {
   parent: openAI
   name: 'gpt-4o'
   sku: {
-    name: 'Standard'
+    name: 'GlobalStandard'
     capacity: gpt4Capacity
   }
   properties: {
