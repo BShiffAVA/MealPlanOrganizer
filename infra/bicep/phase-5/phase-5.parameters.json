@@ -43,6 +43,15 @@
     },
     "signalRServiceId": {
       "value": "/subscriptions/46c4ffee-60f3-4055-813c-3037475e62ca/resourceGroups/rg-mealplan-organizer/providers/Microsoft.SignalRService/signalR/signalr-mealplan-organizer"
+    },
+    "deployAIVision": {
+      "value": true
+    },
+    "openAILocation": {
+      "value": "canadacentral"
+    },
+    "gpt4Capacity": {
+      "value": 10
     }
   }
 }

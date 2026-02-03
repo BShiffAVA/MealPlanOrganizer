@@ -17,6 +17,7 @@ The Meal Plan Organizer is a mobile-first application for a single household (2 
 - Storage: Azure Blob Storage (images)
 - Observability: Azure Application Insights + Log Analytics
 - Real-time: Azure SignalR Service (required for ratings and meal plan changes)
+- GenAI: Azure OpenAI (GPT-4o with Vision) + Azure AI Vision (OCR)
 
 ## High-Level Architecture Diagram
 ```mermaid
@@ -33,6 +34,8 @@ flowchart LR
     BLOB[Azure Blob Storage - Recipe Images]:::data
     AI[Azure Application Insights]:::ops
     SIG[Azure SignalR Service]:::opt
+    OPENAI[Azure OpenAI<br/>GPT-4 Turbo Vision]:::ai
+    VISION[Azure AI Vision<br/>OCR Read API]:::ai
 
     UI -- Login --> ExternalID
     UI -- Auth REST --> AF
@@ -41,6 +44,8 @@ flowchart LR
     AF -- Image Upload/Fetch --> BLOB
     AF -- Telemetry --> AI
     AF -- Broadcast --> SIG
+    AF -- Recipe Extraction --> OPENAI
+    AF -- Image OCR --> VISION
     SIG -- Push updates --> UI
 
     classDef svc fill:#e6f7ff,stroke:#0288d1,stroke-width:1px;
@@ -48,6 +53,7 @@ flowchart LR
     classDef data fill:#f3e5f5,stroke:#6a1b9a,stroke-width:1px;
     classDef ops fill:#e8f5e9,stroke:#2e7d32,stroke-width:1px;
     classDef opt fill:#f0f4c3,stroke:#827717,stroke-width:1px;
+    classDef ai fill:#e3f2fd,stroke:#1565c0,stroke-width:1px;
 ```
 
 ## Key Interaction Diagrams
@@ -224,11 +230,74 @@ erDiagram
 - Auth: `/auth/login` (External ID via OIDC), `/auth/refresh`
 - Users: `GET/PUT /users/me`, `POST /households/invite`, `POST /households/join`
 - Recipes: `GET /recipes`, `GET /recipes/{id}`, `POST /recipes`, `PUT /recipes/{id}`, `DELETE /recipes/{id}`
+- Recipe Extraction: `POST /recipes/extract` (GenAI-powered extraction from image, URL, or text)
 - Ratings: `PUT /recipes/{id}/ratings/my`, `GET /recipes/{id}/ratings`
 - Meal Plans: `GET /mealplans`, `GET /mealplans/{id}`, `POST`, `PUT`, `DELETE`
 - Shopping List: `GET /mealplans/{id}/shopping-list`
 - Recommendations: `GET /recommendations?mode=ratings|ingredients|popular`
 - Pantry: `GET/POST/PUT/DELETE /pantry/items`
+
+## GenAI Recipe Extraction Architecture
+
+### Overview
+The GenAI Recipe Extraction feature enables users to import recipes from images (cookbook photos, handwritten recipes, screenshots), URLs, or pasted text using Azure AI services.
+
+### Services
+- **Azure OpenAI Service**: GPT-4o with Vision capability for semantic recipe parsing
+  - Model: `gpt-4o-2024-08-06`
+  - Region: Canada Central (same as other resources)
+  - Quota: 10K tokens/minute
+- **Azure AI Vision** (optional): Read API for OCR pre-processing
+  - SKU: S1
+  - Used for enhanced text extraction from images before OpenAI processing
+
+### Extraction Flow
+```mermaid
+sequenceDiagram
+  participant User
+  participant MAUI
+  participant API as Azure Functions
+  participant Vision as Azure AI Vision
+  participant OpenAI as Azure OpenAI
+  participant SQL as Azure SQL
+
+  User->>MAUI: Upload recipe image/URL/text
+  MAUI->>API: POST /recipes/extract
+  alt Image Input
+    API->>Vision: OCR Read API (extract text)
+    Vision-->>API: Extracted text
+  end
+  API->>OpenAI: GPT-4 Vision (parse recipe)
+  OpenAI-->>API: Structured recipe JSON
+  API-->>MAUI: Extracted recipe + confidence
+  User->>MAUI: Review and edit
+  MAUI->>API: POST /recipes (save)
+  API->>SQL: INSERT Recipe
+  API-->>MAUI: 201 Created
+```
+
+### Cost Estimates (Monthly, Family of 4)
+| Service | Usage | Cost |
+|---------|-------|------|
+| Azure OpenAI (GPT-4o) | ~100 extractions × 2K tokens | ~$1.00 |
+| Azure AI Vision (Read API) | ~50 images | ~$0.08 |
+| **Total GenAI Feature** | | **~$1.10/month** |
+
+### Security
+- API keys stored in Azure Key Vault
+- Function App accesses via managed identity with `Cognitive Services OpenAI User` and `Cognitive Services User` roles
+- Rate limiting: 100 extractions/user/day
+- No recipe content logged; only metadata for telemetry
+
+### Configuration
+Environment variables (via Key Vault references in production):
+- `OpenAI__Endpoint`: Azure OpenAI service endpoint
+- `OpenAI__ApiKey`: API key (Key Vault secret)
+- `OpenAI__DeploymentName`: GPT-4 Turbo deployment name
+- `Vision__Endpoint`: Azure AI Vision endpoint
+- `Vision__ApiKey`: Vision API key (Key Vault secret)
+
+See [RECIPE_EXTRACTION_PLAN.md](../genai/RECIPE_EXTRACTION_PLAN.md) for detailed implementation plan.
 
 ## Security Architecture
 - Identity: Microsoft Entra External ID (external tenant) for OIDC; tokens validated by Azure Functions middleware

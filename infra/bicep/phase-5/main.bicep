@@ -49,6 +49,16 @@ param storageAccountId string
 @description('SignalR Service resource ID from Phase 4')
 param signalRServiceId string
 
+@description('Deploy Azure AI Vision for OCR (optional)')
+param deployAIVision bool = true
+
+@description('Azure region for OpenAI (must support GPT-4o with Vision)')
+@allowed(['canadacentral', 'eastus2', 'westus', 'swedencentral', 'australiaeast'])
+param openAILocation string = 'canadacentral'
+
+@description('GPT-4 Turbo capacity in tokens per minute (thousands)')
+param gpt4Capacity int = 10
+
 // ============================================================================
 // VARIABLES
 // ============================================================================
@@ -206,6 +216,28 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
           name: 'Environment'
           value: environment
         }
+        // GenAI Recipe Extraction - Azure OpenAI
+        {
+          name: 'OpenAI__Endpoint'
+          value: '@Microsoft.KeyVault(SecretUri=https://${keyVaultName}.vault.azure.net/secrets/OpenAI-Endpoint/)'
+        }
+        {
+          name: 'OpenAI__ApiKey'
+          value: '@Microsoft.KeyVault(SecretUri=https://${keyVaultName}.vault.azure.net/secrets/OpenAI-ApiKey/)'
+        }
+        {
+          name: 'OpenAI__DeploymentName'
+          value: '@Microsoft.KeyVault(SecretUri=https://${keyVaultName}.vault.azure.net/secrets/OpenAI-DeploymentName/)'
+        }
+        // GenAI Recipe Extraction - Azure AI Vision (optional)
+        {
+          name: 'Vision__Endpoint'
+          value: '@Microsoft.KeyVault(SecretUri=https://${keyVaultName}.vault.azure.net/secrets/Vision-Endpoint/)'
+        }
+        {
+          name: 'Vision__ApiKey'
+          value: '@Microsoft.KeyVault(SecretUri=https://${keyVaultName}.vault.azure.net/secrets/Vision-ApiKey/)'
+        }
       ]
       connectionStrings: [
         {
@@ -348,6 +380,24 @@ resource functionStorageRole 'Microsoft.Authorization/roleAssignments@2022-04-01
 // Note: SignalR Service RBAC roles vary by tenant. Configure manually if needed.
 
 // ============================================================================
+// GenAI Services Module (Azure OpenAI + AI Vision)
+// ============================================================================
+
+module genAIServices '../modules/openai.bicep' = {
+  name: 'genai-services-deployment'
+  params: {
+    openAILocation: openAILocation
+    visionLocation: location
+    environment: environment
+    baseName: 'mealplan'
+    keyVaultName: keyVaultName
+    functionAppPrincipalId: functionApp.identity.principalId
+    deployVision: deployAIVision
+    gpt4Capacity: gpt4Capacity
+  }
+}
+
+// ============================================================================
 // OUTPUTS
 // ============================================================================
 
@@ -377,3 +427,25 @@ output functionStorageAccountName string = functionStorageAccount.name
 
 @description('Function Storage Account ID')
 output functionStorageAccountId string = functionStorageAccount.id
+
+// GenAI Service Outputs
+@description('Azure OpenAI Service resource ID')
+output openAIId string = genAIServices.outputs.openAIId
+
+@description('Azure OpenAI Service name')
+output openAIName string = genAIServices.outputs.openAIName
+
+@description('Azure OpenAI Service endpoint')
+output openAIEndpoint string = genAIServices.outputs.openAIEndpoint
+
+@description('GPT-4o deployment name')
+output gpt4DeploymentName string = genAIServices.outputs.gpt4DeploymentName
+
+@description('Azure AI Vision resource ID')
+output visionId string = genAIServices.outputs.visionId
+
+@description('Azure AI Vision name')
+output visionName string = genAIServices.outputs.visionName
+
+@description('Azure AI Vision endpoint')
+output visionEndpoint string = genAIServices.outputs.visionEndpoint

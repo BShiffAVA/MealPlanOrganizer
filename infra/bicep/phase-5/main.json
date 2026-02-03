@@ -1,0 +1,917 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.40.2.10011",
+      "templateHash": "12206501363149860713"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "canadacentral",
+      "metadata": {
+        "author": "Cloud Architecture Team",
+        "version": "1.0.0",
+        "description": "Azure region for resource deployment"
+      }
+    },
+    "environment": {
+      "type": "string",
+      "defaultValue": "prod",
+      "metadata": {
+        "description": "Environment name for tagging"
+      }
+    },
+    "functionAppName": {
+      "type": "string",
+      "defaultValue": "func-mealplan-organizer",
+      "metadata": {
+        "description": "Function App name"
+      }
+    },
+    "appServicePlanName": {
+      "type": "string",
+      "defaultValue": "asp-mealplan-organizer",
+      "metadata": {
+        "description": "App Service Plan name"
+      }
+    },
+    "functionStorageAccountName": {
+      "type": "string",
+      "defaultValue": "stfuncmealplan",
+      "metadata": {
+        "description": "Storage Account name for Function App runtime"
+      }
+    },
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Log Analytics Workspace resource ID from Phase 1"
+      }
+    },
+    "vnetId": {
+      "type": "string",
+      "metadata": {
+        "description": "Virtual Network resource ID from Phase 1"
+      }
+    },
+    "integrationSubnetId": {
+      "type": "string",
+      "metadata": {
+        "description": "Integration subnet resource ID from Phase 1"
+      }
+    },
+    "appInsightsId": {
+      "type": "string",
+      "metadata": {
+        "description": "Application Insights resource ID from Phase 1"
+      }
+    },
+    "keyVaultId": {
+      "type": "string",
+      "metadata": {
+        "description": "Key Vault resource ID from Phase 2"
+      }
+    },
+    "sqlServerId": {
+      "type": "string",
+      "metadata": {
+        "description": "SQL Server resource ID from Phase 3"
+      }
+    },
+    "sqlDatabaseName": {
+      "type": "string",
+      "defaultValue": "MealPlanOrganizerDB",
+      "metadata": {
+        "description": "SQL Database name from Phase 3"
+      }
+    },
+    "storageAccountId": {
+      "type": "string",
+      "metadata": {
+        "description": "Storage Account resource ID from Phase 3 (recipe images)"
+      }
+    },
+    "signalRServiceId": {
+      "type": "string",
+      "metadata": {
+        "description": "SignalR Service resource ID from Phase 4"
+      }
+    },
+    "deployAIVision": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Deploy Azure AI Vision for OCR (optional)"
+      }
+    },
+    "openAILocation": {
+      "type": "string",
+      "defaultValue": "canadacentral",
+      "allowedValues": [
+        "canadacentral",
+        "eastus2",
+        "westus",
+        "swedencentral",
+        "australiaeast"
+      ],
+      "metadata": {
+        "description": "Azure region for OpenAI (must support GPT-4o with Vision)"
+      }
+    },
+    "gpt4Capacity": {
+      "type": "int",
+      "defaultValue": 10,
+      "metadata": {
+        "description": "GPT-4 Turbo capacity in tokens per minute (thousands)"
+      }
+    }
+  },
+  "variables": {
+    "tags": {
+      "Environment": "[parameters('environment')]",
+      "Project": "MealPlanOrganizer",
+      "Phase": "5-ComputeAppTier",
+      "ManagedBy": "Bicep"
+    },
+    "keyVaultName": "[last(split(parameters('keyVaultId'), '/'))]",
+    "storageAccountName": "[last(split(parameters('storageAccountId'), '/'))]",
+    "signalRServiceName": "[last(split(parameters('signalRServiceId'), '/'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2024-01-01",
+      "name": "[parameters('functionStorageAccountName')]",
+      "location": "[parameters('location')]",
+      "tags": "[variables('tags')]",
+      "kind": "StorageV2",
+      "sku": {
+        "name": "Standard_LRS"
+      },
+      "properties": {
+        "accessTier": "Hot",
+        "allowBlobPublicAccess": false,
+        "minimumTlsVersion": "TLS1_2",
+        "supportsHttpsTrafficOnly": true,
+        "publicNetworkAccess": "Enabled"
+      }
+    },
+    {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2024-04-01",
+      "name": "[parameters('appServicePlanName')]",
+      "location": "[parameters('location')]",
+      "tags": "[variables('tags')]",
+      "kind": "functionapp",
+      "sku": {
+        "name": "Y1",
+        "tier": "Dynamic"
+      },
+      "properties": {
+        "reserved": false
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2024-04-01",
+      "name": "[parameters('functionAppName')]",
+      "location": "[parameters('location')]",
+      "tags": "[variables('tags')]",
+      "kind": "functionapp",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('appServicePlanName'))]",
+        "httpsOnly": true,
+        "publicNetworkAccess": "Enabled",
+        "siteConfig": {
+          "alwaysOn": false,
+          "http20Enabled": true,
+          "minTlsVersion": "1.2",
+          "scmMinTlsVersion": "1.2",
+          "netFrameworkVersion": "v8.0",
+          "appSettings": [
+            {
+              "name": "AzureWebJobsStorage",
+              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix=core.windows.net', parameters('functionStorageAccountName'), listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('functionStorageAccountName')), '2024-01-01').keys[0].value)]"
+            },
+            {
+              "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
+              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix=core.windows.net', parameters('functionStorageAccountName'), listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('functionStorageAccountName')), '2024-01-01').keys[0].value)]"
+            },
+            {
+              "name": "WEBSITE_CONTENTSHARE",
+              "value": "[toLower(parameters('functionAppName'))]"
+            },
+            {
+              "name": "FUNCTIONS_EXTENSION_VERSION",
+              "value": "~4"
+            },
+            {
+              "name": "FUNCTIONS_WORKER_RUNTIME",
+              "value": "dotnet-isolated"
+            },
+            {
+              "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+              "value": "[reference(parameters('appInsightsId'), '2020-02-02').InstrumentationKey]"
+            },
+            {
+              "name": "ApplicationInsightsAgent_EXTENSION_VERSION",
+              "value": "~3"
+            },
+            {
+              "name": "XDT_MicrosoftApplicationInsights_Mode",
+              "value": "recommended"
+            },
+            {
+              "name": "SqlConnectionString",
+              "value": "[format('@Microsoft.KeyVault(SecretUri=https://{0}.vault.azure.net/secrets/SqlConnectionString/)', variables('keyVaultName'))]"
+            },
+            {
+              "name": "StorageConnectionString",
+              "value": "[format('@Microsoft.KeyVault(SecretUri=https://{0}.vault.azure.net/secrets/storage-connection-string/)', variables('keyVaultName'))]"
+            },
+            {
+              "name": "StorageAccessKey",
+              "value": "[format('@Microsoft.KeyVault(SecretUri=https://{0}.vault.azure.net/secrets/storage-access-key/)', variables('keyVaultName'))]"
+            },
+            {
+              "name": "SignalRConnectionString",
+              "value": "[format('@Microsoft.KeyVault(SecretUri=https://{0}.vault.azure.net/secrets/SignalRConnectionString/)', variables('keyVaultName'))]"
+            },
+            {
+              "name": "KeyVaultUrl",
+              "value": "[format('https://{0}.vault.azure.net/', variables('keyVaultName'))]"
+            },
+            {
+              "name": "SqlDatabaseName",
+              "value": "[parameters('sqlDatabaseName')]"
+            },
+            {
+              "name": "StorageAccountName",
+              "value": "[variables('storageAccountName')]"
+            },
+            {
+              "name": "BlobStorage__ConnectionString",
+              "value": "[format('@Microsoft.KeyVault(SecretUri=https://{0}.vault.azure.net/secrets/storage-connection-string/)', variables('keyVaultName'))]"
+            },
+            {
+              "name": "BlobStorage__ContainerName",
+              "value": "recipe-images"
+            },
+            {
+              "name": "SignalRServiceName",
+              "value": "[variables('signalRServiceName')]"
+            },
+            {
+              "name": "Environment",
+              "value": "[parameters('environment')]"
+            },
+            {
+              "name": "OpenAI__Endpoint",
+              "value": "[format('@Microsoft.KeyVault(SecretUri=https://{0}.vault.azure.net/secrets/OpenAI-Endpoint/)', variables('keyVaultName'))]"
+            },
+            {
+              "name": "OpenAI__ApiKey",
+              "value": "[format('@Microsoft.KeyVault(SecretUri=https://{0}.vault.azure.net/secrets/OpenAI-ApiKey/)', variables('keyVaultName'))]"
+            },
+            {
+              "name": "OpenAI__DeploymentName",
+              "value": "[format('@Microsoft.KeyVault(SecretUri=https://{0}.vault.azure.net/secrets/OpenAI-DeploymentName/)', variables('keyVaultName'))]"
+            },
+            {
+              "name": "Vision__Endpoint",
+              "value": "[format('@Microsoft.KeyVault(SecretUri=https://{0}.vault.azure.net/secrets/Vision-Endpoint/)', variables('keyVaultName'))]"
+            },
+            {
+              "name": "Vision__ApiKey",
+              "value": "[format('@Microsoft.KeyVault(SecretUri=https://{0}.vault.azure.net/secrets/Vision-ApiKey/)', variables('keyVaultName'))]"
+            }
+          ],
+          "connectionStrings": [
+            {
+              "name": "Sql",
+              "connectionString": "[format('@Microsoft.KeyVault(SecretUri=https://{0}.vault.azure.net/secrets/SqlConnectionString/)', variables('keyVaultName'))]",
+              "type": "SQLAzure"
+            }
+          ],
+          "cors": {
+            "allowedOrigins": [
+              "*"
+            ],
+            "supportCredentials": false
+          },
+          "numberOfWorkers": 1,
+          "defaultDocuments": [],
+          "requestTracingEnabled": true,
+          "remoteDebuggingEnabled": false,
+          "managedPipelineMode": "Integrated",
+          "virtualApplications": [
+            {
+              "virtualPath": "/",
+              "physicalPath": "site\\wwwroot",
+              "preloadEnabled": false
+            }
+          ],
+          "webSocketsEnabled": true
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', parameters('appServicePlanName'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('functionStorageAccountName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Insights/diagnosticSettings",
+      "apiVersion": "2021-05-01-preview",
+      "scope": "[resourceId('Microsoft.Web/sites', parameters('functionAppName'))]",
+      "name": "[format('{0}-diag', parameters('functionAppName'))]",
+      "properties": {
+        "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+        "logs": [
+          {
+            "categoryGroup": "allLogs",
+            "enabled": true
+          }
+        ],
+        "metrics": [
+          {
+            "category": "AllMetrics",
+            "enabled": true
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', parameters('functionAppName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Insights/diagnosticSettings",
+      "apiVersion": "2021-05-01-preview",
+      "scope": "[resourceId('Microsoft.Storage/storageAccounts', parameters('functionStorageAccountName'))]",
+      "name": "[format('{0}-diag', parameters('functionStorageAccountName'))]",
+      "properties": {
+        "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+        "metrics": [
+          {
+            "category": "Transaction",
+            "enabled": true
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('functionStorageAccountName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]",
+      "name": "[guid(resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName')), resourceId('Microsoft.Web/sites', parameters('functionAppName')), 'Key Vault Secrets User')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6')]",
+        "principalId": "[reference(resourceId('Microsoft.Web/sites', parameters('functionAppName')), '2024-04-01', 'full').identity.principalId]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', parameters('functionAppName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[resourceId('Microsoft.Sql/servers/databases', last(split(parameters('sqlServerId'), '/')), parameters('sqlDatabaseName'))]",
+      "name": "[guid(resourceId('Microsoft.Sql/servers/databases', last(split(parameters('sqlServerId'), '/')), parameters('sqlDatabaseName')), resourceId('Microsoft.Web/sites', parameters('functionAppName')), 'SQL Database Contributor')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '9b7fa17d-e63e-47b0-bb0a-15c516ac86ec')]",
+        "principalId": "[reference(resourceId('Microsoft.Web/sites', parameters('functionAppName')), '2024-04-01', 'full').identity.principalId]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', parameters('functionAppName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
+      "name": "[guid(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), resourceId('Microsoft.Web/sites', parameters('functionAppName')), 'Storage Blob Data Contributor')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')]",
+        "principalId": "[reference(resourceId('Microsoft.Web/sites', parameters('functionAppName')), '2024-04-01', 'full').identity.principalId]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', parameters('functionAppName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "genai-services-deployment",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "openAILocation": {
+            "value": "[parameters('openAILocation')]"
+          },
+          "visionLocation": {
+            "value": "[parameters('location')]"
+          },
+          "environment": {
+            "value": "[parameters('environment')]"
+          },
+          "baseName": {
+            "value": "mealplan"
+          },
+          "keyVaultName": {
+            "value": "[variables('keyVaultName')]"
+          },
+          "functionAppPrincipalId": {
+            "value": "[reference(resourceId('Microsoft.Web/sites', parameters('functionAppName')), '2024-04-01', 'full').identity.principalId]"
+          },
+          "deployVision": {
+            "value": "[parameters('deployAIVision')]"
+          },
+          "gpt4Capacity": {
+            "value": "[parameters('gpt4Capacity')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.40.2.10011",
+              "templateHash": "8849678871176996405"
+            }
+          },
+          "parameters": {
+            "openAILocation": {
+              "type": "string",
+              "defaultValue": "canadacentral",
+              "allowedValues": [
+                "canadacentral",
+                "eastus2",
+                "westus",
+                "swedencentral",
+                "australiaeast"
+              ],
+              "metadata": {
+                "author": "Cloud Architecture Team",
+                "version": "1.0.0",
+                "description": "Azure region for OpenAI deployment (must support GPT-4o with Vision)"
+              }
+            },
+            "visionLocation": {
+              "type": "string",
+              "defaultValue": "canadacentral",
+              "metadata": {
+                "description": "Azure region for AI Vision deployment"
+              }
+            },
+            "environment": {
+              "type": "string",
+              "defaultValue": "prod",
+              "allowedValues": [
+                "dev",
+                "prod"
+              ],
+              "metadata": {
+                "description": "Environment name (dev, prod)"
+              }
+            },
+            "baseName": {
+              "type": "string",
+              "defaultValue": "mealplan",
+              "metadata": {
+                "description": "Base name for resources"
+              }
+            },
+            "keyVaultName": {
+              "type": "string",
+              "metadata": {
+                "description": "Key Vault name for storing secrets"
+              }
+            },
+            "functionAppPrincipalId": {
+              "type": "string",
+              "metadata": {
+                "description": "Function App Principal ID for RBAC"
+              }
+            },
+            "deployVision": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Deploy Azure AI Vision (optional enhancement)"
+              }
+            },
+            "gpt4Capacity": {
+              "type": "int",
+              "defaultValue": 10,
+              "minValue": 1,
+              "maxValue": 120,
+              "metadata": {
+                "description": "GPT-4 Turbo model deployment capacity (tokens per minute in thousands)"
+              }
+            }
+          },
+          "variables": {
+            "tags": {
+              "Environment": "[parameters('environment')]",
+              "Project": "MealPlanOrganizer",
+              "Feature": "GenAI-RecipeExtraction",
+              "ManagedBy": "Bicep"
+            },
+            "openAIAccountName": "[format('oai-{0}-{1}-{2}', parameters('baseName'), parameters('environment'), uniqueString(resourceGroup().id))]",
+            "visionAccountName": "[format('cv-{0}-{1}-{2}', parameters('baseName'), parameters('environment'), uniqueString(resourceGroup().id))]",
+            "openAICustomDomain": "[format('{0}-openai-{1}', parameters('baseName'), parameters('environment'))]",
+            "visionCustomDomain": "[format('{0}-vision-{1}', parameters('baseName'), parameters('environment'))]",
+            "cognitiveServicesOpenAIUserRoleId": "5e0bd9bd-7b93-4f28-af87-19fc36ad61bd",
+            "cognitiveServicesUserRoleId": "a97b65f3-24c7-4388-baec-2e87135dc908"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.CognitiveServices/accounts",
+              "apiVersion": "2024-10-01",
+              "name": "[variables('openAIAccountName')]",
+              "location": "[parameters('openAILocation')]",
+              "tags": "[variables('tags')]",
+              "sku": {
+                "name": "S0"
+              },
+              "kind": "OpenAI",
+              "properties": {
+                "customSubDomainName": "[variables('openAICustomDomain')]",
+                "publicNetworkAccess": "Enabled",
+                "networkAcls": {
+                  "defaultAction": "Allow"
+                },
+                "disableLocalAuth": false
+              }
+            },
+            {
+              "type": "Microsoft.CognitiveServices/accounts/deployments",
+              "apiVersion": "2024-10-01",
+              "name": "[format('{0}/{1}', variables('openAIAccountName'), 'gpt-4o')]",
+              "sku": {
+                "name": "Standard",
+                "capacity": "[parameters('gpt4Capacity')]"
+              },
+              "properties": {
+                "model": {
+                  "format": "OpenAI",
+                  "name": "gpt-4o",
+                  "version": "2024-08-06"
+                },
+                "raiPolicyName": "Microsoft.Default"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.CognitiveServices/accounts', variables('openAIAccountName'))]"
+              ]
+            },
+            {
+              "condition": "[parameters('deployVision')]",
+              "type": "Microsoft.CognitiveServices/accounts",
+              "apiVersion": "2024-10-01",
+              "name": "[variables('visionAccountName')]",
+              "location": "[parameters('visionLocation')]",
+              "tags": "[variables('tags')]",
+              "sku": {
+                "name": "S1"
+              },
+              "kind": "ComputerVision",
+              "properties": {
+                "customSubDomainName": "[variables('visionCustomDomain')]",
+                "publicNetworkAccess": "Enabled",
+                "networkAcls": {
+                  "defaultAction": "Allow"
+                },
+                "disableLocalAuth": false
+              }
+            },
+            {
+              "type": "Microsoft.KeyVault/vaults/secrets",
+              "apiVersion": "2024-04-01-preview",
+              "name": "[format('{0}/{1}', parameters('keyVaultName'), 'OpenAI-Endpoint')]",
+              "properties": {
+                "value": "[reference(resourceId('Microsoft.CognitiveServices/accounts', variables('openAIAccountName')), '2024-10-01').endpoint]",
+                "contentType": "text/plain",
+                "attributes": {
+                  "enabled": true
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.CognitiveServices/accounts', variables('openAIAccountName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.KeyVault/vaults/secrets",
+              "apiVersion": "2024-04-01-preview",
+              "name": "[format('{0}/{1}', parameters('keyVaultName'), 'OpenAI-ApiKey')]",
+              "properties": {
+                "value": "[listKeys(resourceId('Microsoft.CognitiveServices/accounts', variables('openAIAccountName')), '2024-10-01').key1]",
+                "contentType": "text/plain",
+                "attributes": {
+                  "enabled": true
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.CognitiveServices/accounts', variables('openAIAccountName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.KeyVault/vaults/secrets",
+              "apiVersion": "2024-04-01-preview",
+              "name": "[format('{0}/{1}', parameters('keyVaultName'), 'OpenAI-DeploymentName')]",
+              "properties": {
+                "value": "gpt-4o",
+                "contentType": "text/plain",
+                "attributes": {
+                  "enabled": true
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.CognitiveServices/accounts/deployments', variables('openAIAccountName'), 'gpt-4o')]"
+              ]
+            },
+            {
+              "condition": "[parameters('deployVision')]",
+              "type": "Microsoft.KeyVault/vaults/secrets",
+              "apiVersion": "2024-04-01-preview",
+              "name": "[format('{0}/{1}', parameters('keyVaultName'), 'Vision-Endpoint')]",
+              "properties": {
+                "value": "[reference(resourceId('Microsoft.CognitiveServices/accounts', variables('visionAccountName')), '2024-10-01').endpoint]",
+                "contentType": "text/plain",
+                "attributes": {
+                  "enabled": true
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.CognitiveServices/accounts', variables('visionAccountName'))]"
+              ]
+            },
+            {
+              "condition": "[parameters('deployVision')]",
+              "type": "Microsoft.KeyVault/vaults/secrets",
+              "apiVersion": "2024-04-01-preview",
+              "name": "[format('{0}/{1}', parameters('keyVaultName'), 'Vision-ApiKey')]",
+              "properties": {
+                "value": "[listKeys(resourceId('Microsoft.CognitiveServices/accounts', variables('visionAccountName')), '2024-10-01').key1]",
+                "contentType": "text/plain",
+                "attributes": {
+                  "enabled": true
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.CognitiveServices/accounts', variables('visionAccountName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[resourceId('Microsoft.CognitiveServices/accounts', variables('openAIAccountName'))]",
+              "name": "[guid(resourceId('Microsoft.CognitiveServices/accounts', variables('openAIAccountName')), parameters('functionAppPrincipalId'), variables('cognitiveServicesOpenAIUserRoleId'))]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('cognitiveServicesOpenAIUserRoleId'))]",
+                "principalId": "[parameters('functionAppPrincipalId')]",
+                "principalType": "ServicePrincipal"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.CognitiveServices/accounts', variables('openAIAccountName'))]"
+              ]
+            },
+            {
+              "condition": "[parameters('deployVision')]",
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[resourceId('Microsoft.CognitiveServices/accounts', variables('visionAccountName'))]",
+              "name": "[guid(resourceId('Microsoft.CognitiveServices/accounts', variables('visionAccountName')), parameters('functionAppPrincipalId'), variables('cognitiveServicesUserRoleId'))]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('cognitiveServicesUserRoleId'))]",
+                "principalId": "[parameters('functionAppPrincipalId')]",
+                "principalType": "ServicePrincipal"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.CognitiveServices/accounts', variables('visionAccountName'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "openAIId": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure OpenAI Service resource ID"
+              },
+              "value": "[resourceId('Microsoft.CognitiveServices/accounts', variables('openAIAccountName'))]"
+            },
+            "openAIName": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure OpenAI Service name"
+              },
+              "value": "[variables('openAIAccountName')]"
+            },
+            "openAIEndpoint": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure OpenAI Service endpoint"
+              },
+              "value": "[reference(resourceId('Microsoft.CognitiveServices/accounts', variables('openAIAccountName')), '2024-10-01').endpoint]"
+            },
+            "gpt4DeploymentName": {
+              "type": "string",
+              "metadata": {
+                "description": "GPT-4o deployment name"
+              },
+              "value": "gpt-4o"
+            },
+            "visionId": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure AI Vision resource ID (empty if not deployed)"
+              },
+              "value": "[if(parameters('deployVision'), resourceId('Microsoft.CognitiveServices/accounts', variables('visionAccountName')), '')]"
+            },
+            "visionName": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure AI Vision name (empty if not deployed)"
+              },
+              "value": "[if(parameters('deployVision'), variables('visionAccountName'), '')]"
+            },
+            "visionEndpoint": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure AI Vision endpoint (empty if not deployed)"
+              },
+              "value": "[if(parameters('deployVision'), reference(resourceId('Microsoft.CognitiveServices/accounts', variables('visionAccountName')), '2024-10-01').endpoint, '')]"
+            },
+            "openAIEndpointSecretUri": {
+              "type": "string",
+              "metadata": {
+                "description": "Key Vault secret URI for OpenAI endpoint"
+              },
+              "value": "[reference(resourceId('Microsoft.KeyVault/vaults/secrets', parameters('keyVaultName'), 'OpenAI-Endpoint'), '2024-04-01-preview').secretUri]"
+            },
+            "openAIKeySecretUri": {
+              "type": "string",
+              "metadata": {
+                "description": "Key Vault secret URI for OpenAI API key"
+              },
+              "value": "[reference(resourceId('Microsoft.KeyVault/vaults/secrets', parameters('keyVaultName'), 'OpenAI-ApiKey'), '2024-04-01-preview').secretUri]"
+            },
+            "openAIDeploymentSecretUri": {
+              "type": "string",
+              "metadata": {
+                "description": "Key Vault secret URI for OpenAI deployment name"
+              },
+              "value": "[reference(resourceId('Microsoft.KeyVault/vaults/secrets', parameters('keyVaultName'), 'OpenAI-DeploymentName'), '2024-04-01-preview').secretUri]"
+            },
+            "visionEndpointSecretUri": {
+              "type": "string",
+              "metadata": {
+                "description": "Key Vault secret URI for Vision endpoint (empty if not deployed)"
+              },
+              "value": "[if(parameters('deployVision'), reference(resourceId('Microsoft.KeyVault/vaults/secrets', parameters('keyVaultName'), 'Vision-Endpoint'), '2024-04-01-preview').secretUri, '')]"
+            },
+            "visionKeySecretUri": {
+              "type": "string",
+              "metadata": {
+                "description": "Key Vault secret URI for Vision API key (empty if not deployed)"
+              },
+              "value": "[if(parameters('deployVision'), reference(resourceId('Microsoft.KeyVault/vaults/secrets', parameters('keyVaultName'), 'Vision-ApiKey'), '2024-04-01-preview').secretUri, '')]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', parameters('functionAppName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "appServicePlanId": {
+      "type": "string",
+      "metadata": {
+        "description": "App Service Plan resource ID"
+      },
+      "value": "[resourceId('Microsoft.Web/serverfarms', parameters('appServicePlanName'))]"
+    },
+    "appServicePlanName": {
+      "type": "string",
+      "metadata": {
+        "description": "App Service Plan name"
+      },
+      "value": "[parameters('appServicePlanName')]"
+    },
+    "functionAppId": {
+      "type": "string",
+      "metadata": {
+        "description": "Function App resource ID"
+      },
+      "value": "[resourceId('Microsoft.Web/sites', parameters('functionAppName'))]"
+    },
+    "functionAppName": {
+      "type": "string",
+      "metadata": {
+        "description": "Function App name"
+      },
+      "value": "[parameters('functionAppName')]"
+    },
+    "functionAppHostname": {
+      "type": "string",
+      "metadata": {
+        "description": "Function App hostname"
+      },
+      "value": "[reference(resourceId('Microsoft.Web/sites', parameters('functionAppName')), '2024-04-01').defaultHostName]"
+    },
+    "functionAppEndpoint": {
+      "type": "string",
+      "metadata": {
+        "description": "Function App default HTTPS endpoint"
+      },
+      "value": "[format('https://{0}', reference(resourceId('Microsoft.Web/sites', parameters('functionAppName')), '2024-04-01').defaultHostName)]"
+    },
+    "functionAppPrincipalId": {
+      "type": "string",
+      "metadata": {
+        "description": "Function App Principal ID (for RBAC)"
+      },
+      "value": "[reference(resourceId('Microsoft.Web/sites', parameters('functionAppName')), '2024-04-01', 'full').identity.principalId]"
+    },
+    "functionStorageAccountName": {
+      "type": "string",
+      "metadata": {
+        "description": "Function App storage account name"
+      },
+      "value": "[parameters('functionStorageAccountName')]"
+    },
+    "functionStorageAccountId": {
+      "type": "string",
+      "metadata": {
+        "description": "Function Storage Account ID"
+      },
+      "value": "[resourceId('Microsoft.Storage/storageAccounts', parameters('functionStorageAccountName'))]"
+    },
+    "openAIId": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure OpenAI Service resource ID"
+      },
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'genai-services-deployment'), '2025-04-01').outputs.openAIId.value]"
+    },
+    "openAIName": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure OpenAI Service name"
+      },
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'genai-services-deployment'), '2025-04-01').outputs.openAIName.value]"
+    },
+    "openAIEndpoint": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure OpenAI Service endpoint"
+      },
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'genai-services-deployment'), '2025-04-01').outputs.openAIEndpoint.value]"
+    },
+    "gpt4DeploymentName": {
+      "type": "string",
+      "metadata": {
+        "description": "GPT-4o deployment name"
+      },
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'genai-services-deployment'), '2025-04-01').outputs.gpt4DeploymentName.value]"
+    },
+    "visionId": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure AI Vision resource ID"
+      },
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'genai-services-deployment'), '2025-04-01').outputs.visionId.value]"
+    },
+    "visionName": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure AI Vision name"
+      },
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'genai-services-deployment'), '2025-04-01').outputs.visionName.value]"
+    },
+    "visionEndpoint": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure AI Vision endpoint"
+      },
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'genai-services-deployment'), '2025-04-01').outputs.visionEndpoint.value]"
+    }
+  }
+}

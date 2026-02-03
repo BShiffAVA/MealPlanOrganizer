@@ -19,6 +19,12 @@
   - Prep time and cook time
   - Servings
   - Images/photos
+- **GenAI Recipe Extraction**: Import recipes automatically from:
+  - Uploaded images (cookbook photos, handwritten recipes, screenshots)
+  - Recipe URLs (links to recipe websites)
+  - Pasted text (copied from websites or documents)
+  - AI extracts: name, ingredients with quantities/units, instructions, times, servings
+  - User can review and edit extracted data before saving
 - **Recipe Rating System**: 
   - Family members can rate recipes on a 1-5 star scale
   - Optional review/comments
@@ -63,6 +69,8 @@
   - **Azure Storage**: For recipe images
   - **Azure Service Bus/SignalR**: Real-time notifications and updates (optional, for enhanced features)
   - **Microsoft Entra External ID**: User authentication and management (CIAM in external tenant)
+  - **Azure OpenAI**: GPT-4o with Vision for GenAI recipe extraction (~$1.00/month)
+  - **Azure AI Vision**: OCR Read API for image text extraction (~$0.08/month)
 
 ### Architecture Approach
 - RESTful API backend (or GraphQL as alternative)
@@ -162,6 +170,7 @@
 
 ## Success Criteria
 - [ ] Family members can create, view, and rate recipes on mobile
+- [ ] GenAI recipe extraction works from images, URLs, and text with >80% accuracy
 - [ ] Meal plans can be created and shared with family
 - [ ] Recipe recommendations appear based on ratings and ingredients
 - [ ] App works offline and syncs when reconnected

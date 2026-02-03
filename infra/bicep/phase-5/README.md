@@ -32,6 +32,13 @@ Phase 5 deploys the serverless compute infrastructure for the Meal Plan Organize
   - SQL Database Contributor (for database access)
   - Storage Blob Data Contributor (for recipe images)
   - SignalR Service Owner (for real-time messaging)
+  - Cognitive Services OpenAI User (for recipe extraction)
+  - Cognitive Services User (for AI Vision OCR)
+
+- **GenAI Services** (for Recipe Extraction)
+  - Azure OpenAI Service with GPT-4 Turbo Vision deployment
+  - Azure AI Vision with Read API (OCR) capability
+  - Cost: ~$1.50/month for family of 4
 
 - **Application Settings** (Key Vault references)
   - `SqlConnectionString`: Database connection
@@ -40,6 +47,11 @@ Phase 5 deploys the serverless compute infrastructure for the Meal Plan Organize
   - `SignalRConnectionString`: Real-time messaging
   - `KeyVaultUrl`: Secrets management endpoint
   - `SqlDatabaseName`, `StorageAccountName`, `SignalRServiceName`: Configuration
+  - `OpenAI__Endpoint`: Azure OpenAI service endpoint
+  - `OpenAI__ApiKey`: Azure OpenAI API key
+  - `OpenAI__DeploymentName`: GPT-4 Turbo deployment name
+  - `Vision__Endpoint`: Azure AI Vision endpoint
+  - `Vision__ApiKey`: Azure AI Vision API key
 
 ## Prerequisites
 
