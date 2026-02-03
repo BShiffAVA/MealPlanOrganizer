@@ -232,4 +232,66 @@ public class RecipeService : IRecipeService
             return null;
         }
     }
+
+    public async Task<Models.RecipeExtractionResponse?> ExtractRecipeAsync(Models.RecipeExtractionRequest request)
+    {
+        try
+        {
+            _logger.LogInformation("Extracting recipe via GenAI. InputType: {InputType}", request.InputType);
+
+            var url = $"{_baseUrl}/recipes/extract?code={_functionKey}";
+
+            // Build API request body matching backend RecipeExtractionRequest model
+            var apiRequest = new
+            {
+                inputType = request.InputType,
+                image = request.InputType == "image" ? request.ImageBase64 : null,
+                url = request.InputType == "url" ? request.Url : null,
+                text = request.InputType == "text" ? request.Text : null
+            };
+
+            var json = JsonSerializer.Serialize(apiRequest);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PostAsync(url, content);
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            _logger.LogInformation("Extraction response status: {StatusCode}", response.StatusCode);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError("Extraction failed: {StatusCode}. Response: {Response}", response.StatusCode, responseContent);
+                return new Models.RecipeExtractionResponse
+                {
+                    Success = false,
+                    ErrorMessage = $"Extraction failed with status {response.StatusCode}"
+                };
+            }
+
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var extractionResponse = JsonSerializer.Deserialize<Models.RecipeExtractionResponse>(responseContent, options);
+
+            if (extractionResponse == null)
+            {
+                _logger.LogError("Failed to parse extraction response: {Response}", responseContent);
+                return new Models.RecipeExtractionResponse
+                {
+                    Success = false,
+                    ErrorMessage = "Failed to parse extraction response"
+                };
+            }
+
+            _logger.LogInformation("Recipe extracted successfully. Confidence: {Confidence:P0}", extractionResponse.Confidence);
+            return extractionResponse;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception during recipe extraction");
+            return new Models.RecipeExtractionResponse
+            {
+                Success = false,
+                ErrorMessage = $"An error occurred: {ex.Message}"
+            };
+        }
+    }
 }

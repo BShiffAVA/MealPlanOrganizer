@@ -1,3 +1,5 @@
+using MealPlanOrganizer.Mobile.Models;
+
 namespace MealPlanOrganizer.Mobile.Services;
 
 public interface IRecipeService
@@ -7,6 +9,11 @@ public interface IRecipeService
     Task<Guid?> CreateRecipeAsync(CreateRecipeDto recipe);
     Task<bool> UpdateRecipeAsync(Guid recipeId, UpdateRecipeDto recipe);
     Task<string?> UploadRecipeImageAsync(FileResult photo, Guid recipeId);
+    
+    /// <summary>
+    /// Extract recipe data from an image, URL, or text using GenAI.
+    /// </summary>
+    Task<RecipeExtractionResponse?> ExtractRecipeAsync(RecipeExtractionRequest request);
 }
 
 public class RecipeDto

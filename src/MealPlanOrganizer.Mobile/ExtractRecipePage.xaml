@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:MealPlanOrganizer.Mobile.ViewModels"
+             x:Class="MealPlanOrganizer.Mobile.ExtractRecipePage"
+             Title="Import Recipe">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="16">
+            
+            <!-- Header -->
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Import Recipe with AI"
+                       Style="{StaticResource Headline}"
+                       SemanticProperties.HeadingLevel="Level1" />
+                <Label Text="Extract recipe details from a photo, URL, or text"
+                       Style="{StaticResource SubHeadline}"
+                       TextColor="#666666" />
+            </VerticalStackLayout>
+
+            <!-- Input Type Selector -->
+            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                <Button x:Name="ImageModeButton"
+                        Text="📷 Photo"
+                        Clicked="OnImageModeClicked"
+                        BackgroundColor="#4CAF50"
+                        TextColor="White"
+                        CornerRadius="8" />
+                <Button x:Name="UrlModeButton"
+                        Grid.Column="1"
+                        Text="🔗 URL"
+                        Clicked="OnUrlModeClicked"
+                        BackgroundColor="#E0E0E0"
+                        TextColor="#333333"
+                        CornerRadius="8" />
+                <Button x:Name="TextModeButton"
+                        Grid.Column="2"
+                        Text="📝 Text"
+                        Clicked="OnTextModeClicked"
+                        BackgroundColor="#E0E0E0"
+                        TextColor="#333333"
+                        CornerRadius="8" />
+            </Grid>
+
+            <!-- Image Input Section -->
+            <VerticalStackLayout x:Name="ImageInputSection" Spacing="12" IsVisible="True">
+                <Label Text="Take a photo or select from gallery"
+                       FontSize="14"
+                       TextColor="#666666" />
+                
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                    <Button Text="📷 Take Photo"
+                            Clicked="OnTakePhotoClicked"
+                            BackgroundColor="#6C63FF"
+                            TextColor="White"
+                            HeightRequest="50"
+                            CornerRadius="8" />
+                    <Button Grid.Column="1"
+                            Text="🖼️ Gallery"
+                            Clicked="OnPickImageClicked"
+                            BackgroundColor="#6C63FF"
+                            TextColor="White"
+                            HeightRequest="50"
+                            CornerRadius="8" />
+                </Grid>
+
+                <!-- Selected Image Preview -->
+                <Frame x:Name="ImagePreviewFrame"
+                       IsVisible="False"
+                       Padding="8"
+                       CornerRadius="12"
+                       BorderColor="#E0E0E0"
+                       HasShadow="False">
+                    <Grid RowDefinitions="Auto,Auto">
+                        <Image x:Name="SelectedImagePreview"
+                               HeightRequest="200"
+                               Aspect="AspectFit" />
+                        <Button Grid.Row="1"
+                                Text="✕ Remove"
+                                Clicked="OnClearImageClicked"
+                                BackgroundColor="Transparent"
+                                TextColor="#FF5252"
+                                FontSize="12"
+                                Margin="0,8,0,0" />
+                    </Grid>
+                </Frame>
+            </VerticalStackLayout>
+
+            <!-- URL Input Section -->
+            <VerticalStackLayout x:Name="UrlInputSection" Spacing="8" IsVisible="False">
+                <Label Text="Enter the URL of a recipe webpage"
+                       FontSize="14"
+                       TextColor="#666666" />
+                <Entry x:Name="UrlEntry"
+                       Placeholder="https://example.com/recipe/..."
+                       PlaceholderColor="#999999"
+                       Keyboard="Url"
+                       TextChanged="OnUrlTextChanged" />
+                <Label Text="Supports most recipe websites"
+                       FontSize="12"
+                       TextColor="#999999" />
+            </VerticalStackLayout>
+
+            <!-- Text Input Section -->
+            <VerticalStackLayout x:Name="TextInputSection" Spacing="8" IsVisible="False">
+                <Label Text="Paste or type recipe content"
+                       FontSize="14"
+                       TextColor="#666666" />
+                <Editor x:Name="TextEditor"
+                        Placeholder="Paste the full recipe here including ingredients and instructions..."
+                        PlaceholderColor="#999999"
+                        HeightRequest="200"
+                        TextChanged="OnTextChanged" />
+                <Label x:Name="CharacterCountLabel"
+                       Text="0 characters (minimum 20)"
+                       FontSize="12"
+                       TextColor="#999999" />
+            </VerticalStackLayout>
+
+            <!-- Error Message -->
+            <Frame x:Name="ErrorFrame"
+                   IsVisible="False"
+                   Padding="12"
+                   BackgroundColor="#FFEBEE"
+                   BorderColor="#EF5350"
+                   CornerRadius="8"
+                   HasShadow="False">
+                <Label x:Name="ErrorLabel"
+                       TextColor="#C62828"
+                       FontSize="14" />
+            </Frame>
+
+            <!-- Extract Button -->
+            <Button x:Name="ExtractButton"
+                    Text="🪄 Extract Recipe"
+                    Clicked="OnExtractClicked"
+                    BackgroundColor="#4CAF50"
+                    TextColor="White"
+                    HeightRequest="50"
+                    CornerRadius="8"
+                    FontAttributes="Bold"
+                    FontSize="16"
+                    IsEnabled="False" />
+
+            <!-- Loading Indicator -->
+            <VerticalStackLayout x:Name="LoadingSection"
+                                 IsVisible="False"
+                                 Spacing="12"
+                                 HorizontalOptions="Center">
+                <ActivityIndicator IsRunning="True"
+                                   Color="#4CAF50"
+                                   HeightRequest="40"
+                                   WidthRequest="40" />
+                <Label Text="Analyzing recipe..."
+                       HorizontalOptions="Center"
+                       FontSize="14"
+                       TextColor="#666666" />
+                <Label Text="This may take a few seconds"
+                       HorizontalOptions="Center"
+                       FontSize="12"
+                       TextColor="#999999" />
+            </VerticalStackLayout>
+
+            <!-- Tips Section -->
+            <Frame Padding="12"
+                   BackgroundColor="#E3F2FD"
+                   BorderColor="#2196F3"
+                   CornerRadius="8"
+                   HasShadow="False"
+                   Margin="0,8,0,0">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="💡 Tips for best results:"
+                           FontAttributes="Bold"
+                           FontSize="14"
+                           TextColor="#1565C0" />
+                    <Label Text="• Use clear, well-lit photos"
+                           FontSize="12"
+                           TextColor="#1565C0" />
+                    <Label Text="• Include the full recipe in the image or text"
+                           FontSize="12"
+                           TextColor="#1565C0" />
+                    <Label Text="• URLs work best with structured recipe sites"
+                           FontSize="12"
+                           TextColor="#1565C0" />
+                </VerticalStackLayout>
+            </Frame>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

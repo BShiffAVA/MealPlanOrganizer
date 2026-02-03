@@ -37,6 +37,10 @@ public static class MauiProgram
 		builder.Services.AddHttpClient<RecipeService>();
 		builder.Services.AddSingleton<IRecipeService>(sp => sp.GetRequiredService<RecipeService>());
 
+		// Register pages for dependency injection
+		builder.Services.AddTransient<ExtractRecipePage>();
+		builder.Services.AddTransient<ExtractedRecipePreviewPage>();
+
 		// Configure logging
 		//var logPath = Path.Combine(FileSystem.CacheDirectory, "logs");
 		var logPath = "C:\\Logs";

@@ -16,4 +16,9 @@
         ContentTemplate="{DataTemplate local:AddRecipePage}"
         Route="AddRecipePage" />
 
+    <ShellContent
+        Title="Import Recipe"
+        ContentTemplate="{DataTemplate local:ExtractRecipePage}"
+        Route="ExtractRecipePage" />
+
 </Shell>

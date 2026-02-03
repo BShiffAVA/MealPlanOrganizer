@@ -19,6 +19,14 @@
                     SemanticProperties.HeadingLevel="Level2" />
             </VerticalStackLayout>
             <Button
+                Text="📷 Import"
+                Clicked="OnImportRecipeClicked"
+                BackgroundColor="#6C63FF"
+                TextColor="White"
+                VerticalOptions="End"
+                Padding="12,8"
+                CornerRadius="8" />
+            <Button
                 Text="+ Add"
                 Clicked="OnAddRecipeClicked"
                 BackgroundColor="#4CAF50"

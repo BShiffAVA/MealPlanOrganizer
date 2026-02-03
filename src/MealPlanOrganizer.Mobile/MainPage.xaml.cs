@@ -161,6 +161,11 @@ public partial class MainPage : ContentPage
 	{
 		await Navigation.PushAsync(new AddRecipePage());
 	}
+
+	private async void OnImportRecipeClicked(object? sender, EventArgs e)
+	{
+		await Shell.Current.GoToAsync(nameof(ExtractRecipePage));
+	}
 }
 
 public sealed class RecipeCard
