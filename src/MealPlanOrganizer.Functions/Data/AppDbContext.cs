@@ -25,6 +25,11 @@ namespace MealPlanOrganizer.Functions.Data
                 b.Property(x => x.CreatedBy).HasMaxLength(200);
                 b.Property(x => x.CreatedUtc).HasDefaultValueSql("GETUTCDATE()");
                 b.Property(x => x.UpdatedUtc).HasColumnType("datetime2");
+                
+                // GenAI extraction metadata
+                b.Property(x => x.IsExtracted).HasDefaultValue(false);
+                b.Property(x => x.SourceImageUrl).HasColumnType("nvarchar(max)");
+                b.Property(x => x.ExtractionConfidence).HasColumnType("decimal(3,2)");
             });
 
             modelBuilder.Entity<RecipeIngredient>(b =>
@@ -33,6 +38,8 @@ namespace MealPlanOrganizer.Functions.Data
                 b.HasKey(x => x.Id);
                 b.Property(x => x.Name).IsRequired().HasMaxLength(200);
                 b.Property(x => x.Quantity).HasMaxLength(100);
+                b.Property(x => x.QuantityValue).HasColumnType("decimal(10,4)");
+                b.Property(x => x.Unit).HasMaxLength(50);
                 b.HasOne(x => x.Recipe)
                     .WithMany(x => x.Ingredients)
                     .HasForeignKey(x => x.RecipeId)
