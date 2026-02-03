@@ -26,18 +26,6 @@
                        "storageAccountName":  {
                                                   "value":  "stmealplanorg"
                                               },
-                       "vnetName":  {
-                                        "value":  "vnet-mealplan-organizer"
-                                    },
-                       "subnetName":  {
-                                          "value":  "snet-private-endpoints"
-                                      },
-                       "sqlPrivateDnsZoneName":  {
-                                                     "value":  "privatelink.database.windows.net"
-                                                 },
-                       "blobPrivateDnsZoneName":  {
-                                                      "value":  "privatelink.blob.core.windows.net"
-                                                  },
                        "logAnalyticsWorkspaceName":  {
                                                          "value":  "log-mealplan-organizer"
                                                      },

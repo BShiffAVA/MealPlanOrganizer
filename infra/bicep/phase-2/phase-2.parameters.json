@@ -27,15 +27,6 @@
         "Region": "CanadaCentral"
       }
     },
-    "vnetName": {
-      "value": "vnet-mealplan-organizer"
-    },
-    "subnetName": {
-      "value": "snet-private-endpoints"
-    },
-    "privateDnsZoneName": {
-      "value": "privatelink.vaultcore.azure.net"
-    },
     "logAnalyticsWorkspaceName": {
       "value": "log-mealplan-organizer"
     }

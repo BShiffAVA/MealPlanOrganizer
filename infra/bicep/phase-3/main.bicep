@@ -36,18 +36,6 @@ param sqlDatabaseName string = 'MealPlanOrganizerDB'
 @description('Storage account name')
 param storageAccountName string = 'stmealplanorg'
 
-@description('VNet name from Phase 1')
-param vnetName string = 'vnet-mealplan-organizer'
-
-@description('Private endpoints subnet name from Phase 1')
-param subnetName string = 'snet-private-endpoints'
-
-@description('SQL Server private DNS zone name')
-param sqlPrivateDnsZoneName string = 'privatelink.database.windows.net'
-
-@description('Blob storage private DNS zone name')
-param blobPrivateDnsZoneName string = 'privatelink.blob.core.windows.net'
-
 @description('Log Analytics workspace name from Phase 1')
 param logAnalyticsWorkspaceName string = 'log-mealplan-organizer'
 
@@ -66,10 +54,6 @@ param tags object = {
 // ============================================================================
 var subscriptionId = subscription().subscriptionId
 var resourceGroupName = resourceGroup().name
-var vnetResourceId = '/subscriptions/${subscriptionId}/resourceGroups/${resourceGroupName}/providers/Microsoft.Network/virtualNetworks/${vnetName}'
-var privateEndpointSubnetId = '${vnetResourceId}/subnets/${subnetName}'
-var sqlPrivateDnsZoneId = '/subscriptions/${subscriptionId}/resourceGroups/${resourceGroupName}/providers/Microsoft.Network/privateDnsZones/${sqlPrivateDnsZoneName}'
-var blobPrivateDnsZoneId = '/subscriptions/${subscriptionId}/resourceGroups/${resourceGroupName}/providers/Microsoft.Network/privateDnsZones/${blobPrivateDnsZoneName}'
 var logAnalyticsWorkspaceId = '/subscriptions/${subscriptionId}/resourceGroups/${resourceGroupName}/providers/Microsoft.OperationalInsights/workspaces/${logAnalyticsWorkspaceName}'
 var keyVaultUri = 'https://${keyVaultName}.vault.azure.net/'
 var sqlServerFqdn = '${sqlServerName}.database.windows.net'
@@ -92,7 +76,7 @@ resource sqlServer 'Microsoft.Sql/servers@2023-08-01-preview' = {
     administratorLogin: sqlAdminLogin
     administratorLoginPassword: sqlAdminPassword
     minimalTlsVersion: '1.2'
-    publicNetworkAccess: 'Disabled'
+    publicNetworkAccess: 'Enabled'
   }
 }
 
@@ -113,42 +97,6 @@ resource sqlDatabase 'Microsoft.Sql/servers/databases@2023-08-01-preview' = {
   }
 }
 
-// SQL Server Private Endpoint
-resource sqlPrivateEndpoint 'Microsoft.Network/privateEndpoints@2024-05-01' = {
-  name: '${sqlServerName}-pep-${uniqueString(sqlServerName)}'
-  location: location
-  tags: tags
-  properties: {
-    subnet: {
-      id: privateEndpointSubnetId
-    }
-    privateLinkServiceConnections: [
-      {
-        name: '${sqlServerName}-plsc'
-        properties: {
-          privateLinkServiceId: sqlServer.id
-          groupIds: [ 'sqlServer' ]
-        }
-      }
-    ]
-  }
-}
-
-// SQL Server Private DNS Zone Group
-resource sqlPrivateDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2024-05-01' = {
-  parent: sqlPrivateEndpoint
-  name: 'default'
-  properties: {
-    privateDnsZoneConfigs: [
-      {
-        name: 'privatelink-database-windows-net'
-        properties: {
-          privateDnsZoneId: sqlPrivateDnsZoneId
-        }
-      }
-    ]
-  }
-}
 
 // SQL Server Diagnostic Settings
 resource sqlDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
@@ -194,10 +142,10 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2024-01-01' = {
     }
     minimumTlsVersion: 'TLS1_2'
     networkAcls: {
-      defaultAction: 'Deny'
+      defaultAction: 'Allow'
       bypass: 'AzureServices'
     }
-    publicNetworkAccess: 'Disabled'
+    publicNetworkAccess: 'Enabled'
     supportsHttpsTrafficOnly: true
   }
 }
@@ -253,42 +201,6 @@ resource storageLifecyclePolicy 'Microsoft.Storage/storageAccounts/managementPol
   }
 }
 
-// Storage Account Private Endpoint
-resource storagePrivateEndpoint 'Microsoft.Network/privateEndpoints@2024-05-01' = {
-  name: '${storageAccountName}-blob-pep-${uniqueString(storageAccountName)}'
-  location: location
-  tags: tags
-  properties: {
-    subnet: {
-      id: privateEndpointSubnetId
-    }
-    privateLinkServiceConnections: [
-      {
-        name: '${storageAccountName}-blob-plsc'
-        properties: {
-          privateLinkServiceId: storageAccount.id
-          groupIds: [ 'blob' ]
-        }
-      }
-    ]
-  }
-}
-
-// Storage Account Private DNS Zone Group
-resource storageBlobPrivateDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2024-05-01' = {
-  parent: storagePrivateEndpoint
-  name: 'default'
-  properties: {
-    privateDnsZoneConfigs: [
-      {
-        name: 'privatelink-blob-core-windows-net'
-        properties: {
-          privateDnsZoneId: blobPrivateDnsZoneId
-        }
-      }
-    ]
-  }
-}
 
 // Storage Account Diagnostic Settings
 resource storageDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {

@@ -31,15 +31,6 @@ param tags object = {
   Region: location
 }
 
-@description('Phase 1 - Virtual Network name')
-param vnetName string = 'vnet-mealplan-organizer'
-
-@description('Phase 1 - Private Endpoints subnet name')
-param subnetName string = 'snet-private-endpoints'
-
-@description('Phase 1 - Key Vault Private DNS Zone name')
-param privateDnsZoneName string = 'privatelink.vaultcore.azure.net'
-
 @description('Phase 1 - Log Analytics Workspace name')
 param logAnalyticsWorkspaceName string = 'log-mealplan-organizer'
 
@@ -50,11 +41,7 @@ param logAnalyticsWorkspaceName string = 'log-mealplan-organizer'
 var subscriptionId = subscription().subscriptionId
 var resourceGroupName = resourceGroup().name
 var keyVaultSkuName = 'standard'
-var privateEndpointName = '${keyVaultName}-pe'
 var diagnosticSettingsName = '${keyVaultName}-diag'
-var vnetResourceId = '/subscriptions/${subscriptionId}/resourceGroups/${resourceGroupName}/providers/Microsoft.Network/virtualNetworks/${vnetName}'
-var privateEndpointSubnetId = '${vnetResourceId}/subnets/${subnetName}'
-var keyVaultPrivateDnsZoneId = '/subscriptions/${subscriptionId}/resourceGroups/${resourceGroupName}/providers/Microsoft.Network/privateDnsZones/${privateDnsZoneName}'
 var logAnalyticsWorkspaceId = '/subscriptions/${subscriptionId}/resourceGroups/${resourceGroupName}/providers/Microsoft.OperationalInsights/workspaces/${logAnalyticsWorkspaceName}'
 
 // ============================================================================
@@ -76,56 +63,11 @@ resource keyVault 'Microsoft.KeyVault/vaults@2024-11-01' = {
     enableSoftDelete: true
     softDeleteRetentionInDays: 90
     enablePurgeProtection: enablePurgeProtection
-    publicNetworkAccess: 'Disabled'
+    publicNetworkAccess: 'Enabled'
     networkAcls: {
       bypass: 'AzureServices'
-      defaultAction: 'Deny'
+      defaultAction: 'Allow'
     }
-  }
-}
-
-// ============================================================================
-// RESOURCES: Private Endpoint for Key Vault (TASK-007)
-// ============================================================================
-
-resource privateEndpoint 'Microsoft.Network/privateEndpoints@2024-05-01' = {
-  name: privateEndpointName
-  location: location
-  tags: tags
-  properties: {
-    subnet: {
-      id: privateEndpointSubnetId
-    }
-    privateLinkServiceConnections: [
-      {
-        name: '${keyVaultName}-connection'
-        properties: {
-          privateLinkServiceId: keyVault.id
-          groupIds: [
-            'vault'
-          ]
-        }
-      }
-    ]
-  }
-}
-
-// ============================================================================
-// RESOURCES: Private DNS Zone Group for Key Vault (TASK-007)
-// ============================================================================
-
-resource privateDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2024-05-01' = {
-  parent: privateEndpoint
-  name: 'default'
-  properties: {
-    privateDnsZoneConfigs: [
-      {
-        name: 'keyvault-zone'
-        properties: {
-          privateDnsZoneId: keyVaultPrivateDnsZoneId
-        }
-      }
-    ]
   }
 }
 
@@ -165,9 +107,3 @@ output keyVaultName string = keyVault.name
 
 @description('Key Vault URI')
 output keyVaultUri string = keyVault.properties.vaultUri
-
-@description('Private Endpoint ID')
-output privateEndpointId string = privateEndpoint.id
-
-@description('Private Endpoint Name')
-output privateEndpointName string = privateEndpoint.name

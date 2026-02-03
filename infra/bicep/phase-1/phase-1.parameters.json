@@ -26,12 +26,6 @@
     "integrationSubnetPrefix": {
       "value": "10.0.2.0/24"
     },
-    "privateEndpointSubnetName": {
-      "value": "snet-private-endpoints"
-    },
-    "privateEndpointSubnetPrefix": {
-      "value": "10.0.1.0/24"
-    },
     "logAnalyticsRetentionDays": {
       "value": 30
     },
@@ -44,18 +38,6 @@
         "Phase": "1-Foundation-Networking",
         "Region": "CanadaCentral"
       }
-    },
-    "vnetLinkNameSql": {
-      "value": "sql-link"
-    },
-    "vnetLinkNameKeyVault": {
-      "value": "keyvault-link"
-    },
-    "vnetLinkNameBlob": {
-      "value": "blob-link"
-    },
-    "vnetLinkNameSignalR": {
-      "value": "signalr-link"
     }
   }
 }
