@@ -54,7 +54,6 @@ param tags object = {
 // ============================================================================
 var subscriptionId = subscription().subscriptionId
 var resourceGroupName = resourceGroup().name
-var logAnalyticsWorkspaceId = '/subscriptions/${subscriptionId}/resourceGroups/${resourceGroupName}/providers/Microsoft.OperationalInsights/workspaces/${logAnalyticsWorkspaceName}'
 var keyVaultUri = 'https://${keyVaultName}.vault.azure.net/'
 var sqlServerFqdn = '${sqlServerName}.database.windows.net'
 
@@ -103,7 +102,7 @@ resource sqlDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-previe
   name: '${sqlServerName}-diag'
   scope: sqlServer
   properties: {
-    workspaceId: logAnalyticsWorkspaceId
+    workspaceId: logAnalyticsWorkspace.id
     metrics: [
       {
         category: 'AllMetrics'
@@ -207,7 +206,7 @@ resource storageDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-pr
   name: '${storageAccountName}-diag'
   scope: blobServices
   properties: {
-    workspaceId: logAnalyticsWorkspaceId
+    workspaceId: logAnalyticsWorkspace.id
     logs: [
       { category: 'StorageRead', enabled: true }
       { category: 'StorageWrite', enabled: true }
@@ -220,8 +219,12 @@ resource storageDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-pr
 }
 
 // ============================================================================
-// Key Vault Reference and Secrets
+// Existing Resources References (from previous phases)
 // ============================================================================
+resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2025-02-01' existing = {
+  name: logAnalyticsWorkspaceName
+}
+
 resource keyVault 'Microsoft.KeyVault/vaults@2024-11-01' existing = {
   name: keyVaultName
 }
