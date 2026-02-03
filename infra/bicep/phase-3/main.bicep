@@ -60,10 +60,8 @@ var sqlServerFqdn = '${sqlServerName}.database.windows.net'
 // ============================================================================
 // SQL Server
 // ============================================================================
-// Note: SQL Server is configured with SQL authentication (administrator login).
-// To enable Azure AD-only authentication after deployment:
-// 1. Run: az sql server ad-admin create --resource-group rg-mealplan-organizer --server-name sql-mealplan-organizer --display-name mealplan-sql-admin --object-id <service-principal-id>
-// 2. Then disable SQL authentication: az sql server update --resource-group rg-mealplan-organizer --name sql-mealplan-organizer --enable-ad-only-auth
+// Note: SQL Server is configured with Azure AD-only authentication.
+// SQL password authentication is disabled for security.
 resource sqlServer 'Microsoft.Sql/servers@2023-08-01-preview' = {
   name: sqlServerName
   location: location
@@ -76,6 +74,17 @@ resource sqlServer 'Microsoft.Sql/servers@2023-08-01-preview' = {
     administratorLoginPassword: sqlAdminPassword
     minimalTlsVersion: '1.2'
     publicNetworkAccess: 'Enabled'
+    restrictOutboundNetworkAccess: 'Disabled'
+    isIPv6Enabled: false
+  }
+}
+
+// Enable Azure AD-only authentication (disable SQL auth)
+resource sqlServerAzureAdOnly 'Microsoft.Sql/servers/azureADOnlyAuthentications@2023-08-01-preview' = {
+  parent: sqlServer
+  name: 'default'
+  properties: {
+    azureADOnlyAuthentication: true
   }
 }
 
