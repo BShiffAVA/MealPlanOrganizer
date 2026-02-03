@@ -153,14 +153,23 @@ public class GetRecipeById
 
         // Use user delegation SAS when using Azure AD (managed identity)
         var startsOn = DateTimeOffset.UtcNow.AddMinutes(-5);
-        var expiresOn = DateTimeOffset.UtcNow.Add(expiry);
+        var requestedExpiresOn = DateTimeOffset.UtcNow.Add(expiry);
+        var maxExpiresOn = DateTimeOffset.UtcNow.AddDays(7);
+        var expiresOn = requestedExpiresOn > maxExpiresOn ? maxExpiresOn : requestedExpiresOn;
+
         var delegationKey = await _blobServiceClient.GetUserDelegationKeyAsync(startsOn, expiresOn);
 
-        var sasBuilderWithDelegation = new BlobSasBuilder(permissions, expiresOn)
+        var sasBuilderWithDelegation = new BlobSasBuilder
         {
             BlobContainerName = blobClient.BlobContainerName,
-            BlobName = blobClient.Name
+            BlobName = blobClient.Name,
+            Resource = "b",
+            StartsOn = startsOn,
+            ExpiresOn = expiresOn,
+            Protocol = SasProtocol.Https
         };
+
+        sasBuilderWithDelegation.SetPermissions(permissions);
 
         var sasToken = sasBuilderWithDelegation
             .ToSasQueryParameters(delegationKey.Value, _blobServiceClient.AccountName)

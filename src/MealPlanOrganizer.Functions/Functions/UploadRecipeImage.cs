@@ -5,7 +5,6 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Azure;
 using Azure.Storage.Blobs;
-using Azure.Storage.Sas;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
@@ -200,14 +199,13 @@ namespace MealPlanOrganizer.Functions.Functions
                     return errResp;
                 }
 
-                // Generate SAS URL (valid for 365 days)
+                // Store plain blob URL; SAS will be generated on GET
                 try
                 {
                     var blobClient = _containerClient.GetBlobClient(blobName);
-                    var sasUri = await GenerateSasUrlAsync(blobClient, BlobSasPermissions.Read, TimeSpan.FromDays(365));
-                    _logger.LogInformation("Generated SAS URL for blob: {BlobName}", blobName);
+                    var blobUrl = blobClient.Uri.ToString();
 
-                    // Update recipe with SAS URL
+                    // Update recipe with blob URL
                     var recipe = await _context.Recipes.FirstOrDefaultAsync(r => r.Id == recipeGuid);
                     if (recipe == null)
                     {
@@ -217,31 +215,31 @@ namespace MealPlanOrganizer.Functions.Functions
                         return notFound;
                     }
 
-                    recipe.ImageUrl = sasUri;
+                    recipe.ImageUrl = blobUrl;
                     recipe.UpdatedUtc = DateTime.UtcNow;
                     await _context.SaveChangesAsync();
 
-                    // Return response with image URL
+                    // Return response with blob URL
                     var response = req.CreateResponse(HttpStatusCode.OK);
                     response.Headers.Add("Content-Type", "application/json");
                     await response.WriteStringAsync(JsonSerializer.Serialize(new
                     {
-                        imageUrl = sasUri,
+                        imageUrl = blobUrl,
                         blobName = blobName
                     }));
 
                     return response;
                 }
-                catch (Exception sasEx)
+                catch (Exception urlEx)
                 {
-                    _logger.LogError(sasEx, "Error generating SAS URL. Exception type: {ExceptionType}, Message: {Message}", 
-                        sasEx.GetType().Name, sasEx.Message);
-                    
+                    _logger.LogError(urlEx, "Error storing blob URL. Exception type: {ExceptionType}, Message: {Message}",
+                        urlEx.GetType().Name, urlEx.Message);
+
                     var errResp = req.CreateResponse(HttpStatusCode.InternalServerError);
-                    await errResp.WriteStringAsync(JsonSerializer.Serialize(new 
-                    { 
-                        error = "File uploaded but SAS URL generation failed",
-                        details = sasEx.Message
+                    await errResp.WriteStringAsync(JsonSerializer.Serialize(new
+                    {
+                        error = "File uploaded but storing blob URL failed",
+                        details = urlEx.Message
                     }));
                     return errResp;
                 }
@@ -358,38 +356,7 @@ namespace MealPlanOrganizer.Functions.Functions
             return -1;
         }
 
-        private async Task<string> GenerateSasUrlAsync(BlobClient blobClient, BlobSasPermissions permissions, TimeSpan expiry)
-        {
-            // Generate SAS URL using the blob client's credentials
-            if (blobClient.CanGenerateSasUri)
-            {
-                var sasBuilder = new BlobSasBuilder(permissions, DateTimeOffset.UtcNow.Add(expiry))
-                {
-                    BlobContainerName = blobClient.BlobContainerName,
-                    BlobName = blobClient.Name
-                };
-
-                var sasUri = blobClient.GenerateSasUri(sasBuilder);
-                return sasUri.ToString();
-            }
-
-            // Use user delegation SAS when using Azure AD (managed identity)
-            var startsOn = DateTimeOffset.UtcNow.AddMinutes(-5);
-            var expiresOn = DateTimeOffset.UtcNow.Add(expiry);
-            var delegationKey = await _blobServiceClient.GetUserDelegationKeyAsync(startsOn, expiresOn);
-
-            var sasBuilderWithDelegation = new BlobSasBuilder(permissions, expiresOn)
-            {
-                BlobContainerName = blobClient.BlobContainerName,
-                BlobName = blobClient.Name
-            };
-
-            var sasToken = sasBuilderWithDelegation
-                .ToSasQueryParameters(delegationKey.Value, _blobServiceClient.AccountName)
-                .ToString();
-
-            return $"{blobClient.Uri}?{sasToken}";
-        }
+        // SAS generation is handled on GET to avoid short-lived URLs at upload time.
     }
 }
 
