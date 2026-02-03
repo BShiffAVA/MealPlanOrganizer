@@ -24,52 +24,50 @@ builder.Services.AddDbContext<AppDbContext>((sp, options) =>
     options.UseSqlServer(cs);
 });
 
-// Configure Azure Blob Storage client
+// Configure Azure Blob Storage clients
 // For local development: uses connection string (BlobStorage:ConnectionString)
 // For Azure: uses Managed Identity (DefaultAzureCredential)
 builder.Services.AddSingleton(sp =>
 {
     var cfg = sp.GetRequiredService<IConfiguration>();
     var connectionString = cfg["BlobStorage:ConnectionString"];
-    var containerName = cfg["BlobStorage:ContainerName"];
     var storageAccountName = cfg["StorageAccountName"];
-    
+
+    if (!string.IsNullOrWhiteSpace(connectionString) && connectionString.Contains("UseDevelopmentStorage"))
+    {
+        return new BlobServiceClient(connectionString);
+    }
+
+    if (!string.IsNullOrWhiteSpace(storageAccountName))
+    {
+        var blobServiceUri = new Uri($"https://{storageAccountName}.blob.core.windows.net");
+        var credentialOptions = new DefaultAzureCredentialOptions
+        {
+            ExcludeInteractiveBrowserCredential = true
+        };
+
+        return new BlobServiceClient(blobServiceUri, new DefaultAzureCredential(credentialOptions));
+    }
+
+    throw new InvalidOperationException(
+        "No blob storage configuration found. " +
+        "For local: set BlobStorage:ConnectionString. For Azure: set StorageAccountName.");
+});
+
+builder.Services.AddSingleton(sp =>
+{
+    var cfg = sp.GetRequiredService<IConfiguration>();
+    var containerName = cfg["BlobStorage:ContainerName"];
+
     if (string.IsNullOrWhiteSpace(containerName))
     {
         throw new InvalidOperationException(
             "BlobStorage:ContainerName is not configured. " +
             "Please add this setting to configuration.");
     }
-    
-    BlobContainerClient containerClient;
-    
-    // Check if we're in local development (connection string with UseDevelopmentStorage)
-    if (!string.IsNullOrWhiteSpace(connectionString) && connectionString.Contains("UseDevelopmentStorage"))
-    {
-        // Local development: use connection string
-        var blobServiceClient = new BlobServiceClient(connectionString);
-        containerClient = blobServiceClient.GetBlobContainerClient(containerName);
-    }
-    else if (!string.IsNullOrWhiteSpace(storageAccountName))
-    {
-        // Azure deployment: use Managed Identity
-        var blobServiceUri = new Uri($"https://{storageAccountName}.blob.core.windows.net");
-        var credentialOptions = new DefaultAzureCredentialOptions
-        {
-            ExcludeInteractiveBrowserCredential = true
-        };
-        
-        var blobServiceClient = new BlobServiceClient(blobServiceUri, new DefaultAzureCredential(credentialOptions));
-        containerClient = blobServiceClient.GetBlobContainerClient(containerName);
-    }
-    else
-    {
-        throw new InvalidOperationException(
-            "No blob storage configuration found. " +
-            "For local: set BlobStorage:ConnectionString. For Azure: set StorageAccountName.");
-    }
-    
-    return containerClient;
+
+    var blobServiceClient = sp.GetRequiredService<BlobServiceClient>();
+    return blobServiceClient.GetBlobContainerClient(containerName);
 });
 var app = builder.Build();
 

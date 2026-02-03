@@ -1,4 +1,7 @@
+using System;
 using System.Net;
+using Azure.Storage.Blobs;
+using Azure.Storage.Sas;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.EntityFrameworkCore;
@@ -11,11 +14,19 @@ public class GetRecipeById
 {
     private readonly ILogger<GetRecipeById> _logger;
     private readonly AppDbContext _context;
+    private readonly BlobContainerClient _containerClient;
+    private readonly BlobServiceClient _blobServiceClient;
 
-    public GetRecipeById(ILogger<GetRecipeById> logger, AppDbContext context)
+    public GetRecipeById(
+        ILogger<GetRecipeById> logger,
+        AppDbContext context,
+        BlobContainerClient containerClient,
+        BlobServiceClient blobServiceClient)
     {
         _logger = logger;
         _context = context;
+        _containerClient = containerClient;
+        _blobServiceClient = blobServiceClient;
     }
 
     [Function("GetRecipeById")]
@@ -39,6 +50,7 @@ public class GetRecipeById
             return notFoundResponse;
         }
 
+        var imageUrl = await NormalizeImageUrlAsync(recipe.ImageUrl);
         var response = req.CreateResponse(HttpStatusCode.OK);
         await response.WriteAsJsonAsync(new
         {
@@ -49,11 +61,11 @@ public class GetRecipeById
             prepTimeMinutes = recipe.PrepTimeMinutes,
             cookTimeMinutes = recipe.CookTimeMinutes,
             servings = recipe.Servings,
-            imageUrl = recipe.ImageUrl,
+            imageUrl = imageUrl,
             createdBy = recipe.CreatedBy,
             createdUtc = recipe.CreatedUtc,
-                        averageRating = recipe.Ratings.Count > 0 ? recipe.Ratings.Average(r => r.Rating) : 0.0,
-                        ratingCount = recipe.Ratings.Count,
+            averageRating = recipe.Ratings.Count > 0 ? recipe.Ratings.Average(r => r.Rating) : 0.0,
+            ratingCount = recipe.Ratings.Count,
             ratings = recipe.Ratings
                 .OrderByDescending(r => r.RatedUtc)
                 .Select(r => new
@@ -77,5 +89,83 @@ public class GetRecipeById
         });
 
         return response;
+    }
+
+    private async Task<string?> NormalizeImageUrlAsync(string? imageUrl)
+    {
+        if (string.IsNullOrWhiteSpace(imageUrl))
+        {
+            return null;
+        }
+
+        var trimmed = imageUrl.Trim().Trim('"');
+
+        // If it already has a SAS token, return as-is
+        if (trimmed.Contains("sig=", StringComparison.OrdinalIgnoreCase))
+        {
+            return trimmed;
+        }
+
+        // Try to extract blob name from a full URL
+        if (Uri.TryCreate(trimmed, UriKind.Absolute, out var uri))
+        {
+            var blobNameFromUrl = ExtractBlobName(uri);
+            if (!string.IsNullOrWhiteSpace(blobNameFromUrl))
+            {
+                var blobClient = _containerClient.GetBlobClient(blobNameFromUrl);
+                return await GenerateSasUrlAsync(blobClient, BlobSasPermissions.Read, TimeSpan.FromDays(30));
+            }
+
+            return trimmed;
+        }
+
+        // If it's already a blob name, generate SAS
+        var blobClientFromName = _containerClient.GetBlobClient(trimmed);
+        return await GenerateSasUrlAsync(blobClientFromName, BlobSasPermissions.Read, TimeSpan.FromDays(30));
+    }
+
+    private string? ExtractBlobName(Uri uri)
+    {
+        var path = uri.AbsolutePath.TrimStart('/');
+        var containerPrefix = _containerClient.Name + "/";
+
+        if (path.StartsWith(containerPrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return path.Substring(containerPrefix.Length);
+        }
+
+        return null;
+    }
+
+    private async Task<string> GenerateSasUrlAsync(BlobClient blobClient, BlobSasPermissions permissions, TimeSpan expiry)
+    {
+        if (blobClient.CanGenerateSasUri)
+        {
+            var sasBuilder = new BlobSasBuilder(permissions, DateTimeOffset.UtcNow.Add(expiry))
+            {
+                BlobContainerName = blobClient.BlobContainerName,
+                BlobName = blobClient.Name
+            };
+
+            var sasUri = blobClient.GenerateSasUri(sasBuilder);
+            return sasUri.ToString();
+        }
+
+        // Use user delegation SAS when using Azure AD (managed identity)
+        var startsOn = DateTimeOffset.UtcNow.AddMinutes(-5);
+        var expiresOn = DateTimeOffset.UtcNow.Add(expiry);
+        var delegationKey = await _blobServiceClient.GetUserDelegationKeyAsync(startsOn, expiresOn);
+
+        var sasBuilderWithDelegation = new BlobSasBuilder(permissions, expiresOn)
+        {
+            BlobContainerName = blobClient.BlobContainerName,
+            BlobName = blobClient.Name
+        };
+
+        var sasToken = sasBuilderWithDelegation
+            .ToSasQueryParameters(delegationKey.Value, _blobServiceClient.AccountName)
+            .ToString();
+
+        return $"{blobClient.Uri}?{sasToken}";
     }
 }
