@@ -65,10 +65,11 @@ public class AuthenticationHelper
 
             var userId = _jwtValidationService.GetUserId(principal);
             var email = _jwtValidationService.GetUserEmail(principal);
+            var displayName = _jwtValidationService.GetUserDisplayName(principal);
             
-            _logger.LogInformation("Request authenticated. UserId: {UserId}, Email: {Email}", userId, email);
+            _logger.LogInformation("Request authenticated. UserId: {UserId}, Email: {Email}, DisplayName: {DisplayName}", userId, email, displayName);
             
-            return AuthenticationResult.Success(principal, userId, email);
+            return AuthenticationResult.Success(principal, userId, email, displayName);
         }
         catch (Exception ex)
         {
@@ -103,11 +104,12 @@ public class AuthenticationResult
     public ClaimsPrincipal? Principal { get; private set; }
     public string? UserId { get; private set; }
     public string? UserEmail { get; private set; }
+    public string? UserDisplayName { get; private set; }
     public string? ErrorMessage { get; private set; }
 
     private AuthenticationResult() { }
 
-    public static AuthenticationResult Success(ClaimsPrincipal principal, string? userId, string? email)
+    public static AuthenticationResult Success(ClaimsPrincipal principal, string? userId, string? email, string? displayName)
     {
         return new AuthenticationResult
         {
@@ -115,7 +117,8 @@ public class AuthenticationResult
             HasToken = true,
             Principal = principal,
             UserId = userId,
-            UserEmail = email
+            UserEmail = email,
+            UserDisplayName = displayName
         };
     }
 

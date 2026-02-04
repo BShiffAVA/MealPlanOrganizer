@@ -32,7 +32,7 @@ namespace MealPlanOrganizer.Functions.Functions
         {
             _logger.LogInformation("Received CreateRecipe request");
             String? userId;
-            String? userEmail;
+            String? userDisplayName;
 
             // Authenticate the request
             try
@@ -46,8 +46,8 @@ namespace MealPlanOrganizer.Functions.Functions
                     return unauthorized;
                 }
                 userId = authResult.UserId ?? "anonymous";
-                userEmail = authResult.UserEmail;
-                _logger.LogInformation("Authenticated user: {UserId}, Email: {Email}", userId, userEmail);
+                userDisplayName = authResult.UserDisplayName ?? authResult.UserEmail;
+                _logger.LogInformation("Authenticated user: {UserId}, DisplayName: {DisplayName}", userId, userDisplayName);
             }
             catch (Exception ex)
             {
@@ -88,7 +88,7 @@ namespace MealPlanOrganizer.Functions.Functions
                     CookTimeMinutes = model.CookTimeMinutes,
                     Servings = model.Servings,
                     ImageUrl = string.IsNullOrWhiteSpace(model.ImageUrl) ? null : model.ImageUrl!.Trim(),
-                    CreatedBy = userEmail ?? userId // Use authenticated user's email or ID
+                    CreatedBy = userDisplayName ?? userId // Use authenticated user's display name or ID
                 };
 
                 if (model.Ingredients != null && model.Ingredients.Any())
