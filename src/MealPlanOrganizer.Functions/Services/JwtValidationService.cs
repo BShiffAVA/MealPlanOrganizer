@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 using System.Security.Claims;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -59,10 +61,24 @@ public class JwtValidationService : IJwtValidationService
 
         // Set up OpenID Connect configuration manager for automatic key refresh
         var metadataAddress = $"{authority}/.well-known/openid-configuration";
+        _logger.LogInformation("OIDC metadata address: {MetadataAddress}", metadataAddress);
+        
         _configurationManager = new ConfigurationManager<OpenIdConnectConfiguration>(
             metadataAddress,
             new OpenIdConnectConfigurationRetriever(),
             new HttpDocumentRetriever());
+
+        // Build valid issuers list - handle both config notations
+        var tenantNameForIssuers = configuration["AzureAd__TenantName"] ?? configuration["AzureAd:TenantName"];
+        var validIssuers = new List<string> { authority };
+        
+        if (!string.IsNullOrEmpty(tenantNameForIssuers))
+        {
+            validIssuers.Add($"https://{tenantNameForIssuers}.ciamlogin.com/{_tenantId}/v2.0");
+        }
+        validIssuers.Add($"https://login.microsoftonline.com/{_tenantId}/v2.0");
+        
+        _logger.LogInformation("Valid issuers configured: {Issuers}", string.Join(", ", validIssuers));
 
         _tokenValidationParameters = new TokenValidationParameters
         {
@@ -71,13 +87,7 @@ public class JwtValidationService : IJwtValidationService
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
             ValidAudience = _clientId,
-            // For External ID, the issuer format can vary
-            ValidIssuers = new[]
-            {
-                $"https://{configuration["AzureAd:TenantName"]}.ciamlogin.com/{_tenantId}/v2.0",
-                $"https://login.microsoftonline.com/{_tenantId}/v2.0",
-                authority
-            },
+            ValidIssuers = validIssuers,
             ClockSkew = TimeSpan.FromMinutes(5)
         };
     }
@@ -95,8 +105,19 @@ public class JwtValidationService : IJwtValidationService
             // Get the OpenID Connect configuration (includes signing keys)
             var config = await _configurationManager.GetConfigurationAsync(CancellationToken.None);
             
+            _logger.LogDebug("OIDC config loaded. Issuer: {Issuer}, SigningKeys count: {KeyCount}", 
+                config.Issuer, config.SigningKeys?.Count() ?? 0);
+            
             var validationParameters = _tokenValidationParameters.Clone();
             validationParameters.IssuerSigningKeys = config.SigningKeys;
+            
+            // Also add the issuer from the configuration as valid
+            var validIssuers = validationParameters.ValidIssuers?.ToList() ?? new List<string>();
+            if (!string.IsNullOrEmpty(config.Issuer) && !validIssuers.Contains(config.Issuer))
+            {
+                validIssuers.Add(config.Issuer);
+                validationParameters.ValidIssuers = validIssuers;
+            }
 
             var tokenHandler = new JwtSecurityTokenHandler();
             var principal = tokenHandler.ValidateToken(token, validationParameters, out var validatedToken);

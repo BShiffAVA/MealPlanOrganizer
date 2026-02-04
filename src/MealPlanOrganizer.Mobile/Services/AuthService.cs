@@ -58,8 +58,79 @@ public class AuthService : IAuthService
 
         _msalClient = builder.Build();
 
+#if WINDOWS
+        // Configure persistent token cache for Windows using file-based storage
+        // This ensures tokens persist across app restarts
+        ConfigureWindowsTokenCache();
+#endif
+
         _logger.LogInformation("AuthService initialized with authority: {Authority}", authority);
     }
+
+#if WINDOWS
+    /// <summary>
+    /// Configures persistent token cache for Windows using encrypted file storage.
+    /// Tokens are stored in the user's local app data folder.
+    /// </summary>
+    private void ConfigureWindowsTokenCache()
+    {
+        try
+        {
+            var cacheFilePath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "MealPlanOrganizer",
+                "msalcache.bin"
+            );
+
+            var cacheDirectory = Path.GetDirectoryName(cacheFilePath);
+            if (!Directory.Exists(cacheDirectory))
+            {
+                Directory.CreateDirectory(cacheDirectory!);
+            }
+
+            // Hook up cache serialization for before/after cache access
+            _msalClient.UserTokenCache.SetBeforeAccess(notificationArgs =>
+            {
+                try
+                {
+                    if (File.Exists(cacheFilePath))
+                    {
+                        var cacheData = File.ReadAllBytes(cacheFilePath);
+                        notificationArgs.TokenCache.DeserializeMsalV3(cacheData);
+                        _logger.LogDebug("Token cache loaded from disk");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to read token cache from disk");
+                }
+            });
+
+            _msalClient.UserTokenCache.SetAfterAccess(notificationArgs =>
+            {
+                try
+                {
+                    if (notificationArgs.HasStateChanged)
+                    {
+                        var cacheData = notificationArgs.TokenCache.SerializeMsalV3();
+                        File.WriteAllBytes(cacheFilePath, cacheData);
+                        _logger.LogDebug("Token cache saved to disk");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to write token cache to disk");
+                }
+            });
+
+            _logger.LogInformation("Windows token cache configured at: {CacheFilePath}", cacheFilePath);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to configure Windows token cache");
+        }
+    }
+#endif
 
     private void MsalLogCallback(Microsoft.Identity.Client.LogLevel level, string message, bool containsPii)
     {

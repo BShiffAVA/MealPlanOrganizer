@@ -31,20 +31,31 @@ namespace MealPlanOrganizer.Functions.Functions
             [HttpTrigger(AuthorizationLevel.Function, "post", Route = "recipes")] HttpRequestData req)
         {
             _logger.LogInformation("Received CreateRecipe request");
+            String? userId;
+            String? userEmail;
 
             // Authenticate the request
-            var authResult = await _authHelper.AuthenticateAsync(req);
-            if (!authResult.IsAuthenticated)
+            try
             {
-                _logger.LogWarning("Authentication failed: {Error}", authResult.ErrorMessage);
-                var unauthorized = req.CreateResponse(HttpStatusCode.Unauthorized);
-                await unauthorized.WriteStringAsync(authResult.ErrorMessage ?? "Unauthorized");
-                return unauthorized;
+                var authResult = await _authHelper.AuthenticateAsync(req);
+                if (!authResult.IsAuthenticated)
+                {
+                    _logger.LogWarning("Authentication failed: {Error}", authResult.ErrorMessage);
+                    var unauthorized = req.CreateResponse(HttpStatusCode.Unauthorized);
+                    await unauthorized.WriteStringAsync(authResult.ErrorMessage ?? "Unauthorized");
+                    return unauthorized;
+                }
+                userId = authResult.UserId ?? "anonymous";
+                userEmail = authResult.UserEmail;
+                _logger.LogInformation("Authenticated user: {UserId}, Email: {Email}", userId, userEmail);
             }
-
-            var userId = authResult.UserId ?? "anonymous";
-            var userEmail = authResult.UserEmail;
-            _logger.LogInformation("Authenticated user: {UserId}, Email: {Email}", userId, userEmail);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Exception during authentication");
+                var error = req.CreateResponse(HttpStatusCode.Unauthorized);
+                await error.WriteStringAsync($"Authentication error: {ex.Message}");
+                return error;
+            }
 
             // Read request body (stub - validation/parsing only)
             var body = await req.ReadAsStringAsync();

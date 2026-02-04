@@ -54,19 +54,27 @@ public class AuthenticationHelper
         }
 
         // Validate the token
-        var principal = await _jwtValidationService.ValidateTokenAsync(token);
-        if (principal == null)
+        try
         {
-            _logger.LogWarning("Token validation failed");
-            return AuthenticationResult.InvalidToken("Token validation failed");
-        }
+            var principal = await _jwtValidationService.ValidateTokenAsync(token);
+            if (principal == null)
+            {
+                _logger.LogWarning("Token validation failed");
+                return AuthenticationResult.InvalidToken("Token validation failed");
+            }
 
-        var userId = _jwtValidationService.GetUserId(principal);
-        var email = _jwtValidationService.GetUserEmail(principal);
-        
-        _logger.LogInformation("Request authenticated. UserId: {UserId}, Email: {Email}", userId, email);
-        
-        return AuthenticationResult.Success(principal, userId, email);
+            var userId = _jwtValidationService.GetUserId(principal);
+            var email = _jwtValidationService.GetUserEmail(principal);
+            
+            _logger.LogInformation("Request authenticated. UserId: {UserId}, Email: {Email}", userId, email);
+            
+            return AuthenticationResult.Success(principal, userId, email);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception during token validation");
+            return AuthenticationResult.InvalidToken($"Token validation error: {ex.Message}");
+        }
     }
 
     /// <summary>
