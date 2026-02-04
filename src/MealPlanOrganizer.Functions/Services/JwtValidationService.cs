@@ -75,8 +75,12 @@ public class JwtValidationService : IJwtValidationService
         if (!string.IsNullOrEmpty(tenantNameForIssuers))
         {
             validIssuers.Add($"https://{tenantNameForIssuers}.ciamlogin.com/{_tenantId}/v2.0");
+            // Also add the issuer format used by the CIAM OIDC config
+            validIssuers.Add($"https://{_tenantId}.ciamlogin.com/{_tenantId}/v2.0");
         }
         validIssuers.Add($"https://login.microsoftonline.com/{_tenantId}/v2.0");
+        // Add the sts.windows.net issuer format (used by some tokens)
+        validIssuers.Add($"https://sts.windows.net/{_tenantId}/");
         
         _logger.LogInformation("Valid issuers configured: {Issuers}", string.Join(", ", validIssuers));
 
