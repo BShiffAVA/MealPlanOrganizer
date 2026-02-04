@@ -34,5 +34,26 @@
 	</array>
 	<key>XSAppIconAssets</key>
 	<string>Assets.xcassets/appicon.appiconset</string>
+	<!-- MSAL authentication callback URL scheme -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.companyname.mealplanorganizer.mobile</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>msal8d3adb68-f2c6-474b-a96b-375a30cacd8a</string>
+			</array>
+		</dict>
+	</array>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>msauthv2</string>
+		<string>msauthv3</string>
+	</array>
+	<key>KeychainAccessGroups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)com.companyname.mealplanorganizer.mobile</string>
+	</array>
 </dict>
 </plist>

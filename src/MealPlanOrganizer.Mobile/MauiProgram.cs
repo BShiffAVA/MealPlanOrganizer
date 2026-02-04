@@ -37,7 +37,11 @@ public static class MauiProgram
 		builder.Services.AddHttpClient<RecipeService>();
 		builder.Services.AddSingleton<IRecipeService>(sp => sp.GetRequiredService<RecipeService>());
 
+		// Register authentication service
+		builder.Services.AddSingleton<IAuthService, AuthService>();
+
 		// Register pages for dependency injection
+		builder.Services.AddTransient<LoginPage>();
 		builder.Services.AddTransient<ExtractRecipePage>();
 		builder.Services.AddTransient<ExtractedRecipePreviewPage>();
 

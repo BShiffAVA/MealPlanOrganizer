@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text;
+using System.Net.Http.Headers;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using MealPlanOrganizer.Mobile.Services;
@@ -9,16 +10,44 @@ namespace MealPlanOrganizer.Mobile.Services;
 public class RecipeService : IRecipeService
 {
     private readonly HttpClient _httpClient;
+    private readonly IAuthService _authService;
     private readonly ILogger<RecipeService> _logger;
     private readonly string _baseUrl;
     private readonly string _functionKey;
 
-    public RecipeService(HttpClient httpClient, ILogger<RecipeService> logger, IConfiguration configuration)
+    public RecipeService(HttpClient httpClient, IAuthService authService, ILogger<RecipeService> logger, IConfiguration configuration)
     {
         _httpClient = httpClient;
+        _authService = authService;
         _logger = logger;
         _baseUrl = configuration["AzureFunctions:BaseUrl"] ?? throw new InvalidOperationException("AzureFunctions:BaseUrl not configured");
         _functionKey = configuration["AzureFunctions:FunctionKey"] ?? throw new InvalidOperationException("AzureFunctions:FunctionKey not configured");
+    }
+
+    /// <summary>
+    /// Attaches the Bearer token to the HTTP client for authenticated requests.
+    /// </summary>
+    private async Task AttachBearerTokenAsync()
+    {
+        try
+        {
+            var accessToken = await _authService.GetAccessTokenAsync();
+            if (!string.IsNullOrEmpty(accessToken))
+            {
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                _logger.LogDebug("Bearer token attached to request");
+            }
+            else
+            {
+                _logger.LogWarning("No access token available - request will be unauthenticated");
+                _httpClient.DefaultRequestHeaders.Authorization = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to attach Bearer token");
+            _httpClient.DefaultRequestHeaders.Authorization = null;
+        }
     }
 
     public async Task<List<RecipeDto>> GetRecipesAsync()
@@ -26,6 +55,8 @@ public class RecipeService : IRecipeService
         try
         {
             _logger.LogInformation("Fetching recipes from Azure Functions");
+
+            await AttachBearerTokenAsync();
 
             var url = $"{_baseUrl}/recipes?code={_functionKey}";
             var response = await _httpClient.GetAsync(url);
@@ -55,6 +86,8 @@ public class RecipeService : IRecipeService
         try
         {
             _logger.LogInformation("Fetching recipe details for ID: {RecipeId}", id);
+
+            await AttachBearerTokenAsync();
 
             var url = $"{_baseUrl}/recipes/{id}?code={_functionKey}";
             var response = await _httpClient.GetAsync(url);
@@ -91,6 +124,8 @@ public class RecipeService : IRecipeService
         {
             _logger.LogInformation("Updating recipe: {RecipeId}", recipeId);
 
+            await AttachBearerTokenAsync();
+
             var url = $"{_baseUrl}/recipes/{recipeId}?code={_functionKey}";
             var json = JsonSerializer.Serialize(recipe);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
@@ -120,6 +155,8 @@ public class RecipeService : IRecipeService
         try
         {
             _logger.LogInformation("Creating new recipe: {Title}", recipe.Title);
+
+            await AttachBearerTokenAsync();
 
             var url = $"{_baseUrl}/recipes?code={_functionKey}";
             var json = JsonSerializer.Serialize(recipe);
@@ -169,6 +206,8 @@ public class RecipeService : IRecipeService
                 _logger.LogWarning("Photo is null");
                 return null;
             }
+
+            await AttachBearerTokenAsync();
 
             var url = $"{_baseUrl}/recipes/{recipeId}/upload-image?code={_functionKey}";
             _logger.LogInformation("Upload URL: {Url}", url);
@@ -238,6 +277,8 @@ public class RecipeService : IRecipeService
         try
         {
             _logger.LogInformation("Extracting recipe via GenAI. InputType: {InputType}", request.InputType);
+
+            await AttachBearerTokenAsync();
 
             var url = $"{_baseUrl}/recipes/extract?code={_functionKey}";
 

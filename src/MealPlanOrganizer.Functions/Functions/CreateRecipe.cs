@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using MealPlanOrganizer.Functions.Data;
 using MealPlanOrganizer.Functions.Data.Entities;
+using MealPlanOrganizer.Functions.Services;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.EntityFrameworkCore;
@@ -16,11 +17,13 @@ namespace MealPlanOrganizer.Functions.Functions
     {
         private readonly ILogger _logger;
         private readonly AppDbContext _db;
+        private readonly AuthenticationHelper _authHelper;
 
-        public CreateRecipe(ILoggerFactory loggerFactory, AppDbContext db)
+        public CreateRecipe(ILoggerFactory loggerFactory, AppDbContext db, AuthenticationHelper authHelper)
         {
             _logger = loggerFactory.CreateLogger<CreateRecipe>();
             _db = db;
+            _authHelper = authHelper;
         }
 
         [Function("CreateRecipe")]
@@ -28,6 +31,20 @@ namespace MealPlanOrganizer.Functions.Functions
             [HttpTrigger(AuthorizationLevel.Function, "post", Route = "recipes")] HttpRequestData req)
         {
             _logger.LogInformation("Received CreateRecipe request");
+
+            // Authenticate the request
+            var authResult = await _authHelper.AuthenticateAsync(req);
+            if (!authResult.IsAuthenticated)
+            {
+                _logger.LogWarning("Authentication failed: {Error}", authResult.ErrorMessage);
+                var unauthorized = req.CreateResponse(HttpStatusCode.Unauthorized);
+                await unauthorized.WriteStringAsync(authResult.ErrorMessage ?? "Unauthorized");
+                return unauthorized;
+            }
+
+            var userId = authResult.UserId ?? "anonymous";
+            var userEmail = authResult.UserEmail;
+            _logger.LogInformation("Authenticated user: {UserId}, Email: {Email}", userId, userEmail);
 
             // Read request body (stub - validation/parsing only)
             var body = await req.ReadAsStringAsync();
@@ -60,7 +77,7 @@ namespace MealPlanOrganizer.Functions.Functions
                     CookTimeMinutes = model.CookTimeMinutes,
                     Servings = model.Servings,
                     ImageUrl = string.IsNullOrWhiteSpace(model.ImageUrl) ? null : model.ImageUrl!.Trim(),
-                    CreatedBy = "system" // TODO: Replace with actual authenticated user
+                    CreatedBy = userEmail ?? userId // Use authenticated user's email or ID
                 };
 
                 if (model.Ingredients != null && model.Ingredients.Any())

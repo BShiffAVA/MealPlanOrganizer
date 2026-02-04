@@ -104,6 +104,10 @@ builder.Services.AddHttpClient();
 // Register recipe extraction service
 builder.Services.AddScoped<IRecipeExtractionService, RecipeExtractionService>();
 
+// Register JWT validation services for Microsoft Entra External ID
+builder.Services.AddSingleton<IJwtValidationService, JwtValidationService>();
+builder.Services.AddScoped<AuthenticationHelper>();
+
 var app = builder.Build();
 
 // Apply EF Core migrations on startup (dev/local)

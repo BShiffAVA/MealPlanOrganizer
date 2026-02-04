@@ -1,0 +1,149 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Protocols;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+using Microsoft.IdentityModel.Tokens;
+
+namespace MealPlanOrganizer.Functions.Services;
+
+/// <summary>
+/// Service for validating JWT tokens from Microsoft Entra External ID.
+/// </summary>
+public class JwtValidationService : IJwtValidationService
+{
+    private readonly ILogger<JwtValidationService> _logger;
+    private readonly TokenValidationParameters _tokenValidationParameters;
+    private readonly ConfigurationManager<OpenIdConnectConfiguration> _configurationManager;
+    private readonly string _tenantId;
+    private readonly string _clientId;
+
+    public JwtValidationService(IConfiguration configuration, ILogger<JwtValidationService> logger)
+    {
+        _logger = logger;
+
+        // Get configuration from settings
+        // Support both double-underscore (env vars) and colon (JSON) notation
+        _tenantId = configuration["AzureAd__TenantId"] 
+            ?? configuration["AzureAd:TenantId"] 
+            ?? throw new InvalidOperationException("AzureAd:TenantId is not configured");
+        
+        _clientId = configuration["AzureAd__ClientId"] 
+            ?? configuration["AzureAd:ClientId"] 
+            ?? throw new InvalidOperationException("AzureAd:ClientId is not configured");
+
+        var authority = configuration["AzureAd__Authority"] 
+            ?? configuration["AzureAd:Authority"];
+
+        // For External ID (CIAM), the authority format is different
+        // Format: https://{tenant-name}.ciamlogin.com/{tenant-id}/v2.0
+        if (string.IsNullOrEmpty(authority))
+        {
+            // Try to construct from tenant name for External ID
+            var tenantName = configuration["AzureAd__TenantName"] 
+                ?? configuration["AzureAd:TenantName"];
+            
+            if (!string.IsNullOrEmpty(tenantName))
+            {
+                authority = $"https://{tenantName}.ciamlogin.com/{_tenantId}/v2.0";
+            }
+            else
+            {
+                // Fallback to standard Azure AD authority
+                authority = $"https://login.microsoftonline.com/{_tenantId}/v2.0";
+            }
+        }
+
+        _logger.LogInformation("Configuring JWT validation for authority: {Authority}", authority);
+
+        // Set up OpenID Connect configuration manager for automatic key refresh
+        var metadataAddress = $"{authority}/.well-known/openid-configuration";
+        _configurationManager = new ConfigurationManager<OpenIdConnectConfiguration>(
+            metadataAddress,
+            new OpenIdConnectConfigurationRetriever(),
+            new HttpDocumentRetriever());
+
+        _tokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidAudience = _clientId,
+            // For External ID, the issuer format can vary
+            ValidIssuers = new[]
+            {
+                $"https://{configuration["AzureAd:TenantName"]}.ciamlogin.com/{_tenantId}/v2.0",
+                $"https://login.microsoftonline.com/{_tenantId}/v2.0",
+                authority
+            },
+            ClockSkew = TimeSpan.FromMinutes(5)
+        };
+    }
+
+    public async Task<ClaimsPrincipal?> ValidateTokenAsync(string token)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            _logger.LogWarning("Token is null or empty");
+            return null;
+        }
+
+        try
+        {
+            // Get the OpenID Connect configuration (includes signing keys)
+            var config = await _configurationManager.GetConfigurationAsync(CancellationToken.None);
+            
+            var validationParameters = _tokenValidationParameters.Clone();
+            validationParameters.IssuerSigningKeys = config.SigningKeys;
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var principal = tokenHandler.ValidateToken(token, validationParameters, out var validatedToken);
+
+            if (validatedToken is JwtSecurityToken jwtToken)
+            {
+                _logger.LogDebug("Token validated successfully. Subject: {Subject}", jwtToken.Subject);
+            }
+
+            return principal;
+        }
+        catch (SecurityTokenExpiredException ex)
+        {
+            _logger.LogWarning("Token has expired: {Message}", ex.Message);
+            return null;
+        }
+        catch (SecurityTokenValidationException ex)
+        {
+            _logger.LogWarning("Token validation failed: {Message}", ex.Message);
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error validating token");
+            return null;
+        }
+    }
+
+    public string? GetUserId(ClaimsPrincipal principal)
+    {
+        // External ID uses 'oid' (object ID) as the unique user identifier
+        return principal.FindFirst("oid")?.Value 
+            ?? principal.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? principal.FindFirst("sub")?.Value;
+    }
+
+    public string? GetUserEmail(ClaimsPrincipal principal)
+    {
+        return principal.FindFirst("email")?.Value
+            ?? principal.FindFirst("preferred_username")?.Value
+            ?? principal.FindFirst(ClaimTypes.Email)?.Value;
+    }
+
+    public string? GetUserDisplayName(ClaimsPrincipal principal)
+    {
+        return principal.FindFirst("name")?.Value
+            ?? principal.FindFirst(ClaimTypes.Name)?.Value
+            ?? principal.FindFirst("given_name")?.Value;
+    }
+}

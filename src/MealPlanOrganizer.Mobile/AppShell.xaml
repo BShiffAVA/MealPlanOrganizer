@@ -21,4 +21,9 @@
         ContentTemplate="{DataTemplate local:ExtractRecipePage}"
         Route="ExtractRecipePage" />
 
+    <!-- Logout Menu Item -->
+    <MenuItem 
+        Text="Sign Out"
+        Clicked="OnLogoutClicked" />
+
 </Shell>

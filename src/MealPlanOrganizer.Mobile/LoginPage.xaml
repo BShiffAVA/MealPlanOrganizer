@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="MealPlanOrganizer.Mobile.LoginPage"
+             Title="Sign In"
+             BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#1C1C1E}">
+
+    <ScrollView>
+        <Grid RowDefinitions="*,Auto,*" Padding="24">
+            
+            <!-- Logo and Welcome Section -->
+            <VerticalStackLayout 
+                Grid.Row="0"
+                VerticalOptions="End"
+                Spacing="8"
+                Padding="0,0,0,32">
+                
+                <Label 
+                    Text="🍽️"
+                    FontSize="64"
+                    HorizontalOptions="Center" />
+                
+                <Label 
+                    Text="Meal Plan Organizer"
+                    FontSize="28"
+                    FontAttributes="Bold"
+                    HorizontalOptions="Center"
+                    TextColor="{AppThemeBinding Light=#1C1C1E, Dark=#FFFFFF}" />
+                
+                <Label 
+                    Text="Sign in to access your recipes"
+                    FontSize="16"
+                    HorizontalOptions="Center"
+                    TextColor="{AppThemeBinding Light=#666666, Dark=#AAAAAA}" />
+            </VerticalStackLayout>
+
+            <!-- Login Form Section -->
+            <VerticalStackLayout 
+                Grid.Row="1"
+                Spacing="16"
+                MaximumWidthRequest="400">
+
+                <!-- Error Message -->
+                <Border 
+                    x:Name="ErrorBorder"
+                    IsVisible="False"
+                    BackgroundColor="#FFEBEE"
+                    Stroke="#EF5350"
+                    StrokeThickness="1"
+                    StrokeShape="RoundRectangle 8"
+                    Padding="12">
+                    <Label 
+                        x:Name="ErrorLabel"
+                        TextColor="#C62828"
+                        FontSize="14"
+                        HorizontalTextAlignment="Center" />
+                </Border>
+
+                <!-- Sign In Button -->
+                <Button 
+                    x:Name="SignInButton"
+                    Text="Sign In with Microsoft"
+                    Clicked="OnSignInClicked"
+                    BackgroundColor="#6C63FF"
+                    TextColor="White"
+                    FontSize="16"
+                    FontAttributes="Bold"
+                    HeightRequest="50"
+                    CornerRadius="8" />
+
+                <!-- Loading Indicator -->
+                <Grid x:Name="LoadingGrid" IsVisible="False">
+                    <ActivityIndicator 
+                        x:Name="LoadingIndicator"
+                        IsRunning="True"
+                        Color="#6C63FF"
+                        HeightRequest="40"
+                        WidthRequest="40"
+                        HorizontalOptions="Center" />
+                    <Label 
+                        Text="Signing in..."
+                        FontSize="14"
+                        TextColor="{AppThemeBinding Light=#666666, Dark=#AAAAAA}"
+                        HorizontalOptions="Center"
+                        Margin="0,50,0,0" />
+                </Grid>
+
+            </VerticalStackLayout>
+
+            <!-- Footer Section -->
+            <VerticalStackLayout 
+                Grid.Row="2"
+                VerticalOptions="End"
+                Spacing="8"
+                Padding="0,32,0,16">
+                
+                <Label 
+                    Text="By signing in, you agree to our"
+                    FontSize="12"
+                    HorizontalOptions="Center"
+                    TextColor="{AppThemeBinding Light=#999999, Dark=#888888}" />
+                
+                <HorizontalStackLayout HorizontalOptions="Center" Spacing="4">
+                    <Label 
+                        Text="Terms of Service"
+                        FontSize="12"
+                        TextColor="#6C63FF"
+                        TextDecorations="Underline">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnTermsOfServiceTapped" />
+                        </Label.GestureRecognizers>
+                    </Label>
+                    <Label 
+                        Text="and"
+                        FontSize="12"
+                        TextColor="{AppThemeBinding Light=#999999, Dark=#888888}" />
+                    <Label 
+                        Text="Privacy Policy"
+                        FontSize="12"
+                        TextColor="#6C63FF"
+                        TextDecorations="Underline">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnPrivacyPolicyTapped" />
+                        </Label.GestureRecognizers>
+                    </Label>
+                </HorizontalStackLayout>
+            </VerticalStackLayout>
+
+        </Grid>
+    </ScrollView>
+
+</ContentPage>
