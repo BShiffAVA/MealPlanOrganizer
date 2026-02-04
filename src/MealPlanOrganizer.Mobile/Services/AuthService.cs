@@ -28,8 +28,9 @@ public class AuthService : IAuthService
         var authority = configuration["AzureAd:Authority"] 
             ?? throw new InvalidOperationException("AzureAd:Authority not configured");
 
-        // Scopes for External ID - openid and offline_access for token refresh
-        _scopes = ["openid", "offline_access", "profile", "email"];
+        // Scopes for External ID - request access token for our own API
+        // Using {client-id}/.default to get all configured permissions for this app
+        _scopes = [$"{clientId}/.default", "openid", "offline_access"];
 
         // Build the MSAL public client application
         var builder = PublicClientApplicationBuilder
