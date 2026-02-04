@@ -102,11 +102,26 @@ public class JwtValidationService : IJwtValidationService
 
         try
         {
+            // Decode token to see what's in it (without validation)
+            var handler = new JwtSecurityTokenHandler();
+            var jwtToken = handler.ReadJwtToken(token);
+            _logger.LogInformation("Token issuer: {Issuer}, audience: {Audience}, kid: {Kid}", 
+                jwtToken.Issuer, 
+                string.Join(",", jwtToken.Audiences), 
+                jwtToken.Header.Kid);
+            
             // Get the OpenID Connect configuration (includes signing keys)
             var config = await _configurationManager.GetConfigurationAsync(CancellationToken.None);
             
-            _logger.LogDebug("OIDC config loaded. Issuer: {Issuer}, SigningKeys count: {KeyCount}", 
-                config.Issuer, config.SigningKeys?.Count() ?? 0);
+            _logger.LogInformation("OIDC config loaded. Issuer: {Issuer}, SigningKeys count: {KeyCount}, JwksUri: {JwksUri}", 
+                config.Issuer, config.SigningKeys?.Count() ?? 0, config.JwksUri);
+            
+            // Log the key IDs we have
+            if (config.SigningKeys != null)
+            {
+                var keyIds = config.SigningKeys.Select(k => k.KeyId).ToList();
+                _logger.LogInformation("Available signing key IDs: {KeyIds}", string.Join(", ", keyIds));
+            }
             
             var validationParameters = _tokenValidationParameters.Clone();
             validationParameters.IssuerSigningKeys = config.SigningKeys;
@@ -122,9 +137,9 @@ public class JwtValidationService : IJwtValidationService
             var tokenHandler = new JwtSecurityTokenHandler();
             var principal = tokenHandler.ValidateToken(token, validationParameters, out var validatedToken);
 
-            if (validatedToken is JwtSecurityToken jwtToken)
+            if (validatedToken is JwtSecurityToken validatedJwt)
             {
-                _logger.LogDebug("Token validated successfully. Subject: {Subject}", jwtToken.Subject);
+                _logger.LogDebug("Token validated successfully. Subject: {Subject}", validatedJwt.Subject);
             }
 
             return principal;
