@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="MealPlanOrganizer.Mobile.CreateMealPlanPage"
+             Title="New Meal Plan">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="16">
+            
+            <!-- Header -->
+            <Label
+                Text="Create a New Meal Plan"
+                FontSize="24"
+                FontAttributes="Bold"
+                HorizontalOptions="Center" />
+            
+            <Label
+                Text="Plan your dinners for the week"
+                FontSize="14"
+                TextColor="Gray"
+                HorizontalOptions="Center"
+                Margin="0,0,0,16" />
+
+            <!-- Name Field -->
+            <VerticalStackLayout Spacing="4">
+                <Label
+                    Text="Plan Name"
+                    FontSize="14"
+                    FontAttributes="Bold" />
+                <Entry
+                    x:Name="NameEntry"
+                    Placeholder="e.g., Week of February 10th"
+                    MaxLength="100" />
+            </VerticalStackLayout>
+
+            <!-- Quick Select Buttons -->
+            <VerticalStackLayout Spacing="4">
+                <Label
+                    Text="Quick Select"
+                    FontSize="14"
+                    FontAttributes="Bold" />
+                <HorizontalStackLayout Spacing="8">
+                    <Button
+                        Text="This Week"
+                        Clicked="OnThisWeekClicked"
+                        BackgroundColor="#E3F2FD"
+                        TextColor="#1976D2"
+                        Padding="16,8"
+                        CornerRadius="8"
+                        FontSize="12" />
+                    <Button
+                        Text="Next Week"
+                        Clicked="OnNextWeekClicked"
+                        BackgroundColor="#E3F2FD"
+                        TextColor="#1976D2"
+                        Padding="16,8"
+                        CornerRadius="8"
+                        FontSize="12" />
+                    <Button
+                        Text="Next 2 Weeks"
+                        Clicked="OnNext2WeeksClicked"
+                        BackgroundColor="#E3F2FD"
+                        TextColor="#1976D2"
+                        Padding="16,8"
+                        CornerRadius="8"
+                        FontSize="12" />
+                </HorizontalStackLayout>
+            </VerticalStackLayout>
+
+            <!-- Start Date -->
+            <VerticalStackLayout Spacing="4">
+                <Label
+                    Text="Start Date"
+                    FontSize="14"
+                    FontAttributes="Bold" />
+                <DatePicker
+                    x:Name="StartDatePicker"
+                    MinimumDate="{Binding Today}"
+                    DateSelected="OnStartDateSelected" />
+            </VerticalStackLayout>
+
+            <!-- End Date -->
+            <VerticalStackLayout Spacing="4">
+                <Label
+                    Text="End Date"
+                    FontSize="14"
+                    FontAttributes="Bold" />
+                <DatePicker
+                    x:Name="EndDatePicker"
+                    MinimumDate="{Binding Today}" />
+            </VerticalStackLayout>
+
+            <!-- Summary -->
+            <Frame
+                Padding="16"
+                CornerRadius="12"
+                BackgroundColor="#F5F5F5"
+                BorderColor="#E0E0E0"
+                HasShadow="False"
+                Margin="0,8,0,0">
+                <VerticalStackLayout Spacing="8">
+                    <Label
+                        Text="Plan Summary"
+                        FontSize="14"
+                        FontAttributes="Bold" />
+                    <Label
+                        x:Name="SummaryLabel"
+                        Text="Select dates to see summary"
+                        FontSize="14"
+                        TextColor="Gray" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Error Message -->
+            <Label
+                x:Name="ErrorLabel"
+                TextColor="Red"
+                IsVisible="False"
+                HorizontalOptions="Center" />
+
+            <!-- Buttons -->
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,16,0,0">
+                <Button
+                    Text="Cancel"
+                    Clicked="OnCancelClicked"
+                    BackgroundColor="#E0E0E0"
+                    TextColor="#424242"
+                    CornerRadius="8" />
+                <Button
+                    x:Name="CreateButton"
+                    Grid.Column="1"
+                    Text="Create Plan"
+                    Clicked="OnCreateClicked"
+                    BackgroundColor="#4CAF50"
+                    TextColor="White"
+                    CornerRadius="8" />
+            </Grid>
+
+            <!-- Loading Indicator -->
+            <ActivityIndicator
+                x:Name="LoadingIndicator"
+                IsRunning="False"
+                IsVisible="False"
+                Color="#6C63FF"
+                HorizontalOptions="Center" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

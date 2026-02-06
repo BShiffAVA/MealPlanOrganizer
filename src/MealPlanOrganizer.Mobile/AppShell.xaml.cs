@@ -20,6 +20,11 @@ public partial class AppShell : Shell
 		Routing.RegisterRoute(nameof(ExtractRecipePage), typeof(ExtractRecipePage));
 		Routing.RegisterRoute(nameof(ExtractedRecipePreviewPage), typeof(ExtractedRecipePreviewPage));
 		Routing.RegisterRoute(nameof(LoginPage), typeof(LoginPage));
+		
+		// Meal plan routes
+		Routing.RegisterRoute(nameof(CreateMealPlanPage), typeof(CreateMealPlanPage));
+		Routing.RegisterRoute(nameof(MealPlanDetailPage), typeof(MealPlanDetailPage));
+		Routing.RegisterRoute(nameof(RecipePickerPage), typeof(RecipePickerPage));
 	}
 
 	private async void OnLogoutClicked(object? sender, EventArgs e)

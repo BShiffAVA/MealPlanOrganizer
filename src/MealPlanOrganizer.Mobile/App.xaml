@@ -9,6 +9,11 @@
                 <ResourceDictionary Source="Resources/Styles/Colors.xaml" />
                 <ResourceDictionary Source="Resources/Styles/Styles.xaml" />
             </ResourceDictionary.MergedDictionaries>
+            
+            <!-- Converters -->
+            <local:StatusColorConverter x:Key="StatusColorConverter" />
+            <local:HasRecipeBackgroundConverter x:Key="HasRecipeBackgroundConverter" />
+            <local:ActionButtonColorConverter x:Key="ActionButtonColorConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

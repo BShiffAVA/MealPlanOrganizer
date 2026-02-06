@@ -19,6 +19,40 @@ public interface IRecipeService
     /// Submit a rating for a recipe. Returns the result of the rating submission.
     /// </summary>
     Task<RateRecipeResult> RateRecipeAsync(Guid recipeId, int rating, string? comments, string? frequencyPreference);
+    
+    // =============================================
+    // Meal Plan Methods
+    // =============================================
+    
+    /// <summary>
+    /// Get recommended recipes for meal planning, sorted by smart recommendation score.
+    /// </summary>
+    Task<RecommendedRecipesResponse?> GetRecommendedRecipesAsync(DateTime? weekStartDate = null);
+    
+    /// <summary>
+    /// Get all meal plans for the household.
+    /// </summary>
+    Task<MealPlansListResponse?> GetMealPlansAsync();
+    
+    /// <summary>
+    /// Get a specific meal plan with all its days and recipes.
+    /// </summary>
+    Task<MealPlanDetailDto?> GetMealPlanAsync(Guid mealPlanId);
+    
+    /// <summary>
+    /// Create a new meal plan.
+    /// </summary>
+    Task<CreateMealPlanResponse> CreateMealPlanAsync(CreateMealPlanDto request);
+    
+    /// <summary>
+    /// Add a recipe to a specific day in a meal plan.
+    /// </summary>
+    Task<AddRecipeToMealPlanResponse> AddRecipeToMealPlanAsync(Guid mealPlanId, AddRecipeToMealPlanDto request);
+    
+    /// <summary>
+    /// Remove a recipe from a specific day in a meal plan.
+    /// </summary>
+    Task<RemoveRecipeFromMealPlanResponse> RemoveRecipeFromMealPlanAsync(Guid mealPlanId, DateTime day);
 }
 
 public class RecipeDto
@@ -159,4 +193,151 @@ public class IngredientInput
 {
     public string Name { get; set; } = string.Empty;
     public string? Quantity { get; set; }
+}
+
+// =============================================
+// Meal Plan DTOs
+// =============================================
+
+/// <summary>
+/// A recommended recipe with scoring information for meal planning.
+/// </summary>
+public class RecommendedRecipeDto
+{
+    public Guid RecipeId { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string? ImageUrl { get; set; }
+    public string? CuisineType { get; set; }
+    public int? PrepTimeMinutes { get; set; }
+    public int? CookTimeMinutes { get; set; }
+    public double Score { get; set; }
+    public double AverageRating { get; set; }
+    public int RatingCount { get; set; }
+    public string? LastCookedDate { get; set; }
+    public string? FrequencyPreference { get; set; }
+    public List<string> ReasonCodes { get; set; } = new();
+}
+
+/// <summary>
+/// Response from the recommendations API.
+/// </summary>
+public class RecommendedRecipesResponse
+{
+    public string WeekStartDate { get; set; } = string.Empty;
+    public int TotalRecipes { get; set; }
+    public List<RecommendedRecipeDto> Recipes { get; set; } = new();
+}
+
+/// <summary>
+/// Summary of a meal plan for list views.
+/// </summary>
+public class MealPlanDto
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string StartDate { get; set; } = string.Empty;
+    public string EndDate { get; set; } = string.Empty;
+    public string? CreatedBy { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public DateTime CreatedUtc { get; set; }
+    public int TotalDays { get; set; }
+    public int RecipesAssigned { get; set; }
+}
+
+/// <summary>
+/// Response from listing meal plans.
+/// </summary>
+public class MealPlansListResponse
+{
+    public int TotalMealPlans { get; set; }
+    public List<MealPlanDto> MealPlans { get; set; } = new();
+}
+
+/// <summary>
+/// A recipe assigned to a day in a meal plan.
+/// </summary>
+public class MealPlanDayRecipeDto
+{
+    public Guid AssignmentId { get; set; }
+    public Guid RecipeId { get; set; }
+    public string? RecipeTitle { get; set; }
+    public string? RecipeImageUrl { get; set; }
+    public string? CuisineType { get; set; }
+    public int? PrepTimeMinutes { get; set; }
+    public int? CookTimeMinutes { get; set; }
+}
+
+/// <summary>
+/// A single day in a meal plan with its assigned recipe.
+/// </summary>
+public class MealPlanDayDto
+{
+    public string Date { get; set; } = string.Empty;
+    public string DayOfWeek { get; set; } = string.Empty;
+    public MealPlanDayRecipeDto? Recipe { get; set; }
+}
+
+/// <summary>
+/// Full details of a meal plan including all days.
+/// </summary>
+public class MealPlanDetailDto
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string StartDate { get; set; } = string.Empty;
+    public string EndDate { get; set; } = string.Empty;
+    public string? CreatedBy { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public DateTime CreatedUtc { get; set; }
+    public int TotalDays { get; set; }
+    public int RecipesAssigned { get; set; }
+    public List<MealPlanDayDto> Days { get; set; } = new();
+}
+
+/// <summary>
+/// Request to create a new meal plan.
+/// </summary>
+public class CreateMealPlanDto
+{
+    public string Name { get; set; } = string.Empty;
+    public DateTime StartDate { get; set; }
+    public DateTime EndDate { get; set; }
+}
+
+/// <summary>
+/// Request to add a recipe to a meal plan day.
+/// </summary>
+public class AddRecipeToMealPlanDto
+{
+    public Guid RecipeId { get; set; }
+    public DateTime Day { get; set; }
+}
+
+/// <summary>
+/// Response from creating a new meal plan.
+/// </summary>
+public class CreateMealPlanResponse
+{
+    public bool Success { get; set; }
+    public Guid? MealPlanId { get; set; }
+    public string? ErrorMessage { get; set; }
+}
+
+/// <summary>
+/// Response from adding a recipe to meal plan.
+/// </summary>
+public class AddRecipeToMealPlanResponse
+{
+    public bool Success { get; set; }
+    public Guid? AssignmentId { get; set; }
+    public string? ErrorMessage { get; set; }
+}
+
+/// <summary>
+/// Response from removing a recipe from meal plan.
+/// </summary>
+public class RemoveRecipeFromMealPlanResponse
+{
+    public bool Success { get; set; }
+    public string? ErrorMessage { get; set; }
 }

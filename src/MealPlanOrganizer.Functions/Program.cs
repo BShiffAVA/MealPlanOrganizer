@@ -104,6 +104,9 @@ builder.Services.AddHttpClient();
 // Register recipe extraction service
 builder.Services.AddScoped<IRecipeExtractionService, RecipeExtractionService>();
 
+// Register recipe recommendation service for meal planning
+builder.Services.AddScoped<IRecipeRecommendationService, RecipeRecommendationService>();
+
 // Register JWT validation services for Microsoft Entra External ID
 builder.Services.AddSingleton<IJwtValidationService, JwtValidationService>();
 builder.Services.AddScoped<AuthenticationHelper>();

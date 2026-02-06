@@ -172,14 +172,14 @@ This document contains user stories and requirements for the Meal Plan Organizer
 
 ### US-011: Create Meal Plan
 **As a** family member  
-**I want** to create a weekly meal plan  
+**I want** to create a weekly meal plan for dinner
 **So that** we can plan our meals and know what to buy
 
 **Acceptance Criteria:**
 - [ ] User can create a new meal plan with a name
 - [ ] User can set start date and end date (default: 1 week)
 - [ ] Meal plan shows all days in the range
-- [ ] For each day, user can assign breakfast, lunch, dinner (snacks optional)
+- [ ] For each day, user can assign dinner 
 - [ ] Meal plan is created and visible to all family members
 - [ ] Only creator can edit the meal plan (or admin)
 - [ ] User can mark meal plan as complete/active

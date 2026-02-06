@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="MealPlanOrganizer.Mobile.RecipePickerPage"
+             Title="Choose Recipes"
+             BackgroundColor="Black">
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Padding="16" RowSpacing="12">
+        
+        <!-- Header -->
+        <VerticalStackLayout Spacing="4">
+            <Label
+                x:Name="HeaderLabel"
+                Text="Select Recipes"
+                FontSize="20"
+                FontAttributes="Bold"
+                TextColor="White" />
+            <Label
+                x:Name="DayLabel"
+                Text="Tap recipes to select them for your meal plan"
+                FontSize="14"
+                TextColor="#AAAAAA" />
+        </VerticalStackLayout>
+
+        <!-- Smart Recommendations Header -->
+        <Frame
+            Grid.Row="1"
+            Padding="12"
+            CornerRadius="8"
+            BackgroundColor="#E8F5E9"
+            BorderColor="Transparent"
+            HasShadow="False">
+            <HorizontalStackLayout Spacing="8">
+                <Label
+                    Text="✨"
+                    FontSize="16" />
+                <Label
+                    Text="Smart Recommendations"
+                    FontSize="14"
+                    FontAttributes="Bold"
+                    TextColor="#2E7D32"
+                    VerticalOptions="Center" />
+                <Label
+                    Text="- sorted by ratings, preferences, and variety"
+                    FontSize="12"
+                    TextColor="#4CAF50"
+                    VerticalOptions="Center" />
+            </HorizontalStackLayout>
+        </Frame>
+
+        <!-- Loading Indicator -->
+        <ActivityIndicator
+            x:Name="LoadingIndicator"
+            Grid.Row="2"
+            IsRunning="False"
+            IsVisible="False"
+            VerticalOptions="Center"
+            HorizontalOptions="Center"
+            Color="#6C63FF" />
+
+        <!-- Empty State -->
+        <VerticalStackLayout
+            x:Name="EmptyState"
+            Grid.Row="2"
+            IsVisible="False"
+            VerticalOptions="Center"
+            HorizontalOptions="Center"
+            Spacing="12">
+            <Label
+                Text="🍳"
+                FontSize="64"
+                HorizontalOptions="Center" />
+            <Label
+                Text="No recipes available"
+                FontSize="20"
+                FontAttributes="Bold"
+                TextColor="White"
+                HorizontalOptions="Center" />
+            <Label
+                Text="Add some recipes first to start meal planning"
+                FontSize="14"
+                TextColor="#AAAAAA"
+                HorizontalOptions="Center" />
+        </VerticalStackLayout>
+
+        <!-- Recipes List -->
+        <CollectionView
+            x:Name="RecipesCollection"
+            Grid.Row="2"
+            SelectionMode="None">
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Frame
+                        Margin="0,0,0,10"
+                        Padding="12"
+                        CornerRadius="10"
+                        BorderColor="{Binding BorderColor}"
+                        BackgroundColor="{Binding BackgroundColor}"
+                        HasShadow="False">
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer
+                                Tapped="OnRecipeTapped"
+                                CommandParameter="{Binding .}" />
+                        </Frame.GestureRecognizers>
+                        <Grid ColumnDefinitions="Auto,60,*,Auto" ColumnSpacing="12">
+                            
+                            <!-- Selection Order Badge -->
+                            <Frame
+                                WidthRequest="28"
+                                HeightRequest="28"
+                                Padding="0"
+                                CornerRadius="14"
+                                BackgroundColor="{Binding SelectionBadgeColor}"
+                                BorderColor="Transparent"
+                                HasShadow="False"
+                                VerticalOptions="Center"
+                                IsVisible="{Binding IsSelected}">
+                                <Label
+                                    Text="{Binding SelectionOrder}"
+                                    FontSize="14"
+                                    FontAttributes="Bold"
+                                    TextColor="White"
+                                    HorizontalOptions="Center"
+                                    VerticalOptions="Center" />
+                            </Frame>
+                            
+                            <!-- Unselected circle -->
+                            <Frame
+                                WidthRequest="28"
+                                HeightRequest="28"
+                                Padding="0"
+                                CornerRadius="14"
+                                BackgroundColor="#444444"
+                                BorderColor="Transparent"
+                                HasShadow="False"
+                                VerticalOptions="Center"
+                                IsVisible="{Binding IsNotSelected}" />
+                            
+                            <!-- Recipe Image -->
+                            <Frame
+                                Grid.Column="1"
+                                WidthRequest="60"
+                                HeightRequest="60"
+                                Padding="0"
+                                CornerRadius="8"
+                                IsClippedToBounds="True"
+                                HasShadow="False"
+                                BackgroundColor="#333333">
+                                <Image
+                                    Source="{Binding ImageUrl}"
+                                    Aspect="AspectFill"
+                                    IsVisible="{Binding HasImage}" />
+                            </Frame>
+                            
+                            <!-- Recipe Info -->
+                            <VerticalStackLayout
+                                Grid.Column="2"
+                                VerticalOptions="Center"
+                                Spacing="2">
+                                <Label
+                                    Text="{Binding Title}"
+                                    FontSize="15"
+                                    FontAttributes="Bold"
+                                    TextColor="White"
+                                    LineBreakMode="TailTruncation" />
+                                <HorizontalStackLayout Spacing="8">
+                                    <Label
+                                        Text="{Binding RatingDisplay}"
+                                        FontSize="12"
+                                        TextColor="#FFC107" />
+                                    <Label
+                                        Text="{Binding CuisineType}"
+                                        FontSize="12"
+                                        TextColor="#AAAAAA"
+                                        IsVisible="{Binding HasCuisine}" />
+                                    <Label
+                                        Text="{Binding TimeDisplay}"
+                                        FontSize="12"
+                                        TextColor="#AAAAAA"
+                                        IsVisible="{Binding HasTime}" />
+                                </HorizontalStackLayout>
+                                <!-- Recommendation reason -->
+                                <Label
+                                    Text="{Binding ReasonDisplay}"
+                                    FontSize="11"
+                                    TextColor="#6C63FF"
+                                    IsVisible="{Binding HasReason}" />
+                            </VerticalStackLayout>
+                            
+                            <!-- Score Badge -->
+                            <Frame
+                                Grid.Column="3"
+                                Padding="8,4"
+                                CornerRadius="12"
+                                HasShadow="False"
+                                BackgroundColor="#E3F2FD"
+                                VerticalOptions="Center"
+                                IsVisible="{Binding ShowScore}">
+                                <Label
+                                    Text="{Binding ScoreDisplay}"
+                                    FontSize="11"
+                                    FontAttributes="Bold"
+                                    TextColor="#1976D2" />
+                            </Frame>
+                        </Grid>
+                    </Frame>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <!-- Bottom Action Bar (multi-select mode) -->
+        <Frame
+            x:Name="ActionBar"
+            Grid.Row="3"
+            Padding="16"
+            CornerRadius="12"
+            BackgroundColor="Black"
+            BorderColor="#333333"
+            HasShadow="False"
+            IsVisible="False">
+            <Grid ColumnDefinitions="*,Auto">
+                <VerticalStackLayout VerticalOptions="Center">
+                    <Label
+                        x:Name="SelectionCountLabel"
+                        Text="0 recipes selected"
+                        FontSize="16"
+                        FontAttributes="Bold"
+                        TextColor="White" />
+                    <Label
+                        x:Name="SelectionHintLabel"
+                        Text="Select up to 7 recipes"
+                        FontSize="12"
+                        TextColor="#CCCCCC" />
+                </VerticalStackLayout>
+                <Button
+                    x:Name="DoneButton"
+                    Grid.Column="1"
+                    Text="Done"
+                    Clicked="OnDoneClicked"
+                    BackgroundColor="#4CAF50"
+                    TextColor="White"
+                    Padding="24,12"
+                    CornerRadius="8"
+                    IsEnabled="False" />
+            </Grid>
+        </Frame>
+    </Grid>
+
+</ContentPage>

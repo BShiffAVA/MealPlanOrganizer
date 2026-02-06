@@ -32,8 +32,8 @@
   - Optional choice of how often you would like to eat this recipe (once a week, once a month, a few times a year, yearly, never)
 
 ### 2. Meal Planning
-- **Create Meal Plans**: Build weekly or custom-duration meal plans
-- **Assign Recipes to Days**: Map recipes to breakfast, lunch, dinner, or snacks
+- **Create Meal Plans**: Build weekly or custom-duration meal plans for dinner
+- **Assign Recipes to Days**: Map recipes to dinner
 - **View Shopping Lists**: Generate shopping lists from selected recipes
 - **Share with Family**: All household members can view and suggest meal plans
 

@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="MealPlanOrganizer.Mobile.MealPlanDetailPage"
+             Title="Meal Plan">
+
+    <Grid RowDefinitions="Auto,Auto,Auto,*" Padding="16" RowSpacing="12">
+        
+        <!-- Header with plan info -->
+        <Frame
+            Padding="16"
+            CornerRadius="12"
+            BackgroundColor="Black"
+            BorderColor="#333333"
+            HasShadow="False">
+            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                <Label
+                    x:Name="PlanNameLabel"
+                    Text="Loading..."
+                    FontSize="20"
+                    FontAttributes="Bold"
+                    TextColor="White" />
+                <Frame
+                    x:Name="StatusBadge"
+                    Grid.Column="1"
+                    Padding="8,4"
+                    CornerRadius="12"
+                    HasShadow="False"
+                    BackgroundColor="#9E9E9E">
+                    <Label
+                        x:Name="StatusLabel"
+                        Text=""
+                        FontSize="12"
+                        TextColor="White" />
+                </Frame>
+                <Label
+                    x:Name="DateRangeLabel"
+                    Grid.Row="1"
+                    Grid.ColumnSpan="2"
+                    Text=""
+                    FontSize="14"
+                    TextColor="White"
+                    Margin="0,4,0,0" />
+            </Grid>
+        </Frame>
+
+        <!-- Progress section -->
+        <Frame
+            Grid.Row="1"
+            Padding="12"
+            CornerRadius="8"
+            BackgroundColor="#E3F2FD"
+            BorderColor="Transparent"
+            HasShadow="False">
+            <HorizontalStackLayout Spacing="12">
+                <Label
+                    x:Name="ProgressLabel"
+                    Text="0 of 0 days planned"
+                    FontSize="14"
+                    TextColor="#1976D2"
+                    VerticalOptions="Center" />
+                <ProgressBar
+                    x:Name="ProgressBar"
+                    Progress="0"
+                    ProgressColor="#4CAF50"
+                    HorizontalOptions="FillAndExpand"
+                    VerticalOptions="Center" />
+            </HorizontalStackLayout>
+        </Frame>
+
+        <!-- Drag-drop hint -->
+        <Label
+            x:Name="DragDropHint"
+            Grid.Row="2"
+            Text="💡 Long-press and drag recipes between days to reorganize"
+            FontSize="12"
+            TextColor="Gray"
+            HorizontalOptions="Center"
+            IsVisible="False" />
+
+        <!-- Loading Indicator -->
+        <ActivityIndicator
+            x:Name="LoadingIndicator"
+            Grid.Row="3"
+            IsRunning="False"
+            IsVisible="False"
+            VerticalOptions="Center"
+            HorizontalOptions="Center"
+            Color="#6C63FF" />
+
+        <!-- Days List -->
+        <CollectionView
+            x:Name="DaysCollection"
+            Grid.Row="3"
+            SelectionMode="None">
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Frame
+                        x:Name="DayFrame"
+                        Margin="0,0,0,8"
+                        Padding="12"
+                        CornerRadius="10"
+                        BorderColor="{Binding DropTargetBorderColor}"
+                        BackgroundColor="{Binding DropTargetBackgroundColor}"
+                        HasShadow="False">
+                        <Frame.GestureRecognizers>
+                            <DropGestureRecognizer
+                                AllowDrop="True"
+                                DragOverCommand="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DragOverCommand}"
+                                DragOverCommandParameter="{Binding}"
+                                DragLeaveCommand="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DragLeaveCommand}"
+                                DragLeaveCommandParameter="{Binding}"
+                                DropCommand="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DropCommand}"
+                                DropCommandParameter="{Binding}" />
+                        </Frame.GestureRecognizers>
+                        <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12">
+                            
+                            <!-- Day Info -->
+                            <VerticalStackLayout
+                                VerticalOptions="Center"
+                                WidthRequest="60">
+                                <Label
+                                    Text="{Binding DayOfWeek}"
+                                    FontSize="12"
+                                    FontAttributes="Bold"
+                                    TextColor="#6C63FF"
+                                    HorizontalOptions="Center" />
+                                <Label
+                                    Text="{Binding DisplayDate}"
+                                    FontSize="10"
+                                    TextColor="Gray"
+                                    HorizontalOptions="Center" />
+                            </VerticalStackLayout>
+                            
+                            <!-- Recipe Info or Empty State -->
+                            <Frame
+                                Grid.Column="1"
+                                Grid.RowSpan="2"
+                                Padding="10"
+                                CornerRadius="8"
+                                BackgroundColor="Black"
+                                BorderColor="#333333"
+                                HasShadow="False"
+                                VerticalOptions="Center"
+                                Opacity="{Binding DragOpacity}">
+                                <Frame.GestureRecognizers>
+                                    <DragGestureRecognizer
+                                        CanDrag="{Binding HasRecipe}"
+                                        DragStartingCommand="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DragStartingCommand}"
+                                        DragStartingCommandParameter="{Binding}"
+                                        DropCompletedCommand="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DropCompletedCommand}"
+                                        DropCompletedCommandParameter="{Binding}" />
+                                </Frame.GestureRecognizers>
+                                <Grid ColumnDefinitions="Auto,*">
+                                    <!-- Recipe Image (if available) -->
+                                    <Frame
+                                        IsVisible="{Binding HasRecipeImage}"
+                                        WidthRequest="50"
+                                        HeightRequest="50"
+                                        Padding="0"
+                                        CornerRadius="8"
+                                        IsClippedToBounds="True"
+                                        HasShadow="False">
+                                        <Image
+                                            Source="{Binding RecipeImageUrl}"
+                                            Aspect="AspectFill" />
+                                    </Frame>
+                                    
+                                    <VerticalStackLayout
+                                        Grid.Column="1"
+                                        Margin="8,0,0,0"
+                                        VerticalOptions="Center">
+                                        <Label
+                                            Text="{Binding RecipeTitle}"
+                                            FontSize="14"
+                                            FontAttributes="Bold"
+                                            TextColor="White"
+                                            LineBreakMode="TailTruncation" />
+                                        <Label
+                                            Text="{Binding RecipeDetails}"
+                                            FontSize="11"
+                                            TextColor="#CCCCCC"
+                                            IsVisible="{Binding HasRecipe}" />
+                                    </VerticalStackLayout>
+                                </Grid>
+                            </Frame>
+                            
+                            <!-- Action Button -->
+                            <Button
+                                Grid.Column="2"
+                                Grid.RowSpan="2"
+                                Text="{Binding ActionButtonText}"
+                                Clicked="OnDayActionClicked"
+                                CommandParameter="{Binding .}"
+                                BackgroundColor="{Binding HasRecipe, Converter={StaticResource ActionButtonColorConverter}}"
+                                TextColor="White"
+                                Padding="12,8"
+                                CornerRadius="8"
+                                FontSize="12"
+                                VerticalOptions="Center" />
+                        </Grid>
+                    </Frame>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </Grid>
+
+</ContentPage>

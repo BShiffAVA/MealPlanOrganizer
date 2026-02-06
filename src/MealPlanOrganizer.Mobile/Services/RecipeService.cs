@@ -435,4 +435,345 @@ public class RecipeService : IRecipeService
             };
         }
     }
+
+    // =============================================
+    // Meal Plan Methods
+    // =============================================
+
+    public async Task<RecommendedRecipesResponse?> GetRecommendedRecipesAsync(DateTime? weekStartDate = null)
+    {
+        try
+        {
+            _logger.LogInformation("Fetching recommended recipes");
+
+            await AttachBearerTokenAsync();
+
+            var url = $"{_baseUrl}/recipes/recommended?code={_functionKey}";
+            if (weekStartDate.HasValue)
+            {
+                url += $"&weekStart={weekStartDate.Value:yyyy-MM-dd}";
+            }
+
+            var response = await _httpClient.GetAsync(url);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                _logger.LogWarning("Unauthorized request for recommendations");
+                return null;
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError("Failed to fetch recommendations: {StatusCode}", response.StatusCode);
+                return null;
+            }
+
+            var jsonContent = await response.Content.ReadAsStringAsync();
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var result = JsonSerializer.Deserialize<RecommendedRecipesResponse>(jsonContent, options);
+
+            _logger.LogInformation("Successfully fetched {Count} recommended recipes", result?.TotalRecipes ?? 0);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception fetching recommended recipes");
+            return null;
+        }
+    }
+
+    public async Task<MealPlansListResponse?> GetMealPlansAsync()
+    {
+        try
+        {
+            _logger.LogInformation("Fetching meal plans");
+
+            await AttachBearerTokenAsync();
+
+            var url = $"{_baseUrl}/mealplans?code={_functionKey}";
+            var response = await _httpClient.GetAsync(url);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                _logger.LogWarning("Unauthorized request for meal plans");
+                return null;
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError("Failed to fetch meal plans: {StatusCode}", response.StatusCode);
+                return null;
+            }
+
+            var jsonContent = await response.Content.ReadAsStringAsync();
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var result = JsonSerializer.Deserialize<MealPlansListResponse>(jsonContent, options);
+
+            _logger.LogInformation("Successfully fetched {Count} meal plans", result?.TotalMealPlans ?? 0);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception fetching meal plans");
+            return null;
+        }
+    }
+
+    public async Task<MealPlanDetailDto?> GetMealPlanAsync(Guid mealPlanId)
+    {
+        try
+        {
+            _logger.LogInformation("Fetching meal plan {MealPlanId}", mealPlanId);
+
+            await AttachBearerTokenAsync();
+
+            var url = $"{_baseUrl}/mealplans/{mealPlanId}?code={_functionKey}";
+            var response = await _httpClient.GetAsync(url);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                _logger.LogWarning("Meal plan {MealPlanId} not found", mealPlanId);
+                return null;
+            }
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                _logger.LogWarning("Unauthorized request for meal plan");
+                return null;
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError("Failed to fetch meal plan: {StatusCode}", response.StatusCode);
+                return null;
+            }
+
+            var jsonContent = await response.Content.ReadAsStringAsync();
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var result = JsonSerializer.Deserialize<MealPlanDetailDto>(jsonContent, options);
+
+            _logger.LogInformation("Successfully fetched meal plan: {Name}", result?.Name);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception fetching meal plan {MealPlanId}", mealPlanId);
+            return null;
+        }
+    }
+
+    public async Task<CreateMealPlanResponse> CreateMealPlanAsync(CreateMealPlanDto request)
+    {
+        try
+        {
+            _logger.LogInformation("Creating meal plan: {Name}", request.Name);
+
+            await AttachBearerTokenAsync();
+
+            var url = $"{_baseUrl}/mealplans?code={_functionKey}";
+            var payload = new
+            {
+                name = request.Name,
+                startDate = request.StartDate.ToString("yyyy-MM-dd"),
+                endDate = request.EndDate.ToString("yyyy-MM-dd")
+            };
+            var json = JsonSerializer.Serialize(payload);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PostAsync(url, content);
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                _logger.LogWarning("Unauthorized meal plan creation attempt");
+                return new CreateMealPlanResponse
+                {
+                    Success = false,
+                    ErrorMessage = "Please log in to create a meal plan."
+                };
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError("Failed to create meal plan: {StatusCode}. Response: {Response}", response.StatusCode, responseContent);
+                return new CreateMealPlanResponse
+                {
+                    Success = false,
+                    ErrorMessage = $"Failed to create meal plan: {response.StatusCode}"
+                };
+            }
+
+            // Parse successful response
+            using var doc = JsonDocument.Parse(responseContent);
+            var root = doc.RootElement;
+
+            Guid? mealPlanId = null;
+            // Backend returns "id" not "mealPlanId"
+            if (root.TryGetProperty("id", out var idElement) && idElement.ValueKind == JsonValueKind.String)
+            {
+                Guid.TryParse(idElement.GetString(), out var parsedId);
+                mealPlanId = parsedId;
+            }
+
+            _logger.LogInformation("Successfully created meal plan. MealPlanId: {MealPlanId}", mealPlanId);
+
+            return new CreateMealPlanResponse
+            {
+                Success = true,
+                MealPlanId = mealPlanId
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception creating meal plan");
+            return new CreateMealPlanResponse
+            {
+                Success = false,
+                ErrorMessage = $"An error occurred: {ex.Message}"
+            };
+        }
+    }
+
+    public async Task<AddRecipeToMealPlanResponse> AddRecipeToMealPlanAsync(Guid mealPlanId, AddRecipeToMealPlanDto request)
+    {
+        try
+        {
+            _logger.LogInformation("Adding recipe {RecipeId} to meal plan {MealPlanId} on {Day}", 
+                request.RecipeId, mealPlanId, request.Day);
+
+            await AttachBearerTokenAsync();
+
+            var url = $"{_baseUrl}/mealplans/{mealPlanId}/recipes?code={_functionKey}";
+            var payload = new
+            {
+                recipeId = request.RecipeId,
+                day = request.Day.ToString("yyyy-MM-dd")
+            };
+            var json = JsonSerializer.Serialize(payload);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PostAsync(url, content);
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                _logger.LogWarning("Unauthorized add recipe to meal plan attempt");
+                return new AddRecipeToMealPlanResponse
+                {
+                    Success = false,
+                    ErrorMessage = "Please log in to modify meal plans."
+                };
+            }
+
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                _logger.LogWarning("Meal plan {MealPlanId} not found", mealPlanId);
+                return new AddRecipeToMealPlanResponse
+                {
+                    Success = false,
+                    ErrorMessage = "Meal plan not found."
+                };
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError("Failed to add recipe to meal plan: {StatusCode}. Response: {Response}", response.StatusCode, responseContent);
+                return new AddRecipeToMealPlanResponse
+                {
+                    Success = false,
+                    ErrorMessage = $"Failed to add recipe: {response.StatusCode}"
+                };
+            }
+
+            // Parse successful response
+            using var doc = JsonDocument.Parse(responseContent);
+            var root = doc.RootElement;
+
+            Guid? assignmentId = null;
+            if (root.TryGetProperty("assignmentId", out var idElement) && idElement.ValueKind == JsonValueKind.String)
+            {
+                Guid.TryParse(idElement.GetString(), out var parsedId);
+                assignmentId = parsedId;
+            }
+
+            _logger.LogInformation("Successfully added recipe to meal plan. AssignmentId: {AssignmentId}", assignmentId);
+
+            return new AddRecipeToMealPlanResponse
+            {
+                Success = true,
+                AssignmentId = assignmentId
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception adding recipe to meal plan");
+            return new AddRecipeToMealPlanResponse
+            {
+                Success = false,
+                ErrorMessage = $"An error occurred: {ex.Message}"
+            };
+        }
+    }
+
+    public async Task<RemoveRecipeFromMealPlanResponse> RemoveRecipeFromMealPlanAsync(Guid mealPlanId, DateTime day)
+    {
+        try
+        {
+            _logger.LogInformation("Removing recipe from meal plan {MealPlanId} on {Day}", mealPlanId, day);
+
+            await AttachBearerTokenAsync();
+
+            var dayString = day.ToString("yyyy-MM-dd");
+            var url = $"{_baseUrl}/mealplans/{mealPlanId}/recipes/{dayString}?code={_functionKey}";
+
+            var response = await _httpClient.DeleteAsync(url);
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                _logger.LogWarning("Unauthorized remove recipe from meal plan attempt");
+                return new RemoveRecipeFromMealPlanResponse
+                {
+                    Success = false,
+                    ErrorMessage = "Please log in to modify meal plans."
+                };
+            }
+
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                // No recipe on this day is OK - treat as success
+                _logger.LogInformation("No recipe found on day {Day} - nothing to remove", day);
+                return new RemoveRecipeFromMealPlanResponse
+                {
+                    Success = true
+                };
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError("Failed to remove recipe from meal plan: {StatusCode}. Response: {Response}", response.StatusCode, responseContent);
+                return new RemoveRecipeFromMealPlanResponse
+                {
+                    Success = false,
+                    ErrorMessage = $"Failed to remove recipe: {response.StatusCode}"
+                };
+            }
+
+            _logger.LogInformation("Successfully removed recipe from meal plan on {Day}", day);
+
+            return new RemoveRecipeFromMealPlanResponse
+            {
+                Success = true
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception removing recipe from meal plan");
+            return new RemoveRecipeFromMealPlanResponse
+            {
+                Success = false,
+                ErrorMessage = $"An error occurred: {ex.Message}"
+            };
+        }
+    }
 }

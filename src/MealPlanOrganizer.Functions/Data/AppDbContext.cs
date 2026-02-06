@@ -11,6 +11,8 @@ namespace MealPlanOrganizer.Functions.Data
         public DbSet<RecipeIngredient> RecipeIngredients => Set<RecipeIngredient>();
         public DbSet<RecipeStep> RecipeSteps => Set<RecipeStep>();
         public DbSet<RecipeRating> RecipeRatings => Set<RecipeRating>();
+        public DbSet<MealPlan> MealPlans => Set<MealPlan>();
+        public DbSet<MealPlanRecipe> MealPlanRecipes => Set<MealPlanRecipe>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -71,6 +73,40 @@ namespace MealPlanOrganizer.Functions.Data
                     .OnDelete(DeleteBehavior.Cascade);
                 // Index for efficient lookups by recipe and user (not unique to allow historical ratings)
                 b.HasIndex(x => new { x.RecipeId, x.UserId });
+            });
+
+            modelBuilder.Entity<MealPlan>(b =>
+            {
+                b.ToTable("MealPlans");
+                b.HasKey(x => x.Id);
+                b.Property(x => x.Name).IsRequired().HasMaxLength(200);
+                b.Property(x => x.StartDate).HasColumnType("date");
+                b.Property(x => x.EndDate).HasColumnType("date");
+                b.Property(x => x.CreatedBy).HasMaxLength(200);
+                b.Property(x => x.Status).IsRequired().HasMaxLength(50).HasDefaultValue("Draft");
+                b.Property(x => x.CreatedUtc).HasDefaultValueSql("GETUTCDATE()");
+                // Index for listing meal plans by date
+                b.HasIndex(x => x.StartDate);
+            });
+
+            modelBuilder.Entity<MealPlanRecipe>(b =>
+            {
+                b.ToTable("MealPlanRecipes");
+                b.HasKey(x => x.Id);
+                b.Property(x => x.Day).HasColumnType("date");
+                b.Property(x => x.CreatedUtc).HasDefaultValueSql("GETUTCDATE()");
+                b.HasOne(x => x.MealPlan)
+                    .WithMany(x => x.Recipes)
+                    .HasForeignKey(x => x.MealPlanId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                b.HasOne(x => x.Recipe)
+                    .WithMany()
+                    .HasForeignKey(x => x.RecipeId)
+                    .OnDelete(DeleteBehavior.Restrict); // Don't cascade delete recipes
+                // Index for efficient lookups by meal plan and day
+                b.HasIndex(x => new { x.MealPlanId, x.Day });
+                // Index for finding when a recipe was last cooked
+                b.HasIndex(x => new { x.RecipeId, x.Day });
             });
 
             // Seed sample data via HasData

@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="MealPlanOrganizer.Mobile.MealPlansPage"
+             Title="Meal Plans">
+
+    <Grid RowDefinitions="Auto,*"
+          Padding="16"
+          RowSpacing="12">
+        
+        <!-- Header with Add Button -->
+        <HorizontalStackLayout Spacing="12" HorizontalOptions="FillAndExpand">
+            <VerticalStackLayout Spacing="4" HorizontalOptions="FillAndExpand">
+                <Label
+                    Text="Meal Plans"
+                    Style="{StaticResource Headline}"
+                    SemanticProperties.HeadingLevel="Level1" />
+                <Label
+                    Text="Plan your weekly dinners"
+                    Style="{StaticResource SubHeadline}"
+                    SemanticProperties.HeadingLevel="Level2" />
+            </VerticalStackLayout>
+            <Button
+                x:Name="CreateButton"
+                Text="+ New Plan"
+                Clicked="OnCreateMealPlanClicked"
+                BackgroundColor="#4CAF50"
+                TextColor="White"
+                VerticalOptions="End"
+                Padding="16,8"
+                CornerRadius="8" />
+        </HorizontalStackLayout>
+
+        <!-- Loading Indicator -->
+        <ActivityIndicator
+            x:Name="LoadingIndicator"
+            Grid.Row="1"
+            IsRunning="False"
+            IsVisible="False"
+            VerticalOptions="Center"
+            HorizontalOptions="Center"
+            Color="#6C63FF" />
+
+        <!-- Empty State -->
+        <VerticalStackLayout
+            x:Name="EmptyState"
+            Grid.Row="1"
+            IsVisible="False"
+            VerticalOptions="Center"
+            HorizontalOptions="Center"
+            Spacing="12">
+            <Label
+                Text="📅"
+                FontSize="64"
+                HorizontalOptions="Center" />
+            <Label
+                Text="No meal plans yet"
+                FontSize="20"
+                FontAttributes="Bold"
+                HorizontalOptions="Center" />
+            <Label
+                Text="Create your first meal plan to start planning dinners"
+                FontSize="14"
+                TextColor="Gray"
+                HorizontalOptions="Center"
+                HorizontalTextAlignment="Center" />
+            <Button
+                Text="Create Meal Plan"
+                Clicked="OnCreateMealPlanClicked"
+                BackgroundColor="#6C63FF"
+                TextColor="White"
+                Margin="0,12,0,0"
+                Padding="24,12"
+                CornerRadius="8" />
+        </VerticalStackLayout>
+
+        <!-- Meal Plans List -->
+        <CollectionView
+            x:Name="MealPlansCollection"
+            Grid.Row="1"
+            SelectionMode="None">
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Frame
+                        Margin="0,0,0,12"
+                        Padding="16"
+                        CornerRadius="12"
+                        BorderColor="#E0E0E0"
+                        HasShadow="False">
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer
+                                Tapped="OnMealPlanTapped"
+                                CommandParameter="{Binding Id}" />
+                        </Frame.GestureRecognizers>
+                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
+                            <!-- Meal Plan Name -->
+                            <Label
+                                Text="{Binding Name}"
+                                FontSize="18"
+                                FontAttributes="Bold"
+                                Grid.Column="0" />
+                            
+                            <!-- Status Badge -->
+                            <Frame
+                                Grid.Column="1"
+                                Padding="8,4"
+                                CornerRadius="12"
+                                HasShadow="False"
+                                BackgroundColor="{Binding Status, Converter={StaticResource StatusColorConverter}}">
+                                <Label
+                                    Text="{Binding Status}"
+                                    FontSize="12"
+                                    TextColor="White" />
+                            </Frame>
+                            
+                            <!-- Date Range -->
+                            <Label
+                                Grid.Row="1"
+                                Grid.ColumnSpan="2"
+                                FontSize="14"
+                                TextColor="Gray"
+                                Margin="0,4,0,0">
+                                <Label.Text>
+                                    <MultiBinding StringFormat="{}{0} - {1}">
+                                        <Binding Path="StartDate" />
+                                        <Binding Path="EndDate" />
+                                    </MultiBinding>
+                                </Label.Text>
+                            </Label>
+                            
+                            <!-- Recipe count and days -->
+                            <HorizontalStackLayout
+                                Grid.Row="2"
+                                Grid.ColumnSpan="2"
+                                Spacing="16"
+                                Margin="0,8,0,0">
+                                <Label
+                                    FontSize="12"
+                                    TextColor="#6C63FF">
+                                    <Label.Text>
+                                        <MultiBinding StringFormat="{}{0} of {1} days planned">
+                                            <Binding Path="RecipesAssigned" />
+                                            <Binding Path="TotalDays" />
+                                        </MultiBinding>
+                                    </Label.Text>
+                                </Label>
+                                <Label
+                                    Text="{Binding CreatedBy, StringFormat='Created by {0}'}"
+                                    FontSize="12"
+                                    TextColor="Gray" />
+                            </HorizontalStackLayout>
+                        </Grid>
+                    </Frame>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </Grid>
+
+</ContentPage>
