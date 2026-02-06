@@ -29,6 +29,7 @@
   - Family members can rate recipes on a 1-5 star scale
   - Optional review/comments
   - Track rating history over time
+  - Optional choice of how often you would like to eat this recipe (once a week, once a month, a few times a year, yearly, never)
 
 ### 2. Meal Planning
 - **Create Meal Plans**: Build weekly or custom-duration meal plans

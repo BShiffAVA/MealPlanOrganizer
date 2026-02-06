@@ -63,13 +63,14 @@ namespace MealPlanOrganizer.Functions.Data
                 b.HasKey(x => x.Id);
                 b.Property(x => x.UserId).IsRequired().HasMaxLength(200);
                 b.Property(x => x.Comments).HasMaxLength(500);
+                b.Property(x => x.FrequencyPreference).HasMaxLength(50);
                 b.Property(x => x.RatedUtc).HasDefaultValueSql("GETUTCDATE()");
                 b.HasOne(x => x.Recipe)
                     .WithMany(x => x.Ratings)
                     .HasForeignKey(x => x.RecipeId)
                     .OnDelete(DeleteBehavior.Cascade);
-                // Enforce one rating per user per recipe
-                b.HasIndex(x => new { x.RecipeId, x.UserId }).IsUnique();
+                // Index for efficient lookups by recipe and user (not unique to allow historical ratings)
+                b.HasIndex(x => new { x.RecipeId, x.UserId });
             });
 
             // Seed sample data via HasData

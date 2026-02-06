@@ -335,4 +335,104 @@ public class RecipeService : IRecipeService
             };
         }
     }
+
+    public async Task<RateRecipeResult> RateRecipeAsync(Guid recipeId, int rating, string? comments, string? frequencyPreference)
+    {
+        try
+        {
+            _logger.LogInformation("Submitting rating for recipe: {RecipeId}, Rating: {Rating}", recipeId, rating);
+
+            await AttachBearerTokenAsync();
+
+            var url = $"{_baseUrl}/recipes/{recipeId}/ratings?code={_functionKey}";
+            
+            var request = new RateRecipeRequestDto
+            {
+                Rating = rating,
+                Comments = comments,
+                FrequencyPreference = frequencyPreference
+            };
+
+            var json = JsonSerializer.Serialize(request);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PostAsync(url, content);
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            _logger.LogInformation("Rating response status: {StatusCode}", response.StatusCode);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
+            {
+                _logger.LogInformation("User already rated this recipe today");
+                return new RateRecipeResult
+                {
+                    Success = false,
+                    AlreadyRatedToday = true,
+                    ErrorMessage = "You have already rated this recipe today. You can add another rating tomorrow."
+                };
+            }
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                _logger.LogWarning("Unauthorized rating attempt");
+                return new RateRecipeResult
+                {
+                    Success = false,
+                    ErrorMessage = "Please log in to rate recipes."
+                };
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError("Failed to submit rating: {StatusCode}. Response: {Response}", response.StatusCode, responseContent);
+                return new RateRecipeResult
+                {
+                    Success = false,
+                    ErrorMessage = $"Failed to submit rating: {response.StatusCode}"
+                };
+            }
+
+            // Parse successful response
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            using var doc = JsonDocument.Parse(responseContent);
+            var root = doc.RootElement;
+
+            Guid? ratingId = null;
+            double? avgRating = null;
+            int? totalRatings = null;
+
+            if (root.TryGetProperty("ratingId", out var ratingIdElement) && ratingIdElement.ValueKind == JsonValueKind.String)
+            {
+                Guid.TryParse(ratingIdElement.GetString(), out var parsedId);
+                ratingId = parsedId;
+            }
+            if (root.TryGetProperty("averageRating", out var avgElement))
+            {
+                avgRating = avgElement.GetDouble();
+            }
+            if (root.TryGetProperty("totalRatings", out var totalElement))
+            {
+                totalRatings = totalElement.GetInt32();
+            }
+
+            _logger.LogInformation("Successfully submitted rating. RatingId: {RatingId}, AvgRating: {AvgRating}", ratingId, avgRating);
+            
+            return new RateRecipeResult
+            {
+                Success = true,
+                RatingId = ratingId,
+                AverageRating = avgRating,
+                TotalRatings = totalRatings
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception submitting rating for recipe: {RecipeId}", recipeId);
+            return new RateRecipeResult
+            {
+                Success = false,
+                ErrorMessage = $"An error occurred: {ex.Message}"
+            };
+        }
+    }
 }

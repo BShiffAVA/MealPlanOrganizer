@@ -23,12 +23,10 @@ public static class MauiProgram
 			});
 
 		// Load configuration from appsettings files
-		var assembly = Assembly.GetExecutingAssembly();
-		using var stream = assembly.GetManifestResourceStream("MealPlanOrganizer.Mobile.appsettings.json");
-		
+		// For MAUI, config files must be loaded from the app package
 		var config = new ConfigurationBuilder()
-			.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-			.AddJsonFile("appsettings.local.json", optional: true, reloadOnChange: true)
+			.AddJsonStream(FileSystem.OpenAppPackageFileAsync("appsettings.json").Result)
+			.AddJsonStream(FileSystem.OpenAppPackageFileAsync("appsettings.local.json").Result)
 			.Build();
 		
 		builder.Configuration.AddConfiguration(config);
