@@ -3,4 +3,7 @@
     <Project Path="src\MealPlanOrganizer.Functions\MealPlanOrganizer_Functions.csproj" />
     <Project Path="src\MealPlanOrganizer.Mobile\MealPlanOrganizer.Mobile.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests\MealPlanOrganizer.Functions.Tests\MealPlanOrganizer.Functions.Tests.csproj" />
+  </Folder>
 </Solution>

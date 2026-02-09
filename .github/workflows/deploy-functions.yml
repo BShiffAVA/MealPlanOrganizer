@@ -7,6 +7,7 @@ on:
       - main
     paths:
       - 'src/MealPlanOrganizer.Functions/**'
+      - 'tests/MealPlanOrganizer.Functions.Tests/**'
       - '.github/workflows/deploy-functions.yml'
 
 env:
@@ -38,9 +39,8 @@ jobs:
 
       - name: Restore dependencies
         run: |
-          cd src/MealPlanOrganizer.Functions
-          dotnet restore
-        working-directory: ./
+          dotnet restore src/MealPlanOrganizer.Functions/MealPlanOrganizer_Functions.csproj
+          dotnet restore tests/MealPlanOrganizer.Functions.Tests/MealPlanOrganizer.Functions.Tests.csproj
 
       - name: Build project
         run: |
@@ -48,12 +48,25 @@ jobs:
           dotnet build --configuration Release --no-restore
         working-directory: ./
 
-      - name: Run tests (if tests exist)
-        continue-on-error: true
+      - name: Build tests
         run: |
-          cd src/MealPlanOrganizer.Functions
-          dotnet test --configuration Release --no-build --logger "console;verbosity=normal" || echo "No tests found"
-        working-directory: ./
+          dotnet build tests/MealPlanOrganizer.Functions.Tests/MealPlanOrganizer.Functions.Tests.csproj --configuration Release --no-restore
+
+      - name: Run unit tests
+        run: |
+          dotnet test tests/MealPlanOrganizer.Functions.Tests/MealPlanOrganizer.Functions.Tests.csproj \
+            --configuration Release \
+            --no-build \
+            --logger "trx;LogFileName=test-results.trx" \
+            --logger "console;verbosity=normal"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: tests/MealPlanOrganizer.Functions.Tests/TestResults/
+          retention-days: 7
 
       - name: Publish Function App
         run: |
@@ -136,6 +149,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Deployment Details" >> $GITHUB_STEP_SUMMARY
           echo "- Build: ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- Unit Tests: ✅" >> $GITHUB_STEP_SUMMARY
           echo "- Publish: ✅" >> $GITHUB_STEP_SUMMARY
           echo "- Deploy: $([ '${{ job.status }}' = 'success' ] && echo '✅' || echo '❌')" >> $GITHUB_STEP_SUMMARY
           echo "- Database Migration: $([ '${{ job.status }}' = 'success' ] && echo '✅' || echo '❌')" >> $GITHUB_STEP_SUMMARY
