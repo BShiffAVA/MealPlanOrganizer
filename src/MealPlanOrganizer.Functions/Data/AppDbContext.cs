@@ -16,6 +16,9 @@ namespace MealPlanOrganizer.Functions.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            // Check if we're using SQL Server for provider-specific configurations
+            var isSqlServer = Database.IsSqlServer();
+            
             modelBuilder.Entity<Recipe>(b =>
             {
                 b.ToTable("Recipes");
@@ -23,15 +26,19 @@ namespace MealPlanOrganizer.Functions.Data
                 b.Property(x => x.Title).IsRequired().HasMaxLength(200);
                 b.Property(x => x.Description).HasMaxLength(2000);
                 b.Property(x => x.CuisineType).HasMaxLength(100);
-                b.Property(x => x.ImageUrl).HasColumnType("nvarchar(max)");
                 b.Property(x => x.CreatedBy).HasMaxLength(200);
-                b.Property(x => x.CreatedUtc).HasDefaultValueSql("GETUTCDATE()");
-                b.Property(x => x.UpdatedUtc).HasColumnType("datetime2");
+                
+                if (isSqlServer)
+                {
+                    b.Property(x => x.ImageUrl).HasColumnType("nvarchar(max)");
+                    b.Property(x => x.CreatedUtc).HasDefaultValueSql("GETUTCDATE()");
+                    b.Property(x => x.UpdatedUtc).HasColumnType("datetime2");
+                    b.Property(x => x.SourceImageUrl).HasColumnType("nvarchar(max)");
+                    b.Property(x => x.ExtractionConfidence).HasColumnType("decimal(3,2)");
+                }
                 
                 // GenAI extraction metadata
                 b.Property(x => x.IsExtracted).HasDefaultValue(false);
-                b.Property(x => x.SourceImageUrl).HasColumnType("nvarchar(max)");
-                b.Property(x => x.ExtractionConfidence).HasColumnType("decimal(3,2)");
             });
 
             modelBuilder.Entity<RecipeIngredient>(b =>
@@ -40,8 +47,13 @@ namespace MealPlanOrganizer.Functions.Data
                 b.HasKey(x => x.Id);
                 b.Property(x => x.Name).IsRequired().HasMaxLength(200);
                 b.Property(x => x.Quantity).HasMaxLength(100);
-                b.Property(x => x.QuantityValue).HasColumnType("decimal(10,4)");
                 b.Property(x => x.Unit).HasMaxLength(50);
+                
+                if (isSqlServer)
+                {
+                    b.Property(x => x.QuantityValue).HasColumnType("decimal(10,4)");
+                }
+                
                 b.HasOne(x => x.Recipe)
                     .WithMany(x => x.Ingredients)
                     .HasForeignKey(x => x.RecipeId)
@@ -66,7 +78,12 @@ namespace MealPlanOrganizer.Functions.Data
                 b.Property(x => x.UserId).IsRequired().HasMaxLength(200);
                 b.Property(x => x.Comments).HasMaxLength(500);
                 b.Property(x => x.FrequencyPreference).HasMaxLength(50);
-                b.Property(x => x.RatedUtc).HasDefaultValueSql("GETUTCDATE()");
+                
+                if (isSqlServer)
+                {
+                    b.Property(x => x.RatedUtc).HasDefaultValueSql("GETUTCDATE()");
+                }
+                
                 b.HasOne(x => x.Recipe)
                     .WithMany(x => x.Ratings)
                     .HasForeignKey(x => x.RecipeId)
@@ -80,11 +97,16 @@ namespace MealPlanOrganizer.Functions.Data
                 b.ToTable("MealPlans");
                 b.HasKey(x => x.Id);
                 b.Property(x => x.Name).IsRequired().HasMaxLength(200);
-                b.Property(x => x.StartDate).HasColumnType("date");
-                b.Property(x => x.EndDate).HasColumnType("date");
                 b.Property(x => x.CreatedBy).HasMaxLength(200);
                 b.Property(x => x.Status).IsRequired().HasMaxLength(50).HasDefaultValue("Draft");
-                b.Property(x => x.CreatedUtc).HasDefaultValueSql("GETUTCDATE()");
+                
+                if (isSqlServer)
+                {
+                    b.Property(x => x.StartDate).HasColumnType("date");
+                    b.Property(x => x.EndDate).HasColumnType("date");
+                    b.Property(x => x.CreatedUtc).HasDefaultValueSql("GETUTCDATE()");
+                }
+                
                 // Index for listing meal plans by date
                 b.HasIndex(x => x.StartDate);
             });
@@ -93,8 +115,13 @@ namespace MealPlanOrganizer.Functions.Data
             {
                 b.ToTable("MealPlanRecipes");
                 b.HasKey(x => x.Id);
-                b.Property(x => x.Day).HasColumnType("date");
-                b.Property(x => x.CreatedUtc).HasDefaultValueSql("GETUTCDATE()");
+                
+                if (isSqlServer)
+                {
+                    b.Property(x => x.Day).HasColumnType("date");
+                    b.Property(x => x.CreatedUtc).HasDefaultValueSql("GETUTCDATE()");
+                }
+                
                 b.HasOne(x => x.MealPlan)
                     .WithMany(x => x.Recipes)
                     .HasForeignKey(x => x.MealPlanId)
