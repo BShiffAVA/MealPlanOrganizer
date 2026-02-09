@@ -11,15 +11,18 @@ public class GetRecommendedRecipes
     private readonly ILogger<GetRecommendedRecipes> _logger;
     private readonly IRecipeRecommendationService _recommendationService;
     private readonly AuthenticationHelper _authHelper;
+    private readonly IBlobUrlService _blobUrlService;
 
     public GetRecommendedRecipes(
         ILogger<GetRecommendedRecipes> logger,
         IRecipeRecommendationService recommendationService,
-        AuthenticationHelper authHelper)
+        AuthenticationHelper authHelper,
+        IBlobUrlService blobUrlService)
     {
         _logger = logger;
         _recommendationService = recommendationService;
         _authHelper = authHelper;
+        _blobUrlService = blobUrlService;
     }
 
     [Function("GetRecommendedRecipes")]
@@ -61,16 +64,16 @@ public class GetRecommendedRecipes
         {
             var recommendations = await _recommendationService.GetRecommendedRecipesAsync(weekStartDate);
 
-            var response = req.CreateResponse(HttpStatusCode.OK);
-            await response.WriteAsJsonAsync(new
+            // Generate SAS URLs for all recipe images
+            var recipesWithSasUrls = new List<object>();
+            foreach (var r in recommendations)
             {
-                weekStartDate = weekStartDate.ToString("yyyy-MM-dd"),
-                totalRecipes = recommendations.Count,
-                recipes = recommendations.Select(r => new
+                var sasUrl = await _blobUrlService.NormalizeImageUrlAsync(r.ImageUrl);
+                recipesWithSasUrls.Add(new
                 {
                     recipeId = r.RecipeId,
                     title = r.Title,
-                    imageUrl = r.ImageUrl,
+                    imageUrl = sasUrl,
                     cuisineType = r.CuisineType,
                     prepTimeMinutes = r.PrepTimeMinutes,
                     cookTimeMinutes = r.CookTimeMinutes,
@@ -80,7 +83,15 @@ public class GetRecommendedRecipes
                     lastCookedDate = r.LastCookedDate?.ToString("yyyy-MM-dd"),
                     frequencyPreference = r.FrequencyPreference,
                     reasonCodes = r.ReasonCodes
-                })
+                });
+            }
+
+            var response = req.CreateResponse(HttpStatusCode.OK);
+            await response.WriteAsJsonAsync(new
+            {
+                weekStartDate = weekStartDate.ToString("yyyy-MM-dd"),
+                totalRecipes = recommendations.Count,
+                recipes = recipesWithSasUrls
             });
 
             return response;

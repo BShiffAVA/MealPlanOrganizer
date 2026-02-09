@@ -61,3 +61,10 @@ sp-credentials.json
 
 # Local tool cache
 .dotnet/
+
+# Azurite (Local Storage Emulator)
+__azurite_db_*.json
+__blobstorage__/
+__queuestorage__/
+__tablestorage__/
+AzuriteConfig

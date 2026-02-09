@@ -3,6 +3,7 @@ using Microsoft.Azure.Functions.Worker.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using MealPlanOrganizer.Functions.Data;
 using MealPlanOrganizer.Functions.Services;
 using Microsoft.Extensions.Configuration;
@@ -70,6 +71,15 @@ builder.Services.AddSingleton(sp =>
 
     var blobServiceClient = sp.GetRequiredService<BlobServiceClient>();
     return blobServiceClient.GetBlobContainerClient(containerName);
+});
+
+// Register blob URL service for generating SAS URLs
+builder.Services.AddSingleton<IBlobUrlService>(sp =>
+{
+    var containerClient = sp.GetRequiredService<BlobContainerClient>();
+    var blobServiceClient = sp.GetRequiredService<BlobServiceClient>();
+    var logger = sp.GetRequiredService<ILogger<BlobUrlService>>();
+    return new BlobUrlService(containerClient, blobServiceClient, logger);
 });
 
 // Configure Azure OpenAI client for GenAI recipe extraction
