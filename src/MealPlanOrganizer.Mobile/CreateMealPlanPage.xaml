@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:MealPlanOrganizer.Mobile.ViewModels"
              x:Class="MealPlanOrganizer.Mobile.CreateMealPlanPage"
+             x:DataType="vm:CreateMealPlanViewModel"
              Title="New Meal Plan">
 
     <ScrollView>
@@ -28,7 +30,7 @@
                     FontSize="14"
                     FontAttributes="Bold" />
                 <Entry
-                    x:Name="NameEntry"
+                    Text="{Binding PlanName}"
                     Placeholder="e.g., Week of February 10th"
                     MaxLength="100" />
             </VerticalStackLayout>
@@ -42,7 +44,7 @@
                 <HorizontalStackLayout Spacing="8">
                     <Button
                         Text="This Week"
-                        Clicked="OnThisWeekClicked"
+                        Command="{Binding SelectThisWeekCommand}"
                         BackgroundColor="#E3F2FD"
                         TextColor="#1976D2"
                         Padding="16,8"
@@ -50,7 +52,7 @@
                         FontSize="12" />
                     <Button
                         Text="Next Week"
-                        Clicked="OnNextWeekClicked"
+                        Command="{Binding SelectNextWeekCommand}"
                         BackgroundColor="#E3F2FD"
                         TextColor="#1976D2"
                         Padding="16,8"
@@ -58,7 +60,7 @@
                         FontSize="12" />
                     <Button
                         Text="Next 2 Weeks"
-                        Clicked="OnNext2WeeksClicked"
+                        Command="{Binding SelectNext2WeeksCommand}"
                         BackgroundColor="#E3F2FD"
                         TextColor="#1976D2"
                         Padding="16,8"
@@ -74,9 +76,8 @@
                     FontSize="14"
                     FontAttributes="Bold" />
                 <DatePicker
-                    x:Name="StartDatePicker"
-                    MinimumDate="{Binding Today}"
-                    DateSelected="OnStartDateSelected" />
+                    Date="{Binding StartDate}"
+                    MinimumDate="{Binding Today}" />
             </VerticalStackLayout>
 
             <!-- End Date -->
@@ -86,7 +87,7 @@
                     FontSize="14"
                     FontAttributes="Bold" />
                 <DatePicker
-                    x:Name="EndDatePicker"
+                    Date="{Binding EndDate}"
                     MinimumDate="{Binding Today}" />
             </VerticalStackLayout>
 
@@ -104,8 +105,7 @@
                         FontSize="14"
                         FontAttributes="Bold" />
                     <Label
-                        x:Name="SummaryLabel"
-                        Text="Select dates to see summary"
+                        Text="{Binding SummaryText}"
                         FontSize="14"
                         TextColor="Gray" />
                 </VerticalStackLayout>
@@ -113,24 +113,23 @@
 
             <!-- Error Message -->
             <Label
-                x:Name="ErrorLabel"
+                Text="{Binding ErrorMessage}"
                 TextColor="Red"
-                IsVisible="False"
+                IsVisible="{Binding HasError}"
                 HorizontalOptions="Center" />
 
             <!-- Buttons -->
             <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,16,0,0">
                 <Button
                     Text="Cancel"
-                    Clicked="OnCancelClicked"
+                    Command="{Binding CancelCommand}"
                     BackgroundColor="#E0E0E0"
                     TextColor="#424242"
                     CornerRadius="8" />
                 <Button
-                    x:Name="CreateButton"
                     Grid.Column="1"
                     Text="Create Plan"
-                    Clicked="OnCreateClicked"
+                    Command="{Binding CreateCommand}"
                     BackgroundColor="#4CAF50"
                     TextColor="White"
                     CornerRadius="8" />
@@ -138,9 +137,8 @@
 
             <!-- Loading Indicator -->
             <ActivityIndicator
-                x:Name="LoadingIndicator"
-                IsRunning="False"
-                IsVisible="False"
+                IsRunning="{Binding IsLoading}"
+                IsVisible="{Binding IsLoading}"
                 Color="#6C63FF"
                 HorizontalOptions="Center" />
 

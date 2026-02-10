@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:MealPlanOrganizer.Mobile.ViewModels"
              x:Class="MealPlanOrganizer.Mobile.RecipePickerPage"
-             Title="Choose Recipes"
+             x:DataType="vm:RecipePickerPageViewModel"
+             Title="{Binding PageTitle, FallbackValue='Choose Recipes'}"
              BackgroundColor="Black">
 
     <Grid RowDefinitions="Auto,Auto,*,Auto" Padding="16" RowSpacing="12">
@@ -10,13 +12,11 @@
         <!-- Header -->
         <VerticalStackLayout Spacing="4">
             <Label
-                x:Name="HeaderLabel"
-                Text="Select Recipes"
+                Text="{Binding PageTitle, FallbackValue='Select Recipes'}"
                 FontSize="20"
                 FontAttributes="Bold"
                 TextColor="White" />
             <Label
-                x:Name="DayLabel"
                 Text="Tap recipes to select them for your meal plan"
                 FontSize="14"
                 TextColor="#AAAAAA" />
@@ -50,10 +50,9 @@
 
         <!-- Loading Indicator -->
         <ActivityIndicator
-            x:Name="LoadingIndicator"
             Grid.Row="2"
-            IsRunning="False"
-            IsVisible="False"
+            IsRunning="{Binding IsLoading}"
+            IsVisible="{Binding IsLoading}"
             VerticalOptions="Center"
             HorizontalOptions="Center"
             Color="#6C63FF" />
@@ -87,9 +86,10 @@
         <CollectionView
             x:Name="RecipesCollection"
             Grid.Row="2"
+            ItemsSource="{Binding Recipes}"
             SelectionMode="None">
             <CollectionView.ItemTemplate>
-                <DataTemplate>
+                <DataTemplate x:DataType="vm:RecipePickerItemViewModel">
                     <Frame
                         Margin="0,0,0,10"
                         Padding="12"
@@ -99,7 +99,7 @@
                         HasShadow="False">
                         <Frame.GestureRecognizers>
                             <TapGestureRecognizer
-                                Tapped="OnRecipeTapped"
+                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:RecipePickerPageViewModel}}, Path=SelectRecipeCommand}"
                                 CommandParameter="{Binding .}" />
                         </Frame.GestureRecognizers>
                         <Grid ColumnDefinitions="Auto,60,*,Auto" ColumnSpacing="12">
@@ -210,38 +210,34 @@
 
         <!-- Bottom Action Bar (multi-select mode) -->
         <Frame
-            x:Name="ActionBar"
             Grid.Row="3"
             Padding="16"
             CornerRadius="12"
             BackgroundColor="Black"
             BorderColor="#333333"
             HasShadow="False"
-            IsVisible="False">
+            IsVisible="{Binding IsMultiSelectMode}">
             <Grid ColumnDefinitions="*,Auto">
                 <VerticalStackLayout VerticalOptions="Center">
                     <Label
-                        x:Name="SelectionCountLabel"
-                        Text="0 recipes selected"
+                        Text="{Binding SelectionCountText}"
                         FontSize="16"
                         FontAttributes="Bold"
                         TextColor="White" />
                     <Label
-                        x:Name="SelectionHintLabel"
-                        Text="Select up to 7 recipes"
+                        Text="{Binding MaxSelections, StringFormat='Select up to {0} recipes'}"
                         FontSize="12"
                         TextColor="#CCCCCC" />
                 </VerticalStackLayout>
                 <Button
-                    x:Name="DoneButton"
                     Grid.Column="1"
                     Text="Done"
-                    Clicked="OnDoneClicked"
+                    Command="{Binding DoneCommand}"
                     BackgroundColor="#4CAF50"
                     TextColor="White"
                     Padding="24,12"
                     CornerRadius="8"
-                    IsEnabled="False" />
+                    IsEnabled="{Binding HasSelections}" />
             </Grid>
         </Frame>
     </Grid>

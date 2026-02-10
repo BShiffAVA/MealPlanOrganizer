@@ -2,27 +2,37 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:models="clr-namespace:MealPlanOrganizer.Mobile.Models"
+             xmlns:vm="clr-namespace:MealPlanOrganizer.Mobile.ViewModels"
+             xmlns:converters="clr-namespace:MealPlanOrganizer.Mobile.Converters"
              x:Class="MealPlanOrganizer.Mobile.ExtractedRecipePreviewPage"
+             x:DataType="vm:ExtractedRecipePreviewViewModel"
              Title="Review Recipe">
+
+    <ContentPage.Resources>
+        <converters:InvertedBoolConverter x:Key="InverseBoolConverter"/>
+    </ContentPage.Resources>
 
     <ScrollView>
         <VerticalStackLayout Padding="16" Spacing="16">
 
             <!-- Confidence Indicator -->
-            <Frame x:Name="ConfidenceFrame"
-                   Padding="12"
+            <Frame Padding="12"
                    CornerRadius="8"
-                   HasShadow="False">
+                   HasShadow="False"
+                   BackgroundColor="{Binding ConfidenceBackgroundColor}"
+                   BorderColor="{Binding ConfidenceBorderColor}">
                 <HorizontalStackLayout Spacing="8">
-                    <Label x:Name="ConfidenceIcon"
+                    <Label Text="{Binding ConfidenceIcon}"
                            FontSize="20"
                            VerticalOptions="Center" />
                     <VerticalStackLayout>
-                        <Label x:Name="ConfidenceLabel"
+                        <Label Text="{Binding ConfidenceLabel}"
                                FontAttributes="Bold"
-                               FontSize="14" />
-                        <Label x:Name="ConfidenceDescription"
-                               FontSize="12" />
+                               FontSize="14"
+                               TextColor="{Binding ConfidenceTextColor}" />
+                        <Label Text="{Binding ConfidenceDescription}"
+                               FontSize="12"
+                               TextColor="{Binding ConfidenceTextColor}" />
                     </VerticalStackLayout>
                 </HorizontalStackLayout>
             </Frame>
@@ -33,7 +43,7 @@
                        FontAttributes="Bold"
                        FontSize="14"
                        TextColor="#666666" />
-                <Entry x:Name="NameEntry"
+                <Entry Text="{Binding RecipeName}"
                        Placeholder="Enter recipe name"
                        FontSize="16" />
             </VerticalStackLayout>
@@ -44,7 +54,7 @@
                        FontAttributes="Bold"
                        FontSize="14"
                        TextColor="#666666" />
-                <Editor x:Name="DescriptionEditor"
+                <Editor Text="{Binding Description}"
                         Placeholder="Recipe description (optional)"
                         HeightRequest="80"
                         AutoSize="TextChanges" />
@@ -58,7 +68,7 @@
                            FontAttributes="Bold"
                            FontSize="14"
                            TextColor="#666666" />
-                    <Entry x:Name="CuisineEntry"
+                    <Entry Text="{Binding CuisineType}"
                            Placeholder="e.g., Italian" />
                 </VerticalStackLayout>
 
@@ -68,7 +78,7 @@
                            FontAttributes="Bold"
                            FontSize="14"
                            TextColor="#666666" />
-                    <Entry x:Name="ServingsEntry"
+                    <Entry Text="{Binding ServingsText}"
                            Placeholder="e.g., 4"
                            Keyboard="Numeric" />
                 </VerticalStackLayout>
@@ -79,7 +89,7 @@
                            FontAttributes="Bold"
                            FontSize="14"
                            TextColor="#666666" />
-                    <Entry x:Name="PrepTimeEntry"
+                    <Entry Text="{Binding PrepTimeText}"
                            Placeholder="e.g., 15"
                            Keyboard="Numeric" />
                 </VerticalStackLayout>
@@ -90,7 +100,7 @@
                            FontAttributes="Bold"
                            FontSize="14"
                            TextColor="#666666" />
-                    <Entry x:Name="CookTimeEntry"
+                    <Entry Text="{Binding CookTimeText}"
                            Placeholder="e.g., 30"
                            Keyboard="Numeric" />
                 </VerticalStackLayout>
@@ -109,8 +119,7 @@
                            VerticalOptions="Center" />
                 </HorizontalStackLayout>
 
-                <CollectionView x:Name="IngredientsCollectionView"
-                                ItemsSource="{Binding Ingredients}"
+                <CollectionView ItemsSource="{Binding Ingredients}"
                                 SelectionMode="None">
                     <CollectionView.ItemTemplate>
                         <DataTemplate x:DataType="models:ExtractedIngredient">
@@ -129,7 +138,7 @@
                                             TextColor="#FF5252"
                                             FontSize="16"
                                             Padding="0"
-                                            Clicked="OnRemoveIngredientClicked"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:ExtractedRecipePreviewViewModel}}, Path=RemoveIngredientCommand}"
                                             CommandParameter="{Binding .}" />
                                 </Grid>
                             </Frame>
@@ -138,7 +147,7 @@
                 </CollectionView>
 
                 <Button Text="+ Add Ingredient"
-                        Clicked="OnAddIngredientClicked"
+                        Command="{Binding AddIngredientCommand}"
                         BackgroundColor="#E3F2FD"
                         TextColor="#1565C0"
                         CornerRadius="8"
@@ -158,8 +167,7 @@
                            VerticalOptions="Center" />
                 </HorizontalStackLayout>
 
-                <CollectionView x:Name="StepsCollectionView"
-                                ItemsSource="{Binding Steps}"
+                <CollectionView ItemsSource="{Binding Steps}"
                                 SelectionMode="None">
                     <CollectionView.ItemTemplate>
                         <DataTemplate x:DataType="models:ExtractedStep">
@@ -187,7 +195,7 @@
                                             MinimumHeightRequest="40" />
                                     <VerticalStackLayout Grid.Column="2" Spacing="4" VerticalOptions="Center">
                                         <Button Text="↑"
-                                                Clicked="OnMoveStepUpClicked"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:ExtractedRecipePreviewViewModel}}, Path=MoveStepUpCommand}"
                                                 CommandParameter="{Binding .}"
                                                 BackgroundColor="#E0E0E0"
                                                 TextColor="#333333"
@@ -196,7 +204,7 @@
                                                 HeightRequest="28"
                                                 WidthRequest="28" />
                                         <Button Text="↓"
-                                                Clicked="OnMoveStepDownClicked"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:ExtractedRecipePreviewViewModel}}, Path=MoveStepDownCommand}"
                                                 CommandParameter="{Binding .}"
                                                 BackgroundColor="#E0E0E0"
                                                 TextColor="#333333"
@@ -205,7 +213,7 @@
                                                 HeightRequest="28"
                                                 WidthRequest="28" />
                                         <Button Text="✕"
-                                                Clicked="OnRemoveStepClicked"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:ExtractedRecipePreviewViewModel}}, Path=RemoveStepCommand}"
                                                 CommandParameter="{Binding .}"
                                                 BackgroundColor="Transparent"
                                                 TextColor="#FF5252"
@@ -221,7 +229,7 @@
                 </CollectionView>
 
                 <Button Text="+ Add Step"
-                        Clicked="OnAddStepClicked"
+                        Command="{Binding AddStepCommand}"
                         BackgroundColor="#E3F2FD"
                         TextColor="#1565C0"
                         CornerRadius="8"
@@ -229,14 +237,13 @@
             </VerticalStackLayout>
 
             <!-- Validation Error -->
-            <Frame x:Name="ValidationErrorFrame"
-                   IsVisible="False"
+            <Frame IsVisible="{Binding HasValidationError}"
                    Padding="12"
                    BackgroundColor="#FFEBEE"
                    BorderColor="#EF5350"
                    CornerRadius="8"
                    HasShadow="False">
-                <Label x:Name="ValidationErrorLabel"
+                <Label Text="{Binding ValidationErrorMessage}"
                        TextColor="#C62828"
                        FontSize="14" />
             </Frame>
@@ -244,25 +251,24 @@
             <!-- Action Buttons -->
             <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,8,0,0">
                 <Button Text="Cancel"
-                        Clicked="OnCancelClicked"
+                        Command="{Binding CancelCommand}"
                         BackgroundColor="#E0E0E0"
                         TextColor="#333333"
                         HeightRequest="50"
                         CornerRadius="8" />
-                <Button x:Name="SaveButton"
-                        Grid.Column="1"
+                <Button Grid.Column="1"
                         Text="💾 Save Recipe"
-                        Clicked="OnSaveClicked"
+                        Command="{Binding SaveCommand}"
                         BackgroundColor="#4CAF50"
                         TextColor="White"
                         HeightRequest="50"
                         CornerRadius="8"
-                        FontAttributes="Bold" />
+                        FontAttributes="Bold"
+                        IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}" />
             </Grid>
 
             <!-- Saving Indicator -->
-            <VerticalStackLayout x:Name="SavingSection"
-                                 IsVisible="False"
+            <VerticalStackLayout IsVisible="{Binding IsLoading}"
                                  Spacing="8"
                                  HorizontalOptions="Center"
                                  Margin="0,8,0,0">

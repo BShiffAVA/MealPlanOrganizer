@@ -2,8 +2,14 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:MealPlanOrganizer.Mobile.ViewModels"
+             xmlns:converters="clr-namespace:MealPlanOrganizer.Mobile.Converters"
              x:Class="MealPlanOrganizer.Mobile.ExtractRecipePage"
+             x:DataType="vm:ExtractRecipeViewModel"
              Title="Import Recipe">
+
+    <ContentPage.Resources>
+        <converters:InvertedBoolConverter x:Key="InverseBoolConverter"/>
+    </ContentPage.Resources>
 
     <ScrollView>
         <VerticalStackLayout Padding="16" Spacing="16">
@@ -20,44 +26,41 @@
 
             <!-- Input Type Selector -->
             <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
-                <Button x:Name="ImageModeButton"
-                        Text="📷 Photo"
-                        Clicked="OnImageModeClicked"
-                        BackgroundColor="#4CAF50"
-                        TextColor="White"
+                <Button Text="📷 Photo"
+                        Command="{Binding SelectImageModeCommand}"
+                        BackgroundColor="{Binding ImageModeBackgroundColor}"
+                        TextColor="{Binding ImageModeTextColor}"
                         CornerRadius="8" />
-                <Button x:Name="UrlModeButton"
-                        Grid.Column="1"
+                <Button Grid.Column="1"
                         Text="🔗 URL"
-                        Clicked="OnUrlModeClicked"
-                        BackgroundColor="#E0E0E0"
-                        TextColor="#333333"
+                        Command="{Binding SelectUrlModeCommand}"
+                        BackgroundColor="{Binding UrlModeBackgroundColor}"
+                        TextColor="{Binding UrlModeTextColor}"
                         CornerRadius="8" />
-                <Button x:Name="TextModeButton"
-                        Grid.Column="2"
+                <Button Grid.Column="2"
                         Text="📝 Text"
-                        Clicked="OnTextModeClicked"
-                        BackgroundColor="#E0E0E0"
-                        TextColor="#333333"
+                        Command="{Binding SelectTextModeCommand}"
+                        BackgroundColor="{Binding TextModeBackgroundColor}"
+                        TextColor="{Binding TextModeTextColor}"
                         CornerRadius="8" />
             </Grid>
 
             <!-- Image Input Section -->
-            <VerticalStackLayout x:Name="ImageInputSection" Spacing="12" IsVisible="True">
+            <VerticalStackLayout Spacing="12" IsVisible="{Binding IsImageMode}">
                 <Label Text="Take a photo or select from gallery"
                        FontSize="14"
                        TextColor="#666666" />
                 
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                     <Button Text="📷 Take Photo"
-                            Clicked="OnTakePhotoClicked"
+                            Command="{Binding TakePhotoCommand}"
                             BackgroundColor="#6C63FF"
                             TextColor="White"
                             HeightRequest="50"
                             CornerRadius="8" />
                     <Button Grid.Column="1"
                             Text="🖼️ Gallery"
-                            Clicked="OnPickImageClicked"
+                            Command="{Binding PickPhotoCommand}"
                             BackgroundColor="#6C63FF"
                             TextColor="White"
                             HeightRequest="50"
@@ -65,19 +68,18 @@
                 </Grid>
 
                 <!-- Selected Image Preview -->
-                <Frame x:Name="ImagePreviewFrame"
-                       IsVisible="False"
+                <Frame IsVisible="{Binding HasSelectedImage}"
                        Padding="8"
                        CornerRadius="12"
                        BorderColor="#E0E0E0"
                        HasShadow="False">
                     <Grid RowDefinitions="Auto,Auto">
-                        <Image x:Name="SelectedImagePreview"
+                        <Image Source="{Binding SelectedImagePreview}"
                                HeightRequest="200"
                                Aspect="AspectFit" />
                         <Button Grid.Row="1"
                                 Text="✕ Remove"
-                                Clicked="OnClearImageClicked"
+                                Command="{Binding ClearImageCommand}"
                                 BackgroundColor="Transparent"
                                 TextColor="#FF5252"
                                 FontSize="12"
@@ -87,64 +89,58 @@
             </VerticalStackLayout>
 
             <!-- URL Input Section -->
-            <VerticalStackLayout x:Name="UrlInputSection" Spacing="8" IsVisible="False">
+            <VerticalStackLayout Spacing="8" IsVisible="{Binding IsUrlMode}">
                 <Label Text="Enter the URL of a recipe webpage"
                        FontSize="14"
                        TextColor="#666666" />
-                <Entry x:Name="UrlEntry"
+                <Entry Text="{Binding UrlText}"
                        Placeholder="https://example.com/recipe/..."
                        PlaceholderColor="#999999"
-                       Keyboard="Url"
-                       TextChanged="OnUrlTextChanged" />
+                       Keyboard="Url" />
                 <Label Text="Supports most recipe websites"
                        FontSize="12"
                        TextColor="#999999" />
             </VerticalStackLayout>
 
             <!-- Text Input Section -->
-            <VerticalStackLayout x:Name="TextInputSection" Spacing="8" IsVisible="False">
+            <VerticalStackLayout Spacing="8" IsVisible="{Binding IsTextMode}">
                 <Label Text="Paste or type recipe content"
                        FontSize="14"
                        TextColor="#666666" />
-                <Editor x:Name="TextEditor"
+                <Editor Text="{Binding PastedText}"
                         Placeholder="Paste the full recipe here including ingredients and instructions..."
                         PlaceholderColor="#999999"
-                        HeightRequest="200"
-                        TextChanged="OnTextChanged" />
-                <Label x:Name="CharacterCountLabel"
-                       Text="0 characters (minimum 20)"
+                        HeightRequest="200" />
+                <Label Text="{Binding CharacterCountText}"
                        FontSize="12"
-                       TextColor="#999999" />
+                       TextColor="{Binding CharacterCountColor}" />
             </VerticalStackLayout>
 
             <!-- Error Message -->
-            <Frame x:Name="ErrorFrame"
-                   IsVisible="False"
+            <Frame IsVisible="{Binding HasError}"
                    Padding="12"
                    BackgroundColor="#FFEBEE"
                    BorderColor="#EF5350"
                    CornerRadius="8"
                    HasShadow="False">
-                <Label x:Name="ErrorLabel"
+                <Label Text="{Binding ErrorMessage}"
                        TextColor="#C62828"
                        FontSize="14" />
             </Frame>
 
             <!-- Extract Button -->
-            <Button x:Name="ExtractButton"
-                    Text="🪄 Extract Recipe"
-                    Clicked="OnExtractClicked"
-                    BackgroundColor="#4CAF50"
+            <Button Text="🪄 Extract Recipe"
+                    Command="{Binding ExtractCommand}"
+                    BackgroundColor="{Binding ExtractButtonBackgroundColor}"
                     TextColor="White"
                     HeightRequest="50"
                     CornerRadius="8"
                     FontAttributes="Bold"
                     FontSize="16"
-                    IsEnabled="False" />
+                    IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}" />
 
             <!-- Loading Indicator -->
-            <VerticalStackLayout x:Name="LoadingSection"
-                                 IsVisible="False"
+            <VerticalStackLayout IsVisible="{Binding IsLoading}"
                                  Spacing="12"
                                  HorizontalOptions="Center">
                 <ActivityIndicator IsRunning="True"
