@@ -189,11 +189,12 @@ public partial class ExtractRecipeViewModel : ObservableObject
         {
             HasError = false;
 
-            var photo = await MediaPicker.Default.PickPhotoAsync(new MediaPickerOptions
+            var photos = await MediaPicker.Default.PickPhotosAsync(new MediaPickerOptions
             {
                 Title = "Select a recipe image"
             });
 
+            var photo = photos?.FirstOrDefault();
             if (photo != null)
             {
                 await ProcessSelectedImageAsync(photo);

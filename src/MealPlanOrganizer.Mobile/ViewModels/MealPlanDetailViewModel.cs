@@ -14,6 +14,11 @@ public partial class MealPlanDetailViewModel : ObservableObject
     private readonly IRecipeService _recipeService;
     private readonly INavigationService _navigationService;
 
+    /// <summary>
+    /// Exposes RecipeService for code-behind drag-drop operations.
+    /// </summary>
+    public IRecipeService RecipeService => _recipeService;
+
     [ObservableProperty]
     private Guid _mealPlanId;
 

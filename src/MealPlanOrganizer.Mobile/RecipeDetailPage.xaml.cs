@@ -35,7 +35,7 @@ public partial class RecipeDetailPage : ContentPage, IQueryAttributable
 		catch (Exception ex)
 		{
 			_logger.LogError(ex, "Failed to apply query attributes for RecipeDetailPage");
-			await DisplayAlert("Error", $"Failed to load recipe: {ex.Message}", "OK");
+			await DisplayAlertAsync("Error", $"Failed to load recipe: {ex.Message}", "OK");
 		}
 	}
 

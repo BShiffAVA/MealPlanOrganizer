@@ -88,7 +88,7 @@ public partial class AppShell : Shell
 
 	private async void OnLogoutClicked(object? sender, EventArgs e)
 	{
-		bool confirm = await DisplayAlert(
+		bool confirm = await DisplayAlertAsync(
 			"Sign Out",
 			"Are you sure you want to sign out?",
 			"Sign Out",
@@ -122,7 +122,7 @@ public partial class AppShell : Shell
 		catch (Exception ex)
 		{
 			Log.Error(ex, "Logout error");
-			await DisplayAlert("Error", "Failed to sign out. Please try again.", "OK");
+			await DisplayAlertAsync("Error", "Failed to sign out. Please try again.", "OK");
 		}
 	}
 }

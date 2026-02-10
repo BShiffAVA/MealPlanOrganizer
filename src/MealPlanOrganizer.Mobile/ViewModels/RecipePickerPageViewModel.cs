@@ -273,12 +273,12 @@ public partial class RecipePickerPageViewModel : ObservableObject
     {
         if (!_dayDate.HasValue)
         {
-            await Shell.Current.DisplayAlert("Error", "Invalid date", "OK");
+            await Shell.Current.DisplayAlertAsync("Error", "Invalid date", "OK");
             return;
         }
 
         // Confirm selection
-        var confirm = await Shell.Current.DisplayAlert(
+        var confirm = await Shell.Current.DisplayAlertAsync(
             "Add Recipe",
             $"Add \"{item.Title}\" to {_dayDate.Value:dddd, MMMM d}?",
             "Add",
@@ -304,7 +304,7 @@ public partial class RecipePickerPageViewModel : ObservableObject
             }
             else
             {
-                await Shell.Current.DisplayAlert("Error", result.ErrorMessage ?? "Failed to add recipe", "OK");
+                await Shell.Current.DisplayAlertAsync("Error", result.ErrorMessage ?? "Failed to add recipe", "OK");
             }
         }
         finally
@@ -343,7 +343,7 @@ public partial class RecipePickerPageViewModel : ObservableObject
         else
         {
             // Max reached
-            Shell.Current.DisplayAlert("Maximum Reached", 
+            _ = Shell.Current.DisplayAlertAsync("Maximum Reached", 
                 $"You can only select up to {MaxSelections} recipes. Deselect one first.", "OK");
         }
     }
@@ -355,7 +355,7 @@ public partial class RecipePickerPageViewModel : ObservableObject
 
         if (!_startDate.HasValue)
         {
-            await Shell.Current.DisplayAlert("Error", "Invalid start date", "OK");
+            await Shell.Current.DisplayAlertAsync("Error", "Invalid start date", "OK");
             return;
         }
 
@@ -386,7 +386,7 @@ public partial class RecipePickerPageViewModel : ObservableObject
 
                 if (!result.Success)
                 {
-                    await Shell.Current.DisplayAlert("Warning", 
+                    await Shell.Current.DisplayAlertAsync("Warning", 
                         $"Failed to add {recipe.Title}: {result.ErrorMessage}", "OK");
                 }
 

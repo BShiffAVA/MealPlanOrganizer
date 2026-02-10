@@ -160,7 +160,7 @@ public partial class MealPlanDetailPage : ContentPage
 
             if (!success)
             {
-                await DisplayAlert("Error", "Failed to move recipe", "OK");
+                await DisplayAlertAsync("Error", "Failed to move recipe", "OK");
             }
 
             // Reload to get updated state
@@ -168,7 +168,7 @@ public partial class MealPlanDetailPage : ContentPage
         }
         catch (Exception ex)
         {
-            await DisplayAlert("Error", $"Failed to move recipe: {ex.Message}", "OK");
+            await DisplayAlertAsync("Error", $"Failed to move recipe: {ex.Message}", "OK");
             await ViewModel.LoadMealPlanCommand.ExecuteAsync(null);
         }
         finally
@@ -254,8 +254,7 @@ public partial class MealPlanDetailPage : ContentPage
         if (_originalRecipes == null || ViewModel.MealPlanId == Guid.Empty) 
             return false;
 
-        var recipeService = Handler?.MauiContext?.Services.GetService<IRecipeService>();
-        if (recipeService == null) return false;
+        var recipeService = ViewModel.RecipeService;
         
         var mealPlanId = ViewModel.MealPlanId;
         var sourceDay = ViewModel.Days[fromIndex];

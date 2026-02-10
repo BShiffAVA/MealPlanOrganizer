@@ -246,7 +246,7 @@ public partial class ExtractedRecipePreviewViewModel : ObservableObject
     [RelayCommand]
     private async Task CancelAsync()
     {
-        var confirmed = await Shell.Current.DisplayAlert(
+        var confirmed = await Shell.Current.DisplayAlertAsync(
             "Discard Changes?",
             "Are you sure you want to discard this extracted recipe?",
             "Discard",
@@ -315,7 +315,7 @@ public partial class ExtractedRecipePreviewViewModel : ObservableObject
             if (savedRecipeId.HasValue)
             {
                 _logger.LogInformation("Recipe saved successfully: {RecipeId}", savedRecipeId);
-                await Shell.Current.DisplayAlert("Success", "Recipe saved successfully!", "OK");
+                await Shell.Current.DisplayAlertAsync("Success", "Recipe saved successfully!", "OK");
                 await Shell.Current.GoToAsync("//MainPage");
             }
             else

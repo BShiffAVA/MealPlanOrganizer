@@ -308,9 +308,8 @@ public partial class RecipeEditorViewModel : ObservableObject
     {
         try
         {
-#pragma warning disable CS0618 // Type or member is obsolete
-            var photo = await MediaPicker.Default.PickPhotoAsync();
-#pragma warning restore CS0618
+            var photos = await MediaPicker.Default.PickPhotosAsync();
+            var photo = photos?.FirstOrDefault();
             await SetPhotoAsync(photo);
         }
         catch (Exception ex)
