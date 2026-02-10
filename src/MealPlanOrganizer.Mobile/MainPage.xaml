@@ -1,6 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:MealPlanOrganizer.Mobile.Models"
              x:Class="MealPlanOrganizer.Mobile.MainPage"
              Title="Meal Plan Organizer">
 
@@ -20,7 +21,7 @@
             </VerticalStackLayout>
             <Button
                 Text="📷 Import"
-                Clicked="OnImportRecipeClicked"
+                Command="{Binding ImportRecipeCommand}"
                 BackgroundColor="#6C63FF"
                 TextColor="White"
                 VerticalOptions="End"
@@ -28,7 +29,7 @@
                 CornerRadius="8" />
             <Button
                 Text="+ Add"
-                Clicked="OnAddRecipeClicked"
+                Command="{Binding AddRecipeCommand}"
                 BackgroundColor="#4CAF50"
                 TextColor="White"
                 VerticalOptions="End"
@@ -37,31 +38,30 @@
         </HorizontalStackLayout>
 
         <VerticalStackLayout Grid.Row="1" Spacing="10">
-            <SearchBar x:Name="SearchBar"
-                       Placeholder="Search recipes"
-                       TextChanged="OnSearchTextChanged" />
+            <SearchBar Placeholder="Search recipes"
+                       Text="{Binding SearchText, Mode=TwoWay}" />
 
             <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="10">
-                <Picker x:Name="CuisinePicker"
-                        Title="Cuisine"
+                <Picker Title="Cuisine"
                         Grid.Row="0"
                         Grid.Column="0"
-                        SelectedIndexChanged="OnCuisineFilterChanged" />
-                <Picker x:Name="PrepTimePicker"
-                        Title="Prep Time"
+                        ItemsSource="{Binding CuisineOptions}"
+                        SelectedItem="{Binding SelectedCuisine, Mode=TwoWay}" />
+                <Picker Title="Prep Time"
                         Grid.Row="0"
                         Grid.Column="1"
-                        SelectedIndexChanged="OnPrepTimeFilterChanged" />
-                <Picker x:Name="RatingPicker"
-                        Title="Rating"
+                        ItemsSource="{Binding PrepTimeOptions}"
+                        SelectedItem="{Binding SelectedPrepTime, Mode=TwoWay}" />
+                <Picker Title="Rating"
                         Grid.Row="1"
                         Grid.Column="0"
-                        SelectedIndexChanged="OnRatingFilterChanged" />
-                <Picker x:Name="CreatorPicker"
-                        Title="Creator"
+                        ItemsSource="{Binding RatingOptions}"
+                        SelectedItem="{Binding SelectedRating, Mode=TwoWay}" />
+                <Picker Title="Creator"
                         Grid.Row="1"
                         Grid.Column="1"
-                        SelectedIndexChanged="OnCreatorFilterChanged" />
+                        ItemsSource="{Binding CreatorOptions}"
+                        SelectedItem="{Binding SelectedCreator, Mode=TwoWay}" />
             </Grid>
         </VerticalStackLayout>
 
@@ -70,7 +70,7 @@
             ItemsSource="{Binding Recipes}"
             SelectionMode="None">
             <CollectionView.ItemTemplate>
-                <DataTemplate>
+                <DataTemplate x:DataType="models:RecipeCard">
                     <Frame
                         Margin="0,0,0,12"
                         Padding="12"
@@ -78,7 +78,9 @@
                         BorderColor="#E0E0E0"
                         HasShadow="False">
                         <Frame.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="OnRecipeTapped" />
+                            <TapGestureRecognizer 
+                                Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ViewRecipeCommand}"
+                                CommandParameter="{Binding .}" />
                         </Frame.GestureRecognizers>
                         <VerticalStackLayout Spacing="8">
                             <Label

@@ -45,9 +45,11 @@ public static class MauiProgram
 		// Register ViewModels
 		builder.Services.AddTransient<LoginViewModel>();
 		builder.Services.AddTransient<MealPlansViewModel>();
+		builder.Services.AddTransient<MainViewModel>();
 
 		// Register pages for dependency injection
 		builder.Services.AddTransient<LoginPage>();
+		builder.Services.AddTransient<MainPage>();
 		builder.Services.AddTransient<MealPlansPage>();
 		builder.Services.AddTransient<ExtractRecipePage>();
 		builder.Services.AddTransient<ExtractedRecipePreviewPage>();

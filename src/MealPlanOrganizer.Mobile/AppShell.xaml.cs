@@ -1,4 +1,5 @@
 ﻿using MealPlanOrganizer.Mobile.Services;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace MealPlanOrganizer.Mobile;
 
@@ -13,8 +14,18 @@ public partial class AppShell : Shell
 		// Get auth service from DI
 		_authService = Application.Current?.Handler?.MauiContext?.Services.GetService<IAuthService>()
 			?? throw new InvalidOperationException("IAuthService not registered");
+
+		// Resolve pages from DI for ShellContent that require constructor injection
+		var services = Application.Current?.Handler?.MauiContext?.Services;
+		if (services != null)
+		{
+			HomeShellContent.Content = services.GetRequiredService<MainPage>();
+			MealPlansShellContent.Content = services.GetRequiredService<MealPlansPage>();
+		}
 		
 		// Register routes for navigation
+		Routing.RegisterRoute(nameof(MainPage), typeof(MainPage));
+		Routing.RegisterRoute(nameof(MealPlansPage), typeof(MealPlansPage));
 		Routing.RegisterRoute(nameof(RecipeDetailPage), typeof(RecipeDetailPage));
 		Routing.RegisterRoute(nameof(EditRecipePage), typeof(EditRecipePage));
 		Routing.RegisterRoute(nameof(ExtractRecipePage), typeof(ExtractRecipePage));

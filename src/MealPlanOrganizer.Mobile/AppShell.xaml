@@ -7,13 +7,13 @@
     Title="MealPlanOrganizer.Mobile">
 
     <ShellContent
+        x:Name="HomeShellContent"
         Title="Home"
-        ContentTemplate="{DataTemplate local:MainPage}"
         Route="MainPage" />
 
     <ShellContent
+        x:Name="MealPlansShellContent"
         Title="Meal Plans"
-        ContentTemplate="{DataTemplate local:MealPlansPage}"
         Route="MealPlansPage" />
 
     <ShellContent
