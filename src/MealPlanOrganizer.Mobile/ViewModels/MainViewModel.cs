@@ -118,11 +118,7 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private async Task AddRecipeAsync()
     {
-        // Using Navigation.PushAsync pattern for non-Shell pages
-        if (Application.Current?.Windows.FirstOrDefault()?.Page is NavigationPage navPage)
-        {
-            await navPage.Navigation.PushAsync(new AddRecipePage());
-        }
+        await _navigationService.GoToAsync(nameof(AddRecipePage));
     }
 
     /// <summary>
@@ -142,11 +138,7 @@ public partial class MainViewModel : ObservableObject
     {
         if (recipe == null) return;
 
-        // Using Navigation.PushAsync pattern for non-Shell pages
-        if (Application.Current?.Windows.FirstOrDefault()?.Page is NavigationPage navPage)
-        {
-            await navPage.Navigation.PushAsync(new RecipeDetailPage(recipe.Id));
-        }
+        await _navigationService.GoToAsync($"{nameof(RecipeDetailPage)}?recipeId={recipe.Id}");
     }
 
     private void InitializeFilters()

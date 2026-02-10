@@ -13,9 +13,11 @@
             
             <!-- Converters -->
             <converters:StringNotEmptyConverter x:Key="StringNotEmptyConverter" />
+            <converters:StringNotEmptyConverter x:Key="StringToBoolConverter" />
             <converters:StatusColorConverter x:Key="StatusColorConverter" />
             <converters:HasRecipeBackgroundConverter x:Key="HasRecipeBackgroundConverter" />
             <converters:ActionButtonColorConverter x:Key="ActionButtonColorConverter" />
+            <converters:InvertedBoolConverter x:Key="InvertedBoolConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

@@ -2,22 +2,19 @@ using MealPlanOrganizer.Mobile.Services;
 
 namespace MealPlanOrganizer.Mobile;
 
-public partial class RecipeDetailPage : ContentPage
+public partial class RecipeDetailPage : ContentPage, IQueryAttributable
 {
 	private readonly IRecipeService _recipeService;
-	private readonly Guid _recipeId;
+	private Guid _recipeId;
 	private int _selectedRating = 0;
 	private Button[] _starButtons = Array.Empty<Button>();
 	private RecipeDetailDto? _currentRecipe;
+	private bool _isInitialized;
 
-	public RecipeDetailPage(Guid recipeId)
+	public RecipeDetailPage(IRecipeService recipeService)
 	{
 		InitializeComponent();
-		_recipeId = recipeId;
-		
-		// Get service from dependency injection
-		_recipeService = IPlatformApplication.Current?.Services.GetService<IRecipeService>()
-			?? throw new InvalidOperationException("IRecipeService not registered");
+		_recipeService = recipeService;
 
 		// Initialize star buttons array
 		_starButtons = new[] { Star1Button, Star2Button, Star3Button, Star4Button, Star5Button };
@@ -26,15 +23,33 @@ public partial class RecipeDetailPage : ContentPage
 		CommentsEditor.TextChanged += OnCommentsTextChanged;
 	}
 
+	public async void ApplyQueryAttributes(IDictionary<string, object> query)
+	{
+		if (query.TryGetValue("recipeId", out var recipeIdObj) &&
+			recipeIdObj is string recipeIdStr &&
+			Guid.TryParse(recipeIdStr, out var recipeId))
+		{
+			_recipeId = recipeId;
+			if (!_isInitialized)
+			{
+				_isInitialized = true;
+				await LoadRecipeAsync();
+			}
+		}
+	}
+
 	protected override async void OnAppearing()
 	{
 		base.OnAppearing();
-		await LoadRecipeAsync();
+		if (_isInitialized && _recipeId != Guid.Empty)
+		{
+			await LoadRecipeAsync();
+		}
 	}
 
 	private async void OnEditClicked(object? sender, EventArgs e)
 	{
-		await Navigation.PushAsync(new EditRecipePage(_recipeId));
+		await Shell.Current.GoToAsync($"{nameof(EditRecipePage)}?recipeId={_recipeId}");
 	}
 
 	private void OnCommentsTextChanged(object? sender, TextChangedEventArgs e)
