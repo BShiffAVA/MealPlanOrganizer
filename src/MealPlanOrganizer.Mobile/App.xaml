@@ -2,6 +2,7 @@
 <Application xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:local="clr-namespace:MealPlanOrganizer.Mobile"
+             xmlns:converters="clr-namespace:MealPlanOrganizer.Mobile.Converters"
              x:Class="MealPlanOrganizer.Mobile.App">
     <Application.Resources>
         <ResourceDictionary>
@@ -11,9 +12,10 @@
             </ResourceDictionary.MergedDictionaries>
             
             <!-- Converters -->
-            <local:StatusColorConverter x:Key="StatusColorConverter" />
-            <local:HasRecipeBackgroundConverter x:Key="HasRecipeBackgroundConverter" />
-            <local:ActionButtonColorConverter x:Key="ActionButtonColorConverter" />
+            <converters:StringNotEmptyConverter x:Key="StringNotEmptyConverter" />
+            <converters:StatusColorConverter x:Key="StatusColorConverter" />
+            <converters:HasRecipeBackgroundConverter x:Key="HasRecipeBackgroundConverter" />
+            <converters:ActionButtonColorConverter x:Key="ActionButtonColorConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

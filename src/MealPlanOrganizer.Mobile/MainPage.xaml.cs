@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.Linq;
+using MealPlanOrganizer.Mobile.Models;
 using MealPlanOrganizer.Mobile.Services;
 
 namespace MealPlanOrganizer.Mobile;
@@ -166,27 +167,4 @@ public partial class MainPage : ContentPage
 	{
 		await Shell.Current.GoToAsync(nameof(ExtractRecipePage));
 	}
-}
-
-public sealed class RecipeCard
-{
-	public RecipeCard(Guid id, string title, string cuisineType, int prepTimeMinutes, double rating, string createdBy)
-	{
-		Id = id;
-		Title = title;
-		CuisineType = cuisineType;
-		PrepTimeMinutes = prepTimeMinutes;
-		Rating = rating;
-		CreatedBy = createdBy;
-	}
-
-	public Guid Id { get; }
-	public string Title { get; }
-	public string CuisineType { get; }
-	public int PrepTimeMinutes { get; }
-	public double Rating { get; }
-	public string CreatedBy { get; }
-
-	public string PrepTimeDisplay => $"Prep {PrepTimeMinutes} min";
-	public string RatingDisplay => $"★ {Rating:0.0}";
 }

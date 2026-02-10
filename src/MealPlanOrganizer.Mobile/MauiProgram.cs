@@ -38,6 +38,9 @@ public static class MauiProgram
 		// Register authentication service
 		builder.Services.AddSingleton<IAuthService, AuthService>();
 
+		// Register navigation service
+		builder.Services.AddSingleton<INavigationService, NavigationService>();
+
 		// Register pages for dependency injection
 		builder.Services.AddTransient<LoginPage>();
 		builder.Services.AddTransient<ExtractRecipePage>();
