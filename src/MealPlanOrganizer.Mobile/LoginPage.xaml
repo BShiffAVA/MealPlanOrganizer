@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:converters="clr-namespace:MealPlanOrganizer.Mobile.Converters"
              x:Class="MealPlanOrganizer.Mobile.LoginPage"
              Title="Sign In"
              BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#1C1C1E}">
+
+    <ContentPage.Resources>
+        <converters:InvertedBoolConverter x:Key="InvertedBoolConverter" />
+    </ContentPage.Resources>
 
     <ScrollView>
         <Grid RowDefinitions="*,Auto,*" Padding="24">
@@ -42,15 +47,14 @@
 
                 <!-- Error Message -->
                 <Border 
-                    x:Name="ErrorBorder"
-                    IsVisible="False"
+                    IsVisible="{Binding IsErrorVisible}"
                     BackgroundColor="#FFEBEE"
                     Stroke="#EF5350"
                     StrokeThickness="1"
                     StrokeShape="RoundRectangle 8"
                     Padding="12">
                     <Label 
-                        x:Name="ErrorLabel"
+                        Text="{Binding ErrorMessage}"
                         TextColor="#C62828"
                         FontSize="14"
                         HorizontalTextAlignment="Center" />
@@ -58,9 +62,9 @@
 
                 <!-- Sign In Button -->
                 <Button 
-                    x:Name="SignInButton"
                     Text="Sign In with Microsoft"
-                    Clicked="OnSignInClicked"
+                    Command="{Binding SignInCommand}"
+                    IsVisible="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}"
                     BackgroundColor="#6C63FF"
                     TextColor="White"
                     FontSize="16"
@@ -69,10 +73,9 @@
                     CornerRadius="8" />
 
                 <!-- Loading Indicator -->
-                <Grid x:Name="LoadingGrid" IsVisible="False">
+                <Grid IsVisible="{Binding IsLoading}">
                     <ActivityIndicator 
-                        x:Name="LoadingIndicator"
-                        IsRunning="True"
+                        IsRunning="{Binding IsLoading}"
                         Color="#6C63FF"
                         HeightRequest="40"
                         WidthRequest="40"
@@ -107,7 +110,7 @@
                         TextColor="#6C63FF"
                         TextDecorations="Underline">
                         <Label.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="OnTermsOfServiceTapped" />
+                            <TapGestureRecognizer Command="{Binding OpenTermsOfServiceCommand}" />
                         </Label.GestureRecognizers>
                     </Label>
                     <Label 
@@ -120,7 +123,7 @@
                         TextColor="#6C63FF"
                         TextDecorations="Underline">
                         <Label.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="OnPrivacyPolicyTapped" />
+                            <TapGestureRecognizer Command="{Binding OpenPrivacyPolicyCommand}" />
                         </Label.GestureRecognizers>
                     </Label>
                 </HorizontalStackLayout>

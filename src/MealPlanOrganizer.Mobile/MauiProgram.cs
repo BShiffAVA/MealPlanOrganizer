@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using System.Reflection;
 using System.Diagnostics;
 using MealPlanOrganizer.Mobile.Services;
+using MealPlanOrganizer.Mobile.ViewModels;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
@@ -41,8 +42,13 @@ public static class MauiProgram
 		// Register navigation service
 		builder.Services.AddSingleton<INavigationService, NavigationService>();
 
+		// Register ViewModels
+		builder.Services.AddTransient<LoginViewModel>();
+		builder.Services.AddTransient<MealPlansViewModel>();
+
 		// Register pages for dependency injection
 		builder.Services.AddTransient<LoginPage>();
+		builder.Services.AddTransient<MealPlansPage>();
 		builder.Services.AddTransient<ExtractRecipePage>();
 		builder.Services.AddTransient<ExtractedRecipePreviewPage>();
 

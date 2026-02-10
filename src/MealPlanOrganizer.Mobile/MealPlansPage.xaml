@@ -1,8 +1,13 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:converters="clr-namespace:MealPlanOrganizer.Mobile.Converters"
              x:Class="MealPlanOrganizer.Mobile.MealPlansPage"
              Title="Meal Plans">
+
+    <ContentPage.Resources>
+        <converters:InvertedBoolConverter x:Key="InvertedBoolConverter" />
+    </ContentPage.Resources>
 
     <Grid RowDefinitions="Auto,*"
           Padding="16"
@@ -21,9 +26,8 @@
                     SemanticProperties.HeadingLevel="Level2" />
             </VerticalStackLayout>
             <Button
-                x:Name="CreateButton"
                 Text="+ New Plan"
-                Clicked="OnCreateMealPlanClicked"
+                Command="{Binding CreateMealPlanCommand}"
                 BackgroundColor="#4CAF50"
                 TextColor="White"
                 VerticalOptions="End"
@@ -33,19 +37,17 @@
 
         <!-- Loading Indicator -->
         <ActivityIndicator
-            x:Name="LoadingIndicator"
             Grid.Row="1"
-            IsRunning="False"
-            IsVisible="False"
+            IsRunning="{Binding IsLoading}"
+            IsVisible="{Binding IsLoading}"
             VerticalOptions="Center"
             HorizontalOptions="Center"
             Color="#6C63FF" />
 
         <!-- Empty State -->
         <VerticalStackLayout
-            x:Name="EmptyState"
             Grid.Row="1"
-            IsVisible="False"
+            IsVisible="{Binding IsEmpty}"
             VerticalOptions="Center"
             HorizontalOptions="Center"
             Spacing="12">
@@ -66,7 +68,7 @@
                 HorizontalTextAlignment="Center" />
             <Button
                 Text="Create Meal Plan"
-                Clicked="OnCreateMealPlanClicked"
+                Command="{Binding CreateMealPlanCommand}"
                 BackgroundColor="#6C63FF"
                 TextColor="White"
                 Margin="0,12,0,0"
@@ -76,8 +78,9 @@
 
         <!-- Meal Plans List -->
         <CollectionView
-            x:Name="MealPlansCollection"
             Grid.Row="1"
+            ItemsSource="{Binding MealPlans}"
+            IsVisible="{Binding IsEmpty, Converter={StaticResource InvertedBoolConverter}}"
             SelectionMode="None">
             <CollectionView.ItemTemplate>
                 <DataTemplate>
@@ -89,8 +92,8 @@
                         HasShadow="False">
                         <Frame.GestureRecognizers>
                             <TapGestureRecognizer
-                                Tapped="OnMealPlanTapped"
-                                CommandParameter="{Binding Id}" />
+                                Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ViewMealPlanCommand}"
+                                CommandParameter="{Binding .}" />
                         </Frame.GestureRecognizers>
                         <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
                             <!-- Meal Plan Name -->
