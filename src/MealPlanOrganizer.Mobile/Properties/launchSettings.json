@@ -2,7 +2,21 @@
   "profiles": {
     "Windows Machine": {
       "commandName": "Project",
-      "nativeDebugging": false
+      "nativeDebugging": false,
+      "hotReloadEnabled": true,
+      "environmentVariables": {
+        "DOTNET_WATCH_RESTART_ON_RUDE_EDIT": "false",
+        "DOTNET_MODIFIABLE_ASSEMBLIES": "debug"
+      }
+    },
+    "Windows (Hot Reload)": {
+      "commandName": "Project",
+      "nativeDebugging": false,
+      "hotReloadEnabled": true,
+      "environmentVariables": {
+        "DOTNET_WATCH_RESTART_ON_RUDE_EDIT": "false",
+        "DOTNET_MODIFIABLE_ASSEMBLIES": "debug"
+      }
     }
   }
 }
