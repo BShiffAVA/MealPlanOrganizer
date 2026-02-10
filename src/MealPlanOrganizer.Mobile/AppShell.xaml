@@ -6,25 +6,26 @@
     xmlns:local="clr-namespace:MealPlanOrganizer.Mobile"
     Title="MealPlanOrganizer.Mobile">
 
+    <!-- Use unique route names for tabs to avoid conflicts with Routing.RegisterRoute -->
     <ShellContent
         x:Name="HomeShellContent"
         Title="Home"
-        Route="MainPage" />
+        Route="HomeTab" />
 
     <ShellContent
         x:Name="MealPlansShellContent"
         Title="Meal Plans"
-        Route="MealPlansPage" />
+        Route="MealPlansTab" />
 
     <ShellContent
         Title="Add Recipe"
         ContentTemplate="{DataTemplate local:AddRecipePage}"
-        Route="AddRecipePage" />
+        Route="AddRecipeTab" />
 
     <ShellContent
         Title="Import Recipe"
         ContentTemplate="{DataTemplate local:ExtractRecipePage}"
-        Route="ExtractRecipePage" />
+        Route="ImportRecipeTab" />
 
     <!-- Logout Menu Item -->
     <MenuItem 

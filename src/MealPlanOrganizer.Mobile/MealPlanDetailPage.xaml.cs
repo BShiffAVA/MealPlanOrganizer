@@ -1,7 +1,5 @@
 using MealPlanOrganizer.Mobile.Services;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
+using MealPlanOrganizer.Mobile.ViewModels;
 using System.Windows.Input;
 
 namespace MealPlanOrganizer.Mobile;
@@ -9,103 +7,46 @@ namespace MealPlanOrganizer.Mobile;
 [QueryProperty(nameof(MealPlanId), "mealPlanId")]
 public partial class MealPlanDetailPage : ContentPage
 {
-    private readonly IRecipeService _recipeService;
-    private readonly ObservableCollection<MealPlanDayViewModel> _days = new();
-    private MealPlanDetailDto? _mealPlan;
     private MealPlanDayViewModel? _draggedDay;
     private int _draggedFromIndex = -1;
     private int _currentHoverIndex = -1;
-    private MealPlanDetailPageViewModel _viewModel;
-    private bool _dropInProgress; // Prevents HandleDropCompleted from interfering
+    private bool _dropInProgress;
+
+    // Store original recipe positions for live preview
+    private List<(int Index, MealPlanDayRecipeDto? Recipe)>? _originalRecipes;
 
     public string? MealPlanId { get; set; }
 
-    public MealPlanDetailPage()
+    public MealPlanDetailViewModel ViewModel { get; }
+
+    // Commands for drag-drop (exposed as public properties for XAML binding)
+    public ICommand DragStartingCommand { get; }
+    public ICommand DropCompletedCommand { get; }
+    public ICommand DragOverCommand { get; }
+    public ICommand DragLeaveCommand { get; }
+    public ICommand DropCommand { get; }
+
+    public MealPlanDetailPage(MealPlanDetailViewModel viewModel)
     {
         InitializeComponent();
 
-        // Get service from DI
-        _recipeService = Application.Current?.Handler?.MauiContext?.Services.GetService<IRecipeService>()
-            ?? throw new InvalidOperationException("IRecipeService not registered");
+        ViewModel = viewModel;
+        BindingContext = this;
 
-        _viewModel = new MealPlanDetailPageViewModel(this);
-        BindingContext = _viewModel;
-        DaysCollection.ItemsSource = _days;
+        // Initialize drag-drop commands
+        DragStartingCommand = new Command<MealPlanDayViewModel>(HandleDragStarting);
+        DropCompletedCommand = new Command<MealPlanDayViewModel>(HandleDropCompleted);
+        DragOverCommand = new Command<MealPlanDayViewModel>(HandleDragOver);
+        DragLeaveCommand = new Command<MealPlanDayViewModel>(HandleDragLeave);
+        DropCommand = new Command<MealPlanDayViewModel>(async day => await HandleDrop(day));
     }
 
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        if (!string.IsNullOrEmpty(MealPlanId) && Guid.TryParse(MealPlanId, out _))
+        if (!string.IsNullOrEmpty(MealPlanId))
         {
-            await LoadMealPlanAsync();
-        }
-    }
-
-    private async Task LoadMealPlanAsync()
-    {
-        if (!Guid.TryParse(MealPlanId, out var mealPlanGuid))
-        {
-            await DisplayAlert("Error", "Invalid meal plan ID", "OK");
-            await Shell.Current.GoToAsync("..");
-            return;
-        }
-
-        try
-        {
-            LoadingIndicator.IsRunning = true;
-            LoadingIndicator.IsVisible = true;
-            DaysCollection.IsVisible = false;
-
-            _mealPlan = await _recipeService.GetMealPlanAsync(mealPlanGuid);
-
-            if (_mealPlan == null)
-            {
-                await DisplayAlert("Error", "Meal plan not found", "OK");
-                await Shell.Current.GoToAsync("..");
-                return;
-            }
-
-            // Update header
-            PlanNameLabel.Text = _mealPlan.Name;
-            StatusLabel.Text = _mealPlan.Status;
-            DateRangeLabel.Text = $"{_mealPlan.StartDate} - {_mealPlan.EndDate}";
-
-            // Update status badge color
-            StatusBadge.BackgroundColor = _mealPlan.Status switch
-            {
-                "Active" => Color.FromArgb("#4CAF50"),
-                "Complete" => Color.FromArgb("#2196F3"),
-                "Draft" => Color.FromArgb("#9E9E9E"),
-                _ => Color.FromArgb("#9E9E9E")
-            };
-
-            // Update progress
-            var totalDays = _mealPlan.TotalDays;
-            var assignedDays = _mealPlan.RecipesAssigned;
-            ProgressLabel.Text = $"{assignedDays} of {totalDays} days planned";
-            ProgressBar.Progress = totalDays > 0 ? (double)assignedDays / totalDays : 0;
-
-            // Show drag-drop hint if there are recipes assigned
-            DragDropHint.IsVisible = assignedDays > 0;
-
-            // Populate days
-            _days.Clear();
-            foreach (var day in _mealPlan.Days)
-            {
-                _days.Add(new MealPlanDayViewModel(day));
-            }
-
-            DaysCollection.IsVisible = true;
-        }
-        catch (Exception ex)
-        {
-            await DisplayAlert("Error", $"Failed to load meal plan: {ex.Message}", "OK");
-        }
-        finally
-        {
-            LoadingIndicator.IsRunning = false;
-            LoadingIndicator.IsVisible = false;
+            await ViewModel.LoadCommand.ExecuteAsync(MealPlanId);
         }
     }
 
@@ -114,33 +55,25 @@ public partial class MealPlanDetailPage : ContentPage
         if (sender is not Button button || button.CommandParameter is not MealPlanDayViewModel dayVm)
             return;
 
-        if (!Guid.TryParse(MealPlanId, out var mealPlanGuid))
-            return;
-
-        // Navigate to recipe picker page
-        await Shell.Current.GoToAsync(
-            $"{nameof(RecipePickerPage)}?mealPlanId={mealPlanGuid}&day={dayVm.Date}");
+        await ViewModel.DayActionCommand.ExecuteAsync(dayVm);
     }
 
     #region Drag and Drop Handlers
 
-    // Store original recipe positions for live preview
-    private List<(int Index, MealPlanDayRecipeDto? Recipe)>? _originalRecipes;
-
-    internal void HandleDragStarting(MealPlanDayViewModel day)
+    private void HandleDragStarting(MealPlanDayViewModel day)
     {
         if (!day.HasRecipe) return;
 
         _draggedDay = day;
-        _draggedFromIndex = _days.IndexOf(day);
+        _draggedFromIndex = ViewModel.Days.IndexOf(day);
         _currentHoverIndex = _draggedFromIndex;
         day.IsDragging = true;
         
         // Store original state for preview/reset
-        _originalRecipes = _days.Select((d, i) => (i, d.Recipe)).ToList();
+        _originalRecipes = ViewModel.Days.Select((d, i) => (i, d.Recipe)).ToList();
     }
 
-    internal void HandleDropCompleted(MealPlanDayViewModel day)
+    private void HandleDropCompleted(MealPlanDayViewModel day)
     {
         // If a drop is in progress, don't interfere - HandleDrop will handle cleanup
         if (_dropInProgress) return;
@@ -148,7 +81,7 @@ public partial class MealPlanDetailPage : ContentPage
         // Reset all visual states and restore original positions (drag was cancelled)
         RestoreOriginalPositions();
         
-        foreach (var d in _days)
+        foreach (var d in ViewModel.Days)
         {
             d.IsDragging = false;
             d.IsDropTarget = false;
@@ -159,17 +92,17 @@ public partial class MealPlanDetailPage : ContentPage
         _originalRecipes = null;
     }
 
-    internal void HandleDragOver(MealPlanDayViewModel targetDay)
+    private void HandleDragOver(MealPlanDayViewModel targetDay)
     {
         if (_draggedDay == null || targetDay == _draggedDay) return;
 
-        var targetIndex = _days.IndexOf(targetDay);
+        var targetIndex = ViewModel.Days.IndexOf(targetDay);
         if (targetIndex == _currentHoverIndex) return;
 
         // Reset previous drop target
-        if (_currentHoverIndex >= 0 && _currentHoverIndex < _days.Count && _currentHoverIndex != _draggedFromIndex)
+        if (_currentHoverIndex >= 0 && _currentHoverIndex < ViewModel.Days.Count && _currentHoverIndex != _draggedFromIndex)
         {
-            _days[_currentHoverIndex].IsDropTarget = false;
+            ViewModel.Days[_currentHoverIndex].IsDropTarget = false;
         }
 
         _currentHoverIndex = targetIndex;
@@ -179,24 +112,20 @@ public partial class MealPlanDetailPage : ContentPage
         PreviewReorder(_draggedFromIndex, targetIndex);
     }
 
-    internal void HandleDragLeave(MealPlanDayViewModel targetDay)
+    private void HandleDragLeave(MealPlanDayViewModel targetDay)
     {
         targetDay.IsDropTarget = false;
         
         // Only restore originals if we're not hovering over a different target
-        // (DragLeave can fire after DragOver on new target due to async event timing)
-        var leavingIndex = _days.IndexOf(targetDay);
+        var leavingIndex = ViewModel.Days.IndexOf(targetDay);
         if (_currentHoverIndex == leavingIndex)
         {
-            // We're leaving without entering a new target, restore originals
             RestoreOriginalPositions();
             _currentHoverIndex = _draggedFromIndex;
         }
-        // If _currentHoverIndex != leavingIndex, we've already moved to a new target
-        // so don't restore - the preview is already showing the new position
     }
 
-    internal async Task HandleDrop(MealPlanDayViewModel targetDay)
+    private async Task HandleDrop(MealPlanDayViewModel targetDay)
     {
         if (_draggedDay == null) return;
 
@@ -204,10 +133,10 @@ public partial class MealPlanDetailPage : ContentPage
         _dropInProgress = true;
 
         var sourceIndex = _draggedFromIndex;
-        var targetIndex = _days.IndexOf(targetDay);
+        var targetIndex = ViewModel.Days.IndexOf(targetDay);
 
         // Reset all visual states
-        foreach (var d in _days)
+        foreach (var d in ViewModel.Days)
         {
             d.IsDragging = false;
             d.IsDropTarget = false;
@@ -216,44 +145,45 @@ public partial class MealPlanDetailPage : ContentPage
         if (sourceIndex == targetIndex || sourceIndex < 0 || targetIndex < 0)
         {
             RestoreOriginalPositions();
-            _draggedDay = null;
-            _draggedFromIndex = -1;
-            _currentHoverIndex = -1;
-            _originalRecipes = null;
-            _dropInProgress = false;
+            ResetDragState();
             return;
         }
 
-        if (!Guid.TryParse(MealPlanId, out var mealPlanGuid))
-            return;
-
         try
         {
-            LoadingIndicator.IsRunning = true;
-            LoadingIndicator.IsVisible = true;
+            ViewModel.IsLoading = true;
 
-            // Perform the move/reorder on the server
-            await MoveRecipeAsync(mealPlanGuid, sourceIndex, targetIndex);
+            // Perform the move on the server
+            var fromDay = ViewModel.Days[sourceIndex];
+            var toDay = ViewModel.Days[targetIndex];
+            var success = await MoveRecipeAsync(sourceIndex, targetIndex);
+
+            if (!success)
+            {
+                await DisplayAlert("Error", "Failed to move recipe", "OK");
+            }
 
             // Reload to get updated state
-            await LoadMealPlanAsync();
+            await ViewModel.LoadMealPlanCommand.ExecuteAsync(null);
         }
         catch (Exception ex)
         {
             await DisplayAlert("Error", $"Failed to move recipe: {ex.Message}", "OK");
-            // Reload to reset state
-            await LoadMealPlanAsync();
+            await ViewModel.LoadMealPlanCommand.ExecuteAsync(null);
         }
         finally
         {
-            LoadingIndicator.IsRunning = false;
-            LoadingIndicator.IsVisible = false;
-            _draggedDay = null;
-            _draggedFromIndex = -1;
-            _currentHoverIndex = -1;
-            _originalRecipes = null;
-            _dropInProgress = false;
+            ResetDragState();
         }
+    }
+
+    private void ResetDragState()
+    {
+        _draggedDay = null;
+        _draggedFromIndex = -1;
+        _currentHoverIndex = -1;
+        _originalRecipes = null;
+        _dropInProgress = false;
     }
 
     private void RestoreOriginalPositions()
@@ -262,9 +192,9 @@ public partial class MealPlanDetailPage : ContentPage
         
         foreach (var (index, recipe) in _originalRecipes)
         {
-            if (index < _days.Count)
+            if (index < ViewModel.Days.Count)
             {
-                _days[index].SetRecipeForPreview(recipe);
+                ViewModel.Days[index].SetRecipeForPreview(recipe);
             }
         }
     }
@@ -280,14 +210,13 @@ public partial class MealPlanDetailPage : ContentPage
         
         if (!targetHasRecipe)
         {
-            // Simple move to empty slot - just show recipe in target, empty in source
-            _days[fromIndex].SetRecipeForPreview(null);
-            _days[toIndex].SetRecipeForPreview(movedRecipe);
+            // Simple move to empty slot
+            ViewModel.Days[fromIndex].SetRecipeForPreview(null);
+            ViewModel.Days[toIndex].SetRecipeForPreview(movedRecipe);
         }
         else
         {
             // Need to shift recipes to make room
-            // Remove from source position
             previewRecipes[fromIndex] = null;
             
             if (fromIndex < toIndex)
@@ -312,28 +241,31 @@ public partial class MealPlanDetailPage : ContentPage
             // Apply preview
             foreach (var (index, recipe) in previewRecipes)
             {
-                if (index < _days.Count)
+                if (index < ViewModel.Days.Count)
                 {
-                    _days[index].SetRecipeForPreview(recipe);
+                    ViewModel.Days[index].SetRecipeForPreview(recipe);
                 }
             }
         }
     }
 
-    private async Task MoveRecipeAsync(Guid mealPlanId, int fromIndex, int toIndex)
+    private async Task<bool> MoveRecipeAsync(int fromIndex, int toIndex)
     {
-        // IMPORTANT: Use _originalRecipes, not _days[i].Recipe, because the preview 
-        // has already modified the displayed values
-        if (_originalRecipes == null) return;
+        if (_originalRecipes == null || ViewModel.MealPlanId == Guid.Empty) 
+            return false;
+
+        var recipeService = Handler?.MauiContext?.Services.GetService<IRecipeService>();
+        if (recipeService == null) return false;
         
-        var sourceDay = _days[fromIndex];
-        var targetDay = _days[toIndex];
+        var mealPlanId = ViewModel.MealPlanId;
+        var sourceDay = ViewModel.Days[fromIndex];
+        var targetDay = ViewModel.Days[toIndex];
         var sourceDate = DateTime.Parse(sourceDay.Date);
         var targetDate = DateTime.Parse(targetDay.Date);
         
-        // Get the ORIGINAL recipe at source position (not the preview value)
+        // Get the ORIGINAL recipe at source position
         var movedRecipe = _originalRecipes.FirstOrDefault(r => r.Index == fromIndex).Recipe;
-        if (movedRecipe == null) return;
+        if (movedRecipe == null) return false;
         
         // Check if target ORIGINALLY had a recipe
         var originalTargetRecipe = _originalRecipes.FirstOrDefault(r => r.Index == toIndex).Recipe;
@@ -342,21 +274,17 @@ public partial class MealPlanDetailPage : ContentPage
         if (!targetHasRecipe)
         {
             // Simple move to empty slot
-            // 1. Add recipe to target day
             var addRequest = new AddRecipeToMealPlanDto
             {
                 RecipeId = movedRecipe.RecipeId,
                 Day = targetDate
             };
-            await _recipeService.AddRecipeToMealPlanAsync(mealPlanId, addRequest);
-            
-            // 2. Remove from source day
-            await _recipeService.RemoveRecipeFromMealPlanAsync(mealPlanId, sourceDate);
+            await recipeService.AddRecipeToMealPlanAsync(mealPlanId, addRequest);
+            await recipeService.RemoveRecipeFromMealPlanAsync(mealPlanId, sourceDate);
         }
         else
         {
             // Need to shift recipes to make room
-            // Collect all recipes that need to be reassigned (using ORIGINAL positions)
             var recipesToReassign = new List<(DateTime TargetDate, Guid RecipeId)>();
             
             if (fromIndex < toIndex)
@@ -367,11 +295,10 @@ public partial class MealPlanDetailPage : ContentPage
                     var originalRecipeAtI = _originalRecipes.FirstOrDefault(r => r.Index == i).Recipe;
                     if (originalRecipeAtI != null)
                     {
-                        var prevDate = DateTime.Parse(_days[i - 1].Date);
+                        var prevDate = DateTime.Parse(ViewModel.Days[i - 1].Date);
                         recipesToReassign.Add((prevDate, originalRecipeAtI.RecipeId));
                     }
                 }
-                // The moved recipe goes to the target position
                 recipesToReassign.Add((targetDate, movedRecipe.RecipeId));
             }
             else
@@ -382,11 +309,10 @@ public partial class MealPlanDetailPage : ContentPage
                     var originalRecipeAtI = _originalRecipes.FirstOrDefault(r => r.Index == i).Recipe;
                     if (originalRecipeAtI != null)
                     {
-                        var nextDate = DateTime.Parse(_days[i + 1].Date);
+                        var nextDate = DateTime.Parse(ViewModel.Days[i + 1].Date);
                         recipesToReassign.Add((nextDate, originalRecipeAtI.RecipeId));
                     }
                 }
-                // The moved recipe goes to the target position
                 recipesToReassign.Add((targetDate, movedRecipe.RecipeId));
             }
             
@@ -394,7 +320,7 @@ public partial class MealPlanDetailPage : ContentPage
             bool sourceWillBeOverwritten = recipesToReassign.Any(r => r.TargetDate == sourceDate);
             if (!sourceWillBeOverwritten)
             {
-                await _recipeService.RemoveRecipeFromMealPlanAsync(mealPlanId, sourceDate);
+                await recipeService.RemoveRecipeFromMealPlanAsync(mealPlanId, sourceDate);
             }
             
             // Apply all reassignments
@@ -405,141 +331,12 @@ public partial class MealPlanDetailPage : ContentPage
                     RecipeId = recipeId,
                     Day = date
                 };
-                await _recipeService.AddRecipeToMealPlanAsync(mealPlanId, request);
+                await recipeService.AddRecipeToMealPlanAsync(mealPlanId, request);
             }
         }
+
+        return true;
     }
 
     #endregion
-}
-
-/// <summary>
-/// ViewModel for the MealPlanDetailPage to enable command binding.
-/// </summary>
-public class MealPlanDetailPageViewModel
-{
-    private readonly MealPlanDetailPage _page;
-
-    public ICommand DragStartingCommand { get; }
-    public ICommand DropCompletedCommand { get; }
-    public ICommand DragOverCommand { get; }
-    public ICommand DragLeaveCommand { get; }
-    public ICommand DropCommand { get; }
-
-    public MealPlanDetailPageViewModel(MealPlanDetailPage page)
-    {
-        _page = page;
-        DragStartingCommand = new Command<MealPlanDayViewModel>(day => _page.HandleDragStarting(day));
-        DropCompletedCommand = new Command<MealPlanDayViewModel>(day => _page.HandleDropCompleted(day));
-        DragOverCommand = new Command<MealPlanDayViewModel>(day => _page.HandleDragOver(day));
-        DragLeaveCommand = new Command<MealPlanDayViewModel>(day => _page.HandleDragLeave(day));
-        DropCommand = new Command<MealPlanDayViewModel>(async day => await _page.HandleDrop(day));
-    }
-}
-
-/// <summary>
-/// ViewModel for displaying a day in the meal plan.
-/// </summary>
-public class MealPlanDayViewModel : INotifyPropertyChanged
-{
-    private bool _isDragging;
-    private bool _isDropTarget;
-
-    public event PropertyChangedEventHandler? PropertyChanged;
-
-    public string Date { get; set; }
-    public string DayOfWeek { get; set; }
-    public MealPlanDayRecipeDto? Recipe { get; set; }
-
-    public MealPlanDayViewModel(MealPlanDayDto day)
-    {
-        Date = day.Date;
-        DayOfWeek = day.DayOfWeek.Length > 3 ? day.DayOfWeek[..3] : day.DayOfWeek;
-        Recipe = day.Recipe;
-    }
-
-    public bool IsDragging
-    {
-        get => _isDragging;
-        set
-        {
-            if (_isDragging != value)
-            {
-                _isDragging = value;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(DragOpacity));
-            }
-        }
-    }
-
-    public bool IsDropTarget
-    {
-        get => _isDropTarget;
-        set
-        {
-            if (_isDropTarget != value)
-            {
-                _isDropTarget = value;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(DropTargetBorderColor));
-                OnPropertyChanged(nameof(DropTargetBackgroundColor));
-            }
-        }
-    }
-
-    public string DropTargetBorderColor => IsDropTarget ? "#4CAF50" : "#E0E0E0";
-    public string DropTargetBackgroundColor => IsDropTarget ? "#E8F5E9" : "Transparent";
-    public double DragOpacity => IsDragging ? 0.5 : 1.0;
-
-    public bool HasRecipe => Recipe != null;
-    public bool HasRecipeImage => !string.IsNullOrEmpty(Recipe?.RecipeImageUrl);
-    public string RecipeImageUrl => Recipe?.RecipeImageUrl ?? "";
-    public string RecipeTitle => Recipe?.RecipeTitle ?? "Tap to add a recipe";
-    
-    public string RecipeDetails
-    {
-        get
-        {
-            if (Recipe == null) return "";
-            var parts = new List<string>();
-            if (!string.IsNullOrEmpty(Recipe.CuisineType))
-                parts.Add(Recipe.CuisineType);
-            if (Recipe.PrepTimeMinutes.HasValue)
-                parts.Add($"{Recipe.PrepTimeMinutes + (Recipe.CookTimeMinutes ?? 0)} min");
-            return string.Join(" • ", parts);
-        }
-    }
-
-    public string DisplayDate
-    {
-        get
-        {
-            if (DateTime.TryParse(Date, out var dt))
-                return dt.ToString("M/d");
-            return Date;
-        }
-    }
-
-    public string ActionButtonText => HasRecipe ? "Change" : "Add";
-
-    /// <summary>
-    /// Sets the recipe for preview purposes during drag operations.
-    /// Updates the Recipe property and notifies all dependent properties.
-    /// </summary>
-    public void SetRecipeForPreview(MealPlanDayRecipeDto? recipe)
-    {
-        Recipe = recipe;
-        OnPropertyChanged(nameof(Recipe));
-        OnPropertyChanged(nameof(HasRecipe));
-        OnPropertyChanged(nameof(HasRecipeImage));
-        OnPropertyChanged(nameof(RecipeImageUrl));
-        OnPropertyChanged(nameof(RecipeTitle));
-        OnPropertyChanged(nameof(RecipeDetails));
-        OnPropertyChanged(nameof(ActionButtonText));
-    }
-
-    protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    }
 }

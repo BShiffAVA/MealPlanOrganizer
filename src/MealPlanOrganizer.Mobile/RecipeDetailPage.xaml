@@ -3,32 +3,33 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:local="clr-namespace:MealPlanOrganizer.Mobile"
              xmlns:converters="clr-namespace:MealPlanOrganizer.Mobile.Converters"
+             xmlns:viewmodels="clr-namespace:MealPlanOrganizer.Mobile.ViewModels"
              x:Class="MealPlanOrganizer.Mobile.RecipeDetailPage"
+             x:DataType="viewmodels:RecipeDetailViewModel"
              Title="Recipe Details">
     <ContentPage.Resources>
         <converters:StringNotEmptyConverter x:Key="StringNotEmptyConverter"/>
+        <converters:InvertedBoolConverter x:Key="InverseBoolConverter"/>
     </ContentPage.Resources>
     <ScrollView>
         <VerticalStackLayout Padding="16" Spacing="20">
             
             <!-- Loading Indicator -->
-            <ActivityIndicator x:Name="LoadingIndicator" 
-                             IsRunning="True" 
-                             IsVisible="True"
+            <ActivityIndicator IsRunning="{Binding IsLoading}" 
+                             IsVisible="{Binding IsLoading}"
                              Color="{StaticResource Primary}"
                              HeightRequest="50"/>
             
             <!-- Content Container (hidden while loading) -->
-            <VerticalStackLayout x:Name="ContentContainer" IsVisible="False" Spacing="20">
+            <VerticalStackLayout IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}" Spacing="20">
                 
                   <!-- Recipe Image -->
-                  <Frame x:Name="ImageFrame"
-                      Padding="0"
+                  <Frame Padding="0"
                       CornerRadius="12"
                       HasShadow="False"
-                      IsVisible="False"
+                      IsVisible="{Binding HasImage}"
                       BorderColor="{StaticResource Gray600}">
-                      <Image x:Name="RecipeImage"
+                      <Image Source="{Binding ImageUrl}"
                           Aspect="AspectFill"
                           HeightRequest="200" />
                   </Frame>
@@ -39,16 +40,16 @@
                        CornerRadius="10"
                        HasShadow="True">
                     <VerticalStackLayout Spacing="10">
-                        <Label x:Name="TitleLabel" 
+                        <Label Text="{Binding Title}" 
                                FontSize="24" 
                                FontAttributes="Bold" 
                                TextColor="White"/>
                         <HorizontalStackLayout Spacing="15">
-                            <Label x:Name="CuisineLabel" 
+                            <Label Text="{Binding CuisineType}" 
                                    FontSize="14" 
                                    TextColor="White" 
                                    VerticalOptions="Center"/>
-                            <Label x:Name="RatingLabel" 
+                            <Label Text="{Binding RatingDisplay}" 
                                    FontSize="14" 
                                    TextColor="White" 
                                    VerticalOptions="Center"/>
@@ -57,9 +58,8 @@
                 </Frame>
 
                 <HorizontalStackLayout Spacing="10">
-                    <Button x:Name="EditButton"
-                            Text="Edit Recipe"
-                            Clicked="OnEditClicked"
+                    <Button Text="Edit Recipe"
+                            Command="{Binding EditCommand}"
                             BackgroundColor="#FF9800"
                             TextColor="White" />
                 </HorizontalStackLayout>
@@ -69,7 +69,7 @@
                     <Label Text="Description" 
                            FontSize="18" 
                            FontAttributes="Bold"/>
-                    <Label x:Name="DescriptionLabel" 
+                    <Label Text="{Binding Description}" 
                            FontSize="14" 
                            TextColor="{StaticResource Gray600}"/>
                 </VerticalStackLayout>
@@ -82,19 +82,19 @@
                     <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" RowSpacing="10">
                         <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="5">
                             <Label Text="Prep Time" FontSize="12" TextColor="{StaticResource Gray400}"/>
-                            <Label x:Name="PrepTimeLabel" FontSize="16" FontAttributes="Bold" TextColor="White"/>
+                            <Label Text="{Binding PrepTime}" FontSize="16" FontAttributes="Bold" TextColor="White"/>
                         </VerticalStackLayout>
                         <VerticalStackLayout Grid.Row="0" Grid.Column="1" Spacing="5">
                             <Label Text="Cook Time" FontSize="12" TextColor="{StaticResource Gray400}"/>
-                            <Label x:Name="CookTimeLabel" FontSize="16" FontAttributes="Bold" TextColor="White"/>
+                            <Label Text="{Binding CookTime}" FontSize="16" FontAttributes="Bold" TextColor="White"/>
                         </VerticalStackLayout>
                         <VerticalStackLayout Grid.Row="0" Grid.Column="2" Spacing="5">
                             <Label Text="Servings" FontSize="12" TextColor="{StaticResource Gray400}"/>
-                            <Label x:Name="ServingsLabel" FontSize="16" FontAttributes="Bold" TextColor="White"/>
+                            <Label Text="{Binding Servings}" FontSize="16" FontAttributes="Bold" TextColor="White"/>
                         </VerticalStackLayout>
                         <VerticalStackLayout Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Spacing="5">
                             <Label Text="Created By" FontSize="12" TextColor="{StaticResource Gray400}"/>
-                            <Label x:Name="CreatorLabel" FontSize="14" TextColor="White"/>
+                            <Label Text="{Binding CreatorDisplay}" FontSize="14" TextColor="White"/>
                         </VerticalStackLayout>
                     </Grid>
                 </Frame>
@@ -111,49 +111,48 @@
                            Padding="12" 
                            CornerRadius="8">
                         <VerticalStackLayout Spacing="8">
-                            <Label x:Name="AvgRatingLabel" 
+                            <Label Text="{Binding AvgRatingDisplay}" 
                                    FontSize="18" 
                                    FontAttributes="Bold" 
                                    TextColor="White"/>
                             <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="4">
                                 <Label Grid.Row="0" Grid.Column="0" Text="5★" TextColor="White" FontSize="12"/>
-                                <ProgressBar Grid.Row="0" Grid.Column="1" x:Name="Star5Progress" ProgressColor="{StaticResource Primary}" Margin="8,0"/>
-                                <Label Grid.Row="0" Grid.Column="2" x:Name="Star5Count" TextColor="White" FontSize="12"/>
+                                <ProgressBar Grid.Row="0" Grid.Column="1" Progress="{Binding Star5Progress}" ProgressColor="{StaticResource Primary}" Margin="8,0"/>
+                                <Label Grid.Row="0" Grid.Column="2" Text="{Binding Star5Count}" TextColor="White" FontSize="12"/>
                                 
                                 <Label Grid.Row="1" Grid.Column="0" Text="4★" TextColor="White" FontSize="12"/>
-                                <ProgressBar Grid.Row="1" Grid.Column="1" x:Name="Star4Progress" ProgressColor="{StaticResource Primary}" Margin="8,0"/>
-                                <Label Grid.Row="1" Grid.Column="2" x:Name="Star4Count" TextColor="White" FontSize="12"/>
+                                <ProgressBar Grid.Row="1" Grid.Column="1" Progress="{Binding Star4Progress}" ProgressColor="{StaticResource Primary}" Margin="8,0"/>
+                                <Label Grid.Row="1" Grid.Column="2" Text="{Binding Star4Count}" TextColor="White" FontSize="12"/>
                                 
                                 <Label Grid.Row="2" Grid.Column="0" Text="3★" TextColor="White" FontSize="12"/>
-                                <ProgressBar Grid.Row="2" Grid.Column="1" x:Name="Star3Progress" ProgressColor="{StaticResource Primary}" Margin="8,0"/>
-                                <Label Grid.Row="2" Grid.Column="2" x:Name="Star3Count" TextColor="White" FontSize="12"/>
+                                <ProgressBar Grid.Row="2" Grid.Column="1" Progress="{Binding Star3Progress}" ProgressColor="{StaticResource Primary}" Margin="8,0"/>
+                                <Label Grid.Row="2" Grid.Column="2" Text="{Binding Star3Count}" TextColor="White" FontSize="12"/>
                                 
                                 <Label Grid.Row="3" Grid.Column="0" Text="2★" TextColor="White" FontSize="12"/>
-                                <ProgressBar Grid.Row="3" Grid.Column="1" x:Name="Star2Progress" ProgressColor="{StaticResource Primary}" Margin="8,0"/>
-                                <Label Grid.Row="3" Grid.Column="2" x:Name="Star2Count" TextColor="White" FontSize="12"/>
+                                <ProgressBar Grid.Row="3" Grid.Column="1" Progress="{Binding Star2Progress}" ProgressColor="{StaticResource Primary}" Margin="8,0"/>
+                                <Label Grid.Row="3" Grid.Column="2" Text="{Binding Star2Count}" TextColor="White" FontSize="12"/>
                                 
                                 <Label Grid.Row="4" Grid.Column="0" Text="1★" TextColor="White" FontSize="12"/>
-                                <ProgressBar Grid.Row="4" Grid.Column="1" x:Name="Star1Progress" ProgressColor="{StaticResource Primary}" Margin="8,0"/>
-                                <Label Grid.Row="4" Grid.Column="2" x:Name="Star1Count" TextColor="White" FontSize="12"/>
+                                <ProgressBar Grid.Row="4" Grid.Column="1" Progress="{Binding Star1Progress}" ProgressColor="{StaticResource Primary}" Margin="8,0"/>
+                                <Label Grid.Row="4" Grid.Column="2" Text="{Binding Star1Count}" TextColor="White" FontSize="12"/>
                             </Grid>
                         </VerticalStackLayout>
                     </Frame>
                     
                     <!-- User's Personal Rating -->
-                    <Frame x:Name="UserRatingFrame" 
-                           BorderColor="{StaticResource Primary}" 
+                    <Frame BorderColor="{StaticResource Primary}" 
                            BackgroundColor="#2A2A2A" 
                            Padding="12" 
                            CornerRadius="8"
-                           IsVisible="False">
+                           IsVisible="{Binding HasUserRating}">
                         <VerticalStackLayout Spacing="4">
                             <Label Text="Your Most Recent Rating" FontSize="14" FontAttributes="Bold" TextColor="{StaticResource Primary}"/>
                             <HorizontalStackLayout Spacing="8">
-                                <Label x:Name="UserRatingStars" FontSize="16" TextColor="White"/>
-                                <Label x:Name="UserRatingDate" FontSize="12" TextColor="{StaticResource Gray400}" VerticalOptions="Center"/>
+                                <Label Text="{Binding UserRatingStars}" FontSize="16" TextColor="White"/>
+                                <Label Text="{Binding UserRatingDate}" FontSize="12" TextColor="{StaticResource Gray400}" VerticalOptions="Center"/>
                             </HorizontalStackLayout>
-                            <Label x:Name="UserRatingFrequency" FontSize="12" TextColor="{StaticResource Gray400}"/>
-                            <Label x:Name="UserRatingComments" FontSize="13" TextColor="White" LineBreakMode="WordWrap"/>
+                            <Label Text="{Binding UserRatingFrequency}" FontSize="12" TextColor="{StaticResource Gray400}" IsVisible="{Binding HasUserRatingFrequency}"/>
+                            <Label Text="{Binding UserRatingComments}" FontSize="13" TextColor="White" LineBreakMode="WordWrap" IsVisible="{Binding HasUserRatingComments}"/>
                         </VerticalStackLayout>
                     </Frame>
                     
@@ -170,28 +169,27 @@
                             
                             <!-- Star Rating Buttons -->
                             <HorizontalStackLayout Spacing="8" HorizontalOptions="Center">
-                                <Button x:Name="Star1Button" Text="1★" Clicked="OnStarClicked" 
+                                <Button Text="1★" Command="{Binding SelectRatingCommand}" CommandParameter="{x:Int32 1}"
                                         WidthRequest="50" HeightRequest="44" 
-                                        BackgroundColor="{StaticResource Gray600}" TextColor="White"/>
-                                <Button x:Name="Star2Button" Text="2★" Clicked="OnStarClicked" 
+                                        BackgroundColor="{Binding Star1Color}" TextColor="White"/>
+                                <Button Text="2★" Command="{Binding SelectRatingCommand}" CommandParameter="{x:Int32 2}"
                                         WidthRequest="50" HeightRequest="44" 
-                                        BackgroundColor="{StaticResource Gray600}" TextColor="White"/>
-                                <Button x:Name="Star3Button" Text="3★" Clicked="OnStarClicked" 
+                                        BackgroundColor="{Binding Star2Color}" TextColor="White"/>
+                                <Button Text="3★" Command="{Binding SelectRatingCommand}" CommandParameter="{x:Int32 3}"
                                         WidthRequest="50" HeightRequest="44" 
-                                        BackgroundColor="{StaticResource Gray600}" TextColor="White"/>
-                                <Button x:Name="Star4Button" Text="4★" Clicked="OnStarClicked" 
+                                        BackgroundColor="{Binding Star3Color}" TextColor="White"/>
+                                <Button Text="4★" Command="{Binding SelectRatingCommand}" CommandParameter="{x:Int32 4}"
                                         WidthRequest="50" HeightRequest="44" 
-                                        BackgroundColor="{StaticResource Gray600}" TextColor="White"/>
-                                <Button x:Name="Star5Button" Text="5★" Clicked="OnStarClicked" 
+                                        BackgroundColor="{Binding Star4Color}" TextColor="White"/>
+                                <Button Text="5★" Command="{Binding SelectRatingCommand}" CommandParameter="{x:Int32 5}"
                                         WidthRequest="50" HeightRequest="44" 
-                                        BackgroundColor="{StaticResource Gray600}" TextColor="White"/>
+                                        BackgroundColor="{Binding Star5Color}" TextColor="White"/>
                             </HorizontalStackLayout>
                             
                             <!-- Selected Rating Display -->
-                            <Label x:Name="SelectedRatingLabel" 
-                                   Text="Tap a star to select your rating" 
+                            <Label Text="{Binding SelectedRatingText}" 
                                    FontSize="14" 
-                                   TextColor="{StaticResource Gray400}" 
+                                   TextColor="{Binding SelectedRatingTextColor}" 
                                    HorizontalOptions="Center"/>
                             
                             <!-- Frequency Preference Picker -->
@@ -199,21 +197,11 @@
                                 <Label Text="How often would you like this recipe?" 
                                        FontSize="14" 
                                        TextColor="{StaticResource Gray400}"/>
-                                <Picker x:Name="FrequencyPicker" 
-                                        Title="Select frequency (optional)"
+                                <Picker Title="Select frequency (optional)"
+                                        ItemsSource="{Binding FrequencyOptions}"
+                                        SelectedItem="{Binding SelectedFrequency}"
                                         TextColor="White"
-                                        TitleColor="{StaticResource Gray400}">
-                                    <Picker.ItemsSource>
-                                        <x:Array Type="{x:Type x:String}">
-                                            <x:String></x:String>
-                                            <x:String>Once a week</x:String>
-                                            <x:String>Once a month</x:String>
-                                            <x:String>A few times a year</x:String>
-                                            <x:String>Yearly</x:String>
-                                            <x:String>Never</x:String>
-                                        </x:Array>
-                                    </Picker.ItemsSource>
-                                </Picker>
+                                        TitleColor="{StaticResource Gray400}"/>
                             </VerticalStackLayout>
                             
                             <!-- Comments Entry -->
@@ -221,47 +209,45 @@
                                 <Label Text="Comments (optional)" 
                                        FontSize="14" 
                                        TextColor="{StaticResource Gray400}"/>
-                                <Editor x:Name="CommentsEditor" 
+                                <Editor Text="{Binding Comments}"
                                         Placeholder="Share your thoughts about this recipe..." 
                                         PlaceholderColor="{StaticResource Gray600}"
                                         TextColor="White"
                                         BackgroundColor="#2A2A2A"
                                         HeightRequest="80"
                                         MaxLength="500"/>
-                                <Label x:Name="CommentsCharCount" 
-                                       Text="0/500" 
+                                <Label Text="{Binding CommentsLength, StringFormat='{0}/500'}" 
                                        FontSize="11" 
                                        TextColor="{StaticResource Gray600}" 
                                        HorizontalOptions="End"/>
                             </VerticalStackLayout>
                             
                             <!-- Submit Button -->
-                            <Button x:Name="SubmitRatingButton" 
-                                    Text="Submit Rating" 
-                                    Clicked="OnSubmitRatingClicked"
+                            <Button Text="{Binding SubmitButtonText}" 
+                                    Command="{Binding SubmitRatingCommand}"
                                     BackgroundColor="{StaticResource Primary}"
                                     TextColor="White"
-                                    IsEnabled="False"/>
+                                    IsEnabled="{Binding CanSubmitRating}"/>
                             
                             <!-- Rating Status Message -->
-                            <Label x:Name="RatingStatusLabel" 
+                            <Label Text="{Binding RatingStatusMessage}" 
                                    FontSize="13" 
-                                   TextColor="{StaticResource Gray400}" 
+                                   TextColor="{Binding RatingStatusColor}" 
                                    HorizontalOptions="Center"
-                                   IsVisible="False"/>
+                                   IsVisible="{Binding ShowRatingStatus}"/>
                         </VerticalStackLayout>
                     </Frame>
                     
                     <!-- All Ratings List -->
                     <Label Text="All Ratings" FontSize="16" FontAttributes="Bold" Margin="0,10,0,0"/>
-                    <CollectionView x:Name="RatingsCollection">
+                    <CollectionView ItemsSource="{Binding Ratings}">
                         <CollectionView.EmptyView>
                             <Label Text="No ratings yet" 
                                    TextColor="White" 
                                    FontSize="14"/>
                         </CollectionView.EmptyView>
                         <CollectionView.ItemTemplate>
-                            <DataTemplate>
+                            <DataTemplate x:DataType="local:RecipeRatingDto">
                                 <Frame BorderColor="{StaticResource Gray600}" 
                                        BackgroundColor="#1A1A1A"
                                        Padding="12" 
@@ -302,9 +288,9 @@
                     <Label Text="Ingredients" 
                            FontSize="20" 
                            FontAttributes="Bold"/>
-                    <CollectionView x:Name="IngredientsCollection">
+                    <CollectionView ItemsSource="{Binding Ingredients}">
                         <CollectionView.ItemTemplate>
-                            <DataTemplate>
+                            <DataTemplate x:DataType="local:RecipeIngredientDto">
                                 <Frame BorderColor="{StaticResource Gray600}" 
                                        BackgroundColor="#1A1A1A"
                                        Padding="12" 
@@ -333,9 +319,9 @@
                     <Label Text="Instructions" 
                            FontSize="20" 
                            FontAttributes="Bold"/>
-                    <CollectionView x:Name="StepsCollection">
+                    <CollectionView ItemsSource="{Binding Steps}">
                         <CollectionView.ItemTemplate>
-                            <DataTemplate>
+                            <DataTemplate x:DataType="local:RecipeStepDto">
                                 <Frame BorderColor="{StaticResource Primary}" 
                                        Padding="15" 
                                        Margin="0,5" 

@@ -1,9 +1,16 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:MealPlanOrganizer.Mobile"
+             xmlns:viewmodels="clr-namespace:MealPlanOrganizer.Mobile.ViewModels"
+             xmlns:converters="clr-namespace:MealPlanOrganizer.Mobile.Converters"
              x:Class="MealPlanOrganizer.Mobile.MealPlanDetailPage"
+             x:DataType="local:MealPlanDetailPage"
              Title="Meal Plan">
-
+    <ContentPage.Resources>
+        <converters:ActionButtonColorConverter x:Key="ActionButtonColorConverter"/>
+        <converters:InvertedBoolConverter x:Key="InverseBoolConverter"/>
+    </ContentPage.Resources>
     <Grid RowDefinitions="Auto,Auto,Auto,*" Padding="16" RowSpacing="12">
         
         <!-- Header with plan info -->
@@ -15,29 +22,25 @@
             HasShadow="False">
             <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
                 <Label
-                    x:Name="PlanNameLabel"
-                    Text="Loading..."
+                    Text="{Binding ViewModel.PlanName}"
                     FontSize="20"
                     FontAttributes="Bold"
                     TextColor="White" />
                 <Frame
-                    x:Name="StatusBadge"
                     Grid.Column="1"
                     Padding="8,4"
                     CornerRadius="12"
                     HasShadow="False"
-                    BackgroundColor="#9E9E9E">
+                    BackgroundColor="{Binding ViewModel.StatusColor}">
                     <Label
-                        x:Name="StatusLabel"
-                        Text=""
+                        Text="{Binding ViewModel.Status}"
                         FontSize="12"
                         TextColor="White" />
                 </Frame>
                 <Label
-                    x:Name="DateRangeLabel"
                     Grid.Row="1"
                     Grid.ColumnSpan="2"
-                    Text=""
+                    Text="{Binding ViewModel.DateRange}"
                     FontSize="14"
                     TextColor="White"
                     Margin="0,4,0,0" />
@@ -54,14 +57,12 @@
             HasShadow="False">
             <HorizontalStackLayout Spacing="12">
                 <Label
-                    x:Name="ProgressLabel"
-                    Text="0 of 0 days planned"
+                    Text="{Binding ViewModel.ProgressText}"
                     FontSize="14"
                     TextColor="#1976D2"
                     VerticalOptions="Center" />
                 <ProgressBar
-                    x:Name="ProgressBar"
-                    Progress="0"
+                    Progress="{Binding ViewModel.ProgressValue}"
                     ProgressColor="#4CAF50"
                     HorizontalOptions="FillAndExpand"
                     VerticalOptions="Center" />
@@ -70,20 +71,18 @@
 
         <!-- Drag-drop hint -->
         <Label
-            x:Name="DragDropHint"
             Grid.Row="2"
             Text="💡 Long-press and drag recipes between days to reorganize"
             FontSize="12"
             TextColor="Gray"
             HorizontalOptions="Center"
-            IsVisible="False" />
+            IsVisible="{Binding ViewModel.ShowDragDropHint}" />
 
         <!-- Loading Indicator -->
         <ActivityIndicator
-            x:Name="LoadingIndicator"
             Grid.Row="3"
-            IsRunning="False"
-            IsVisible="False"
+            IsRunning="{Binding ViewModel.IsLoading}"
+            IsVisible="{Binding ViewModel.IsLoading}"
             VerticalOptions="Center"
             HorizontalOptions="Center"
             Color="#6C63FF" />
@@ -92,9 +91,11 @@
         <CollectionView
             x:Name="DaysCollection"
             Grid.Row="3"
+            ItemsSource="{Binding ViewModel.Days}"
+            IsVisible="{Binding ViewModel.IsLoading, Converter={StaticResource InverseBoolConverter}}"
             SelectionMode="None">
             <CollectionView.ItemTemplate>
-                <DataTemplate>
+                <DataTemplate x:DataType="viewmodels:MealPlanDayViewModel">
                     <Frame
                         x:Name="DayFrame"
                         Margin="0,0,0,8"
@@ -106,11 +107,11 @@
                         <Frame.GestureRecognizers>
                             <DropGestureRecognizer
                                 AllowDrop="True"
-                                DragOverCommand="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DragOverCommand}"
+                                DragOverCommand="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=DragOverCommand}"
                                 DragOverCommandParameter="{Binding}"
-                                DragLeaveCommand="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DragLeaveCommand}"
+                                DragLeaveCommand="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=DragLeaveCommand}"
                                 DragLeaveCommandParameter="{Binding}"
-                                DropCommand="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DropCommand}"
+                                DropCommand="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=DropCommand}"
                                 DropCommandParameter="{Binding}" />
                         </Frame.GestureRecognizers>
                         <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12">
@@ -146,9 +147,9 @@
                                 <Frame.GestureRecognizers>
                                     <DragGestureRecognizer
                                         CanDrag="{Binding HasRecipe}"
-                                        DragStartingCommand="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DragStartingCommand}"
+                                        DragStartingCommand="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=DragStartingCommand}"
                                         DragStartingCommandParameter="{Binding}"
-                                        DropCompletedCommand="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DropCompletedCommand}"
+                                        DropCompletedCommand="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=DropCompletedCommand}"
                                         DropCompletedCommandParameter="{Binding}" />
                                 </Frame.GestureRecognizers>
                                 <Grid ColumnDefinitions="Auto,*">
