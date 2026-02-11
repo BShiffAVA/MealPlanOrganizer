@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:MealPlanOrganizer.Mobile.ViewModels"
+             xmlns:converters="clr-namespace:MealPlanOrganizer.Mobile.Converters"
+             x:Class="MealPlanOrganizer.Mobile.JoinHouseholdPage"
+             x:DataType="viewmodels:JoinHouseholdViewModel"
+             Title="Join a Household"
+             BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#1C1C1E}">
+
+    <ContentPage.Resources>
+        <converters:InvertedBoolConverter x:Key="InvertedBoolConverter" />
+    </ContentPage.Resources>
+
+    <ScrollView>
+        <Grid RowDefinitions="Auto,*,Auto" Padding="24">
+            
+            <!-- Header with Back Button -->
+            <HorizontalStackLayout Grid.Row="0" Spacing="8" Margin="0,0,0,24">
+                <Button 
+                    Text="← Back"
+                    Command="{Binding GoBackCommand}"
+                    BackgroundColor="Transparent"
+                    TextColor="#6C63FF"
+                    FontSize="14"
+                    HeightRequest="40"
+                    Padding="0" />
+            </HorizontalStackLayout>
+
+            <!-- Main Content -->
+            <VerticalStackLayout 
+                Grid.Row="1"
+                VerticalOptions="Start"
+                Spacing="24">
+                
+                <!-- Icon and Title -->
+                <VerticalStackLayout Spacing="8" HorizontalOptions="Center">
+                    <Label 
+                        Text="🔗"
+                        FontSize="64"
+                        HorizontalOptions="Center" />
+                    
+                    <Label 
+                        Text="Join a Household"
+                        FontSize="28"
+                        FontAttributes="Bold"
+                        HorizontalOptions="Center"
+                        TextColor="{AppThemeBinding Light=#1C1C1E, Dark=#FFFFFF}" />
+                    
+                    <Label 
+                        Text="Enter the 8-character invite code you received from your family member."
+                        FontSize="16"
+                        HorizontalOptions="Center"
+                        HorizontalTextAlignment="Center"
+                        TextColor="{AppThemeBinding Light=#666666, Dark=#AAAAAA}" />
+                </VerticalStackLayout>
+
+                <!-- Form Section -->
+                <VerticalStackLayout 
+                    Spacing="16"
+                    MaximumWidthRequest="400"
+                    HorizontalOptions="Center">
+
+                    <!-- Error Message -->
+                    <Border 
+                        IsVisible="{Binding IsErrorVisible}"
+                        BackgroundColor="#FFEBEE"
+                        Stroke="#EF5350"
+                        StrokeThickness="1"
+                        StrokeShape="RoundRectangle 8"
+                        Padding="12">
+                        <Label 
+                            Text="{Binding ErrorMessage}"
+                            TextColor="#C62828"
+                            FontSize="14"
+                            HorizontalTextAlignment="Center" />
+                    </Border>
+
+                    <!-- Success Message (Valid Code) -->
+                    <Border 
+                        IsVisible="{Binding IsCodeValid}"
+                        BackgroundColor="#E8F5E9"
+                        Stroke="#4CAF50"
+                        StrokeThickness="1"
+                        StrokeShape="RoundRectangle 8"
+                        Padding="12">
+                        <VerticalStackLayout Spacing="4">
+                            <Label 
+                                Text="✓ Valid invite code!"
+                                TextColor="#2E7D32"
+                                FontSize="14"
+                                FontAttributes="Bold"
+                                HorizontalTextAlignment="Center" />
+                            <Label 
+                                Text="{Binding HouseholdName, StringFormat='You will join: {0}'}"
+                                TextColor="#2E7D32"
+                                FontSize="14"
+                                HorizontalTextAlignment="Center" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- Invite Code Input -->
+                    <VerticalStackLayout Spacing="8">
+                        <Label 
+                            Text="Invite Code"
+                            FontSize="14"
+                            FontAttributes="Bold"
+                            TextColor="{AppThemeBinding Light=#1C1C1E, Dark=#FFFFFF}" />
+                        <Entry 
+                            Text="{Binding InviteCode}"
+                            Placeholder="e.g., ABC12DEF"
+                            PlaceholderColor="{AppThemeBinding Light=#999999, Dark=#666666}"
+                            BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#2C2C2E}"
+                            TextColor="{AppThemeBinding Light=#1C1C1E, Dark=#FFFFFF}"
+                            FontSize="20"
+                            FontAttributes="Bold"
+                            CharacterSpacing="4"
+                            Keyboard="Text"
+                            MaxLength="8"
+                            HeightRequest="56"
+                            HorizontalTextAlignment="Center"
+                            IsEnabled="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}" />
+                        <Label 
+                            Text="Enter the code exactly as shown (not case sensitive)."
+                            FontSize="12"
+                            HorizontalTextAlignment="Center"
+                            TextColor="{AppThemeBinding Light=#999999, Dark=#888888}" />
+                    </VerticalStackLayout>
+
+                    <!-- Validating Indicator -->
+                    <Grid IsVisible="{Binding IsValidating}">
+                        <HorizontalStackLayout HorizontalOptions="Center" Spacing="8">
+                            <ActivityIndicator 
+                                IsRunning="{Binding IsValidating}"
+                                Color="#6C63FF"
+                                HeightRequest="20"
+                                WidthRequest="20" />
+                            <Label 
+                                Text="Validating code..."
+                                FontSize="14"
+                                TextColor="{AppThemeBinding Light=#666666, Dark=#AAAAAA}" />
+                        </HorizontalStackLayout>
+                    </Grid>
+
+                    <!-- Join Button -->
+                    <Button 
+                        Text="Join Household"
+                        Command="{Binding JoinHouseholdCommand}"
+                        IsVisible="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}"
+                        IsEnabled="{Binding IsCodeValid}"
+                        BackgroundColor="#4CAF50"
+                        TextColor="White"
+                        FontSize="16"
+                        FontAttributes="Bold"
+                        HeightRequest="50"
+                        CornerRadius="8"
+                        Margin="0,8,0,0" />
+
+                    <!-- Loading Indicator -->
+                    <Grid IsVisible="{Binding IsLoading}">
+                        <VerticalStackLayout HorizontalOptions="Center" Spacing="8">
+                            <ActivityIndicator 
+                                IsRunning="{Binding IsLoading}"
+                                Color="#4CAF50"
+                                HeightRequest="40"
+                                WidthRequest="40" />
+                            <Label 
+                                Text="Joining household..."
+                                FontSize="14"
+                                TextColor="{AppThemeBinding Light=#666666, Dark=#AAAAAA}" />
+                        </VerticalStackLayout>
+                    </Grid>
+
+                </VerticalStackLayout>
+
+            </VerticalStackLayout>
+
+            <!-- Footer Section -->
+            <VerticalStackLayout 
+                Grid.Row="2"
+                VerticalOptions="End"
+                Spacing="16"
+                Padding="0,32,0,16">
+                
+                <Label 
+                    Text="Wrong account?"
+                    FontSize="14"
+                    HorizontalOptions="Center"
+                    TextColor="{AppThemeBinding Light=#666666, Dark=#AAAAAA}" />
+                
+                <Button 
+                    Text="Sign Out"
+                    Command="{Binding SignOutCommand}"
+                    BackgroundColor="Transparent"
+                    TextColor="#6C63FF"
+                    FontSize="14"
+                    HeightRequest="40"
+                    HorizontalOptions="Center" />
+            </VerticalStackLayout>
+
+        </Grid>
+    </ScrollView>
+
+</ContentPage>

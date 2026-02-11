@@ -16,6 +16,7 @@ namespace MealPlanOrganizer.Functions.Data
         public DbSet<User> Users => Set<User>();
         public DbSet<Household> Households => Set<Household>();
         public DbSet<HouseholdMember> HouseholdMembers => Set<HouseholdMember>();
+        public DbSet<InviteCode> InviteCodes => Set<InviteCode>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -85,6 +86,40 @@ namespace MealPlanOrganizer.Functions.Data
                 
                 // A user can only be a member of a household once
                 b.HasIndex(x => new { x.UserId, x.HouseholdId }).IsUnique();
+            });
+
+            // InviteCode entity configuration
+            modelBuilder.Entity<InviteCode>(b =>
+            {
+                b.ToTable("InviteCodes");
+                b.HasKey(x => x.Id);
+                b.Property(x => x.Code).IsRequired().HasMaxLength(8);
+                b.Property(x => x.IsRevoked).HasDefaultValue(false);
+                
+                if (isSqlServer)
+                {
+                    b.Property(x => x.CreatedUtc).HasDefaultValueSql("GETUTCDATE()");
+                    b.Property(x => x.ExpiresUtc).HasColumnType("datetime2");
+                    b.Property(x => x.UsedUtc).HasColumnType("datetime2");
+                }
+                
+                // Unique index on Code for fast lookups
+                b.HasIndex(x => x.Code).IsUnique();
+                
+                b.HasOne(x => x.Household)
+                    .WithMany()
+                    .HasForeignKey(x => x.HouseholdId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                
+                b.HasOne(x => x.CreatedByUser)
+                    .WithMany()
+                    .HasForeignKey(x => x.CreatedByUserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                
+                b.HasOne(x => x.UsedByUser)
+                    .WithMany()
+                    .HasForeignKey(x => x.UsedByUserId)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
 
             modelBuilder.Entity<Recipe>(b =>

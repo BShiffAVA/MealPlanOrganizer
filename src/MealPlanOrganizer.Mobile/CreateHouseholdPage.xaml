@@ -40,6 +40,13 @@
                     HorizontalOptions="Center"
                     HorizontalTextAlignment="Center"
                     TextColor="{AppThemeBinding Light=#666666, Dark=#AAAAAA}" />
+                
+                <Label 
+                    Text="Or join an existing household with an invite code."
+                    FontSize="14"
+                    HorizontalOptions="Center"
+                    HorizontalTextAlignment="Center"
+                    TextColor="{AppThemeBinding Light=#888888, Dark=#999999}" />
             </VerticalStackLayout>
 
             <!-- Form Section -->
@@ -97,6 +104,37 @@
                     HeightRequest="50"
                     CornerRadius="8"
                     Margin="0,8,0,0" />
+
+                <!-- Or Divider -->
+                <Grid 
+                    IsVisible="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}"
+                    Margin="0,8,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <BoxView Grid.Column="0" HeightRequest="1" VerticalOptions="Center" 
+                             Color="{AppThemeBinding Light=#DDDDDD, Dark=#444444}" />
+                    <Label Grid.Column="1" Text="or" FontSize="14" Padding="16,0" 
+                           TextColor="{AppThemeBinding Light=#888888, Dark=#AAAAAA}" />
+                    <BoxView Grid.Column="2" HeightRequest="1" VerticalOptions="Center" 
+                             Color="{AppThemeBinding Light=#DDDDDD, Dark=#444444}" />
+                </Grid>
+
+                <!-- Join with Invite Code Button -->
+                <Button 
+                    Text="Join with Invite Code"
+                    Command="{Binding JoinWithInviteCodeCommand}"
+                    IsVisible="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}"
+                    BackgroundColor="Transparent"
+                    BorderColor="#6C63FF"
+                    BorderWidth="2"
+                    TextColor="#6C63FF"
+                    FontSize="16"
+                    FontAttributes="Bold"
+                    HeightRequest="50"
+                    CornerRadius="8" />
 
                 <!-- Loading Indicator -->
                 <Grid IsVisible="{Binding IsLoading}">

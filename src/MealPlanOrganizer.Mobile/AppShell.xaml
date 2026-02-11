@@ -27,6 +27,11 @@
         ContentTemplate="{DataTemplate local:ExtractRecipePage}"
         Route="ImportRecipeTab" />
 
+    <!-- Manage Household Menu Item -->
+    <MenuItem 
+        Text="Manage Household"
+        Clicked="OnManageHouseholdClicked" />
+
     <!-- Logout Menu Item -->
     <MenuItem 
         Text="Sign Out"

@@ -1,0 +1,324 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:MealPlanOrganizer.Mobile.ViewModels"
+             xmlns:models="clr-namespace:MealPlanOrganizer.Mobile.Models"
+             xmlns:converters="clr-namespace:MealPlanOrganizer.Mobile.Converters"
+             x:Class="MealPlanOrganizer.Mobile.ManageHouseholdPage"
+             x:DataType="viewmodels:ManageHouseholdViewModel"
+             Title="Manage Household"
+             BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#1C1C1E}">
+
+    <ContentPage.Resources>
+        <converters:InvertedBoolConverter x:Key="InvertedBoolConverter" />
+    </ContentPage.Resources>
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="16">
+
+            <!-- Loading Indicator -->
+            <ActivityIndicator 
+                IsRunning="{Binding IsLoading}"
+                IsVisible="{Binding IsLoading}"
+                Color="#6C63FF"
+                HeightRequest="40"
+                WidthRequest="40"
+                HorizontalOptions="Center"
+                Margin="0,40,0,0" />
+
+            <!-- Main Content (visible when not loading) -->
+            <VerticalStackLayout 
+                IsVisible="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}"
+                Spacing="16">
+
+                <!-- Error Message -->
+                <Border 
+                    IsVisible="{Binding IsErrorVisible}"
+                    BackgroundColor="#FFEBEE"
+                    Stroke="#EF5350"
+                    StrokeThickness="1"
+                    StrokeShape="RoundRectangle 8"
+                    Padding="12">
+                    <Label 
+                        Text="{Binding ErrorMessage}"
+                        TextColor="#C62828"
+                        FontSize="14"
+                        HorizontalTextAlignment="Center" />
+                </Border>
+
+                <!-- Success Message -->
+                <Border 
+                    IsVisible="{Binding IsSuccessVisible}"
+                    BackgroundColor="#E8F5E9"
+                    Stroke="#4CAF50"
+                    StrokeThickness="1"
+                    StrokeShape="RoundRectangle 8"
+                    Padding="12">
+                    <Label 
+                        Text="{Binding SuccessMessage}"
+                        TextColor="#2E7D32"
+                        FontSize="14"
+                        HorizontalTextAlignment="Center" />
+                </Border>
+
+                <!-- Household Header -->
+                <Border 
+                    BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#2C2C2E}"
+                    StrokeShape="RoundRectangle 12"
+                    Stroke="{AppThemeBinding Light=#E0E0E0, Dark=#3C3C3E}"
+                    StrokeThickness="1"
+                    Padding="16">
+                    <VerticalStackLayout Spacing="8">
+                        <Label 
+                            Text="🏠"
+                            FontSize="32"
+                            HorizontalOptions="Center" />
+                        <Label 
+                            Text="{Binding HouseholdName}"
+                            FontSize="24"
+                            FontAttributes="Bold"
+                            HorizontalOptions="Center"
+                            TextColor="{AppThemeBinding Light=#1C1C1E, Dark=#FFFFFF}" />
+                        <Label 
+                            Text="{Binding IsAdmin, StringFormat='Your role: {0}'}"
+                            FontSize="14"
+                            HorizontalOptions="Center"
+                            TextColor="{AppThemeBinding Light=#666666, Dark=#AAAAAA}">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label" Binding="{Binding IsAdmin}" Value="True">
+                                    <Setter Property="Text" Value="Your role: Admin" />
+                                </DataTrigger>
+                                <DataTrigger TargetType="Label" Binding="{Binding IsAdmin}" Value="False">
+                                    <Setter Property="Text" Value="Your role: Member" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Members Section -->
+                <Border 
+                    BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#2C2C2E}"
+                    StrokeShape="RoundRectangle 12"
+                    Stroke="{AppThemeBinding Light=#E0E0E0, Dark=#3C3C3E}"
+                    StrokeThickness="1"
+                    Padding="16">
+                    <VerticalStackLayout Spacing="12">
+                        <Label 
+                            Text="Household Members"
+                            FontSize="18"
+                            FontAttributes="Bold"
+                            TextColor="{AppThemeBinding Light=#1C1C1E, Dark=#FFFFFF}" />
+                        
+                        <CollectionView 
+                            ItemsSource="{Binding Members}"
+                            SelectionMode="None">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate x:DataType="models:HouseholdMemberDto">
+                                    <Border 
+                                        BackgroundColor="{AppThemeBinding Light=#F8F8F8, Dark=#3C3C3E}"
+                                        StrokeShape="RoundRectangle 8"
+                                        Stroke="Transparent"
+                                        Padding="12"
+                                        Margin="0,4">
+                                        <Grid ColumnDefinitions="Auto,*,Auto">
+                                            <Frame 
+                                                Grid.Column="0"
+                                                BackgroundColor="#6C63FF"
+                                                CornerRadius="20"
+                                                WidthRequest="40"
+                                                HeightRequest="40"
+                                                Padding="0"
+                                                HasShadow="False"
+                                                VerticalOptions="Center">
+                                                <Label 
+                                                    Text="👤"
+                                                    FontSize="16"
+                                                    HorizontalOptions="Center"
+                                                    VerticalOptions="Center" />
+                                            </Frame>
+                                            
+                                            <VerticalStackLayout Grid.Column="1" Margin="12,0,0,0" VerticalOptions="Center">
+                                                <Label 
+                                                    Text="{Binding DisplayName}"
+                                                    FontSize="16"
+                                                    FontAttributes="Bold"
+                                                    TextColor="{AppThemeBinding Light=#1C1C1E, Dark=#FFFFFF}" />
+                                                <Label 
+                                                    Text="{Binding JoinedUtc, StringFormat='Joined {0:MMM d, yyyy}'}"
+                                                    FontSize="12"
+                                                    TextColor="{AppThemeBinding Light=#888888, Dark=#AAAAAA}" />
+                                            </VerticalStackLayout>
+                                            
+                                            <Border 
+                                                Grid.Column="2"
+                                                BackgroundColor="{AppThemeBinding Light=#E8E8E8, Dark=#4C4C4E}"
+                                                StrokeShape="RoundRectangle 12"
+                                                Stroke="Transparent"
+                                                Padding="8,4"
+                                                VerticalOptions="Center">
+                                                <Border.Triggers>
+                                                    <DataTrigger TargetType="Border" Binding="{Binding Role}" Value="Admin">
+                                                        <Setter Property="BackgroundColor" Value="#E3F2FD" />
+                                                    </DataTrigger>
+                                                </Border.Triggers>
+                                                <Label 
+                                                    Text="{Binding Role}"
+                                                    FontSize="12"
+                                                    TextColor="{AppThemeBinding Light=#666666, Dark=#AAAAAA}">
+                                                    <Label.Triggers>
+                                                        <DataTrigger TargetType="Label" Binding="{Binding Role}" Value="Admin">
+                                                            <Setter Property="TextColor" Value="{AppThemeBinding Light=#1565C0, Dark=#64B5F6}" />
+                                                        </DataTrigger>
+                                                    </Label.Triggers>
+                                                </Label>
+                                            </Border>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Invite Codes Section (Admin Only) -->
+                <Border 
+                    IsVisible="{Binding IsAdmin}"
+                    BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#2C2C2E}"
+                    StrokeShape="RoundRectangle 12"
+                    Stroke="{AppThemeBinding Light=#E0E0E0, Dark=#3C3C3E}"
+                    StrokeThickness="1"
+                    Padding="16">
+                    <VerticalStackLayout Spacing="12">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label 
+                                Grid.Column="0"
+                                Text="Invite Codes"
+                                FontSize="18"
+                                FontAttributes="Bold"
+                                VerticalOptions="Center"
+                                TextColor="{AppThemeBinding Light=#1C1C1E, Dark=#FFFFFF}" />
+                            
+                            <Button 
+                                Grid.Column="1"
+                                Text="+ Generate"
+                                Command="{Binding GenerateInviteCodeCommand}"
+                                IsEnabled="{Binding IsGeneratingCode, Converter={StaticResource InvertedBoolConverter}}"
+                                BackgroundColor="#6C63FF"
+                                TextColor="White"
+                                FontSize="14"
+                                HeightRequest="36"
+                                CornerRadius="8"
+                                Padding="12,0" />
+                        </Grid>
+                        
+                        <!-- Generating Indicator -->
+                        <HorizontalStackLayout 
+                            IsVisible="{Binding IsGeneratingCode}"
+                            HorizontalOptions="Center"
+                            Spacing="8">
+                            <ActivityIndicator 
+                                IsRunning="{Binding IsGeneratingCode}"
+                                Color="#6C63FF"
+                                HeightRequest="20"
+                                WidthRequest="20" />
+                            <Label 
+                                Text="Generating code..."
+                                FontSize="14"
+                                TextColor="{AppThemeBinding Light=#666666, Dark=#AAAAAA}" />
+                        </HorizontalStackLayout>
+                        
+                        <!-- No Codes Message -->
+                        <Label 
+                            Text="No active invite codes. Generate one to invite family members."
+                            FontSize="14"
+                            TextColor="{AppThemeBinding Light=#888888, Dark=#AAAAAA}"
+                            HorizontalTextAlignment="Center"
+                            IsVisible="False">
+                            <Label.Triggers>
+                                <MultiTrigger TargetType="Label">
+                                    <MultiTrigger.Conditions>
+                                        <BindingCondition Binding="{Binding InviteCodes.Count}" Value="0" />
+                                        <BindingCondition Binding="{Binding IsGeneratingCode}" Value="False" />
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="IsVisible" Value="True" />
+                                </MultiTrigger>
+                            </Label.Triggers>
+                        </Label>
+                        
+                        <!-- Invite Codes List -->
+                        <CollectionView 
+                            ItemsSource="{Binding InviteCodes}"
+                            SelectionMode="None">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate x:DataType="models:InviteCodeDto">
+                                    <Border 
+                                        BackgroundColor="{AppThemeBinding Light=#F0F4FF, Dark=#3C3C4E}"
+                                        StrokeShape="RoundRectangle 8"
+                                        Stroke="#6C63FF"
+                                        StrokeThickness="1"
+                                        Padding="12"
+                                        Margin="0,4">
+                                        <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto">
+                                            <VerticalStackLayout Grid.Row="0" Grid.Column="0">
+                                                <Label 
+                                                    Text="{Binding Code}"
+                                                    FontSize="20"
+                                                    FontAttributes="Bold"
+                                                    CharacterSpacing="2"
+                                                    TextColor="{AppThemeBinding Light=#1C1C1E, Dark=#FFFFFF}" />
+                                                <Label 
+                                                    Text="{Binding ExpiresDisplay}"
+                                                    FontSize="12"
+                                                    TextColor="{AppThemeBinding Light=#888888, Dark=#AAAAAA}" />
+                                            </VerticalStackLayout>
+                                            
+                                            <HorizontalStackLayout Grid.Row="0" Grid.Column="1" Spacing="8">
+                                                <Button 
+                                                    Text="📋"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:ManageHouseholdViewModel}}, Path=CopyCodeCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    BackgroundColor="Transparent"
+                                                    FontSize="18"
+                                                    HeightRequest="36"
+                                                    WidthRequest="36"
+                                                    Padding="0" />
+                                                <Button 
+                                                    Text="📤"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:ManageHouseholdViewModel}}, Path=ShareCodeCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    BackgroundColor="Transparent"
+                                                    FontSize="18"
+                                                    HeightRequest="36"
+                                                    WidthRequest="36"
+                                                    Padding="0" />
+                                                <Button 
+                                                    Text="🗑️"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:ManageHouseholdViewModel}}, Path=RevokeCodeCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    BackgroundColor="Transparent"
+                                                    FontSize="18"
+                                                    HeightRequest="36"
+                                                    WidthRequest="36"
+                                                    Padding="0" />
+                                            </HorizontalStackLayout>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                        
+                        <Label 
+                            Text="Invite codes expire after 30 days and can only be used once."
+                            FontSize="12"
+                            TextColor="{AppThemeBinding Light=#888888, Dark=#AAAAAA}"
+                            HorizontalTextAlignment="Center" />
+                    </VerticalStackLayout>
+                </Border>
+
+            </VerticalStackLayout>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

@@ -39,6 +39,9 @@ public partial class AppShell : Shell
 		Routing.RegisterRoute(nameof(CreateMealPlanPage), typeof(CreateMealPlanPage));
 		Routing.RegisterRoute(nameof(MealPlanDetailPage), typeof(MealPlanDetailPage));
 		Routing.RegisterRoute(nameof(RecipePickerPage), typeof(RecipePickerPage));
+		
+		// Household management route
+		Routing.RegisterRoute(nameof(ManageHouseholdPage), typeof(ManageHouseholdPage));
 
 		// Subscribe to navigation events for logging and tab switch handling
 		Navigating += OnNavigating;
@@ -98,6 +101,19 @@ public partial class AppShell : Shell
 		if (confirm)
 		{
 			await LogoutAsync();
+		}
+	}
+
+	private async void OnManageHouseholdClicked(object? sender, EventArgs e)
+	{
+		try
+		{
+			await Shell.Current.GoToAsync(nameof(ManageHouseholdPage));
+		}
+		catch (Exception ex)
+		{
+			Log.Error(ex, "Failed to navigate to Manage Household");
+			await DisplayAlertAsync("Error", "Failed to open Manage Household page.", "OK");
 		}
 	}
 

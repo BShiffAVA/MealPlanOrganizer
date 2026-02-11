@@ -52,6 +52,26 @@ public partial class CreateHouseholdViewModel : ObservableObject
     }
 
     /// <summary>
+    /// Navigates to the Join Household page to enter an invite code.
+    /// </summary>
+    [RelayCommand]
+    private void JoinWithInviteCode()
+    {
+        if (Application.Current?.Windows.Count > 0)
+        {
+            var joinPage = Application.Current.Handler?.MauiContext?.Services.GetService<JoinHouseholdPage>();
+            if (joinPage != null)
+            {
+                var navigationPage = new NavigationPage(
+                    new CreateHouseholdPage(
+                        Application.Current.Handler.MauiContext.Services.GetRequiredService<CreateHouseholdViewModel>()));
+                navigationPage.PushAsync(joinPage);
+                Application.Current.Windows[0].Page = navigationPage;
+            }
+        }
+    }
+
+    /// <summary>
     /// Creates the household and navigates to the main page.
     /// </summary>
     [RelayCommand]

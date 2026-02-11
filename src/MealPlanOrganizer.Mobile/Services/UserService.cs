@@ -185,4 +185,179 @@ public class UserService : IUserService
         var user = await GetCurrentUserAsync();
         return user?.Household != null;
     }
+
+    /// <inheritdoc/>
+    public async Task<ValidateInviteCodeResponse?> ValidateInviteCodeAsync(string code)
+    {
+        try
+        {
+            _logger.LogInformation("Validating invite code");
+
+            await AttachBearerTokenAsync();
+
+            var url = $"{_baseUrl}/households/invites/{Uri.EscapeDataString(code)}/validate?code={_functionKey}";
+            var response = await _httpClient.GetAsync(url);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                _logger.LogError("Failed to validate invite code: {StatusCode} - {Error}", response.StatusCode, errorContent);
+                return new ValidateInviteCodeResponse
+                {
+                    IsValid = false,
+                    ErrorMessage = "Failed to validate invite code"
+                };
+            }
+
+            var jsonContent = await response.Content.ReadAsStringAsync();
+            var result = JsonSerializer.Deserialize<ValidateInviteCodeResponse>(jsonContent, _jsonOptions);
+            
+            _logger.LogInformation("Invite code validation result: IsValid={IsValid}", result?.IsValid);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception validating invite code");
+            return new ValidateInviteCodeResponse
+            {
+                IsValid = false,
+                ErrorMessage = "An error occurred while validating the code"
+            };
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<JoinHouseholdResponse?> JoinHouseholdAsync(string code)
+    {
+        try
+        {
+            _logger.LogInformation("Joining household with invite code");
+
+            await AttachBearerTokenAsync();
+
+            var url = $"{_baseUrl}/households/join?code={_functionKey}";
+            var requestBody = new { inviteCode = code };
+            var content = new StringContent(
+                JsonSerializer.Serialize(requestBody), 
+                Encoding.UTF8, 
+                "application/json");
+
+            var response = await _httpClient.PostAsync(url, content);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                _logger.LogError("Failed to join household: {StatusCode} - {Error}", response.StatusCode, errorContent);
+                return null;
+            }
+
+            var jsonContent = await response.Content.ReadAsStringAsync();
+            var result = JsonSerializer.Deserialize<JoinHouseholdResponse>(jsonContent, _jsonOptions);
+            
+            // Invalidate cached user since household changed
+            _cachedUser = null;
+            
+            _logger.LogInformation("Successfully joined household: {HouseholdId}", result?.HouseholdId);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception joining household");
+            return null;
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<InviteCodeDto?> GenerateInviteCodeAsync(Guid householdId)
+    {
+        try
+        {
+            _logger.LogInformation("Generating invite code for household {HouseholdId}", householdId);
+
+            await AttachBearerTokenAsync();
+
+            var url = $"{_baseUrl}/households/{householdId}/invites?code={_functionKey}";
+            var response = await _httpClient.PostAsync(url, null);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                _logger.LogError("Failed to generate invite code: {StatusCode} - {Error}", response.StatusCode, errorContent);
+                return null;
+            }
+
+            var jsonContent = await response.Content.ReadAsStringAsync();
+            var result = JsonSerializer.Deserialize<InviteCodeDto>(jsonContent, _jsonOptions);
+            
+            _logger.LogInformation("Successfully generated invite code: {Code}", result?.Code);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception generating invite code");
+            return null;
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<List<InviteCodeDto>> GetInviteCodesAsync(Guid householdId, bool includeUsed = false)
+    {
+        try
+        {
+            _logger.LogInformation("Getting invite codes for household {HouseholdId}", householdId);
+
+            await AttachBearerTokenAsync();
+
+            var queryParams = includeUsed ? "includeUsed=true" : "";
+            var url = $"{_baseUrl}/households/{householdId}/invites?code={_functionKey}&{queryParams}";
+            var response = await _httpClient.GetAsync(url);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                _logger.LogError("Failed to get invite codes: {StatusCode} - {Error}", response.StatusCode, errorContent);
+                return new List<InviteCodeDto>();
+            }
+
+            var jsonContent = await response.Content.ReadAsStringAsync();
+            var result = JsonSerializer.Deserialize<List<InviteCodeDto>>(jsonContent, _jsonOptions);
+            
+            _logger.LogInformation("Retrieved {Count} invite codes", result?.Count ?? 0);
+            return result ?? new List<InviteCodeDto>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception getting invite codes");
+            return new List<InviteCodeDto>();
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<bool> RevokeInviteCodeAsync(string code)
+    {
+        try
+        {
+            _logger.LogInformation("Revoking invite code {Code}", code);
+
+            await AttachBearerTokenAsync();
+
+            var url = $"{_baseUrl}/households/invites/{Uri.EscapeDataString(code)}?code={_functionKey}";
+            var response = await _httpClient.DeleteAsync(url);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                _logger.LogError("Failed to revoke invite code: {StatusCode} - {Error}", response.StatusCode, errorContent);
+                return false;
+            }
+
+            _logger.LogInformation("Successfully revoked invite code: {Code}", code);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception revoking invite code");
+            return false;
+        }
+    }
 }

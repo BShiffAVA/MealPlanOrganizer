@@ -87,6 +87,9 @@ public class DatabaseFixture : IAsyncLifetime
         context.Set<RecipeStep>().RemoveRange(context.Set<RecipeStep>());
         context.Recipes.RemoveRange(context.Recipes);
         
+        // Clear invite codes before clearing users (FK constraint)
+        context.InviteCodes.RemoveRange(context.InviteCodes);
+        
         // Clear user/household data
         context.HouseholdMembers.RemoveRange(context.HouseholdMembers);
         context.Households.RemoveRange(context.Households);

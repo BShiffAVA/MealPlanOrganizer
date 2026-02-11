@@ -27,4 +27,29 @@ public interface IUserService
     /// Returns true if the current user has a household.
     /// </summary>
     Task<bool> HasHouseholdAsync();
+    
+    /// <summary>
+    /// Validates an invite code and returns household info if valid.
+    /// </summary>
+    Task<ValidateInviteCodeResponse?> ValidateInviteCodeAsync(string code);
+    
+    /// <summary>
+    /// Joins a household using an invite code.
+    /// </summary>
+    Task<JoinHouseholdResponse?> JoinHouseholdAsync(string code);
+    
+    /// <summary>
+    /// Generates a new invite code for the specified household. Admin only.
+    /// </summary>
+    Task<InviteCodeDto?> GenerateInviteCodeAsync(Guid householdId);
+    
+    /// <summary>
+    /// Gets all invite codes for the specified household. Admin only.
+    /// </summary>
+    Task<List<InviteCodeDto>> GetInviteCodesAsync(Guid householdId, bool includeUsed = false);
+    
+    /// <summary>
+    /// Revokes an invite code. Admin only.
+    /// </summary>
+    Task<bool> RevokeInviteCodeAsync(string code);
 }
