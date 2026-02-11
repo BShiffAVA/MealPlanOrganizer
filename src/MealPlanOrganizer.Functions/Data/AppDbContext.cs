@@ -13,12 +13,80 @@ namespace MealPlanOrganizer.Functions.Data
         public DbSet<RecipeRating> RecipeRatings => Set<RecipeRating>();
         public DbSet<MealPlan> MealPlans => Set<MealPlan>();
         public DbSet<MealPlanRecipe> MealPlanRecipes => Set<MealPlanRecipe>();
+        public DbSet<User> Users => Set<User>();
+        public DbSet<Household> Households => Set<Household>();
+        public DbSet<HouseholdMember> HouseholdMembers => Set<HouseholdMember>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // Check if we're using SQL Server for provider-specific configurations
             var isSqlServer = Database.IsSqlServer();
             
+            // User entity configuration
+            modelBuilder.Entity<User>(b =>
+            {
+                b.ToTable("Users");
+                b.HasKey(x => x.Id);
+                b.Property(x => x.ExternalIdObjectId).IsRequired().HasMaxLength(100);
+                b.Property(x => x.Email).IsRequired().HasMaxLength(256);
+                b.Property(x => x.DisplayName).IsRequired().HasMaxLength(200);
+                b.Property(x => x.PhotoUrl).HasMaxLength(2000);
+                
+                if (isSqlServer)
+                {
+                    b.Property(x => x.CreatedUtc).HasDefaultValueSql("GETUTCDATE()");
+                    b.Property(x => x.PreferencesJson).HasColumnType("nvarchar(max)");
+                }
+                
+                // Unique indexes
+                b.HasIndex(x => x.ExternalIdObjectId).IsUnique();
+                b.HasIndex(x => x.Email).IsUnique();
+            });
+            
+            // Household entity configuration
+            modelBuilder.Entity<Household>(b =>
+            {
+                b.ToTable("Households");
+                b.HasKey(x => x.Id);
+                b.Property(x => x.Name).IsRequired().HasMaxLength(200);
+                
+                if (isSqlServer)
+                {
+                    b.Property(x => x.CreatedUtc).HasDefaultValueSql("GETUTCDATE()");
+                }
+                
+                b.HasOne(x => x.CreatedByUser)
+                    .WithMany()
+                    .HasForeignKey(x => x.CreatedByUserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+            
+            // HouseholdMember junction entity configuration
+            modelBuilder.Entity<HouseholdMember>(b =>
+            {
+                b.ToTable("HouseholdMembers");
+                b.HasKey(x => x.Id);
+                b.Property(x => x.Role).IsRequired().HasConversion<string>().HasMaxLength(50);
+                
+                if (isSqlServer)
+                {
+                    b.Property(x => x.JoinedUtc).HasDefaultValueSql("GETUTCDATE()");
+                }
+                
+                b.HasOne(x => x.User)
+                    .WithMany(x => x.HouseholdMemberships)
+                    .HasForeignKey(x => x.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                
+                b.HasOne(x => x.Household)
+                    .WithMany(x => x.Members)
+                    .HasForeignKey(x => x.HouseholdId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                
+                // A user can only be a member of a household once
+                b.HasIndex(x => new { x.UserId, x.HouseholdId }).IsUnique();
+            });
+
             modelBuilder.Entity<Recipe>(b =>
             {
                 b.ToTable("Recipes");

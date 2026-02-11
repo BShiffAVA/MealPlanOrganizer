@@ -35,6 +35,10 @@ public static class MauiProgram
 		// Register services
 		builder.Services.AddHttpClient<RecipeService>();
 		builder.Services.AddSingleton<IRecipeService>(sp => sp.GetRequiredService<RecipeService>());
+		
+		// Register user service
+		builder.Services.AddHttpClient<UserService>();
+		builder.Services.AddSingleton<IUserService>(sp => sp.GetRequiredService<UserService>());
 
 		// Register authentication service
 		builder.Services.AddSingleton<IAuthService, AuthService>();
@@ -44,6 +48,7 @@ public static class MauiProgram
 
 		// Register ViewModels
 		builder.Services.AddTransient<LoginViewModel>();
+		builder.Services.AddTransient<CreateHouseholdViewModel>();
 		builder.Services.AddTransient<MealPlansViewModel>();
 		builder.Services.AddTransient<MainViewModel>();
 		builder.Services.AddTransient<RecipeEditorViewModel>();
@@ -56,6 +61,7 @@ public static class MauiProgram
 
 		// Register pages for dependency injection
 		builder.Services.AddTransient<LoginPage>();
+		builder.Services.AddTransient<CreateHouseholdPage>();
 		builder.Services.AddTransient<MainPage>();
 		builder.Services.AddTransient<MealPlansPage>();
 		builder.Services.AddTransient<AddRecipePage>();

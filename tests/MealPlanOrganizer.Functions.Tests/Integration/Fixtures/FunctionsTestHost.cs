@@ -195,7 +195,10 @@ public class IntegrationTestFixture : IAsyncLifetime
     
     public async Task DisposeAsync()
     {
-        await TestHost.DisposeAsync();
+        if (TestHost != null)
+        {
+            await TestHost.DisposeAsync();
+        }
         await Task.WhenAll(
             Database.DisposeAsync(),
             Blobs.DisposeAsync());

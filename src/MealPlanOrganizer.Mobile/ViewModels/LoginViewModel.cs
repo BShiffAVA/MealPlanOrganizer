@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MealPlanOrganizer.Mobile.Services;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace MealPlanOrganizer.Mobile.ViewModels;
 
@@ -10,6 +11,7 @@ namespace MealPlanOrganizer.Mobile.ViewModels;
 public partial class LoginViewModel : ObservableObject
 {
     private readonly IAuthService _authService;
+    private readonly IUserService _userService;
 
     [ObservableProperty]
     private bool _isLoading;
@@ -19,10 +21,30 @@ public partial class LoginViewModel : ObservableObject
 
     [ObservableProperty]
     private string _errorMessage = string.Empty;
+    
+    [ObservableProperty]
+    private string _loadingMessage = "Signing in...";
+    
+    // CancellationTokenSource to cancel ongoing sign-in operations
+    private CancellationTokenSource? _signInCts;
 
-    public LoginViewModel(IAuthService authService)
+    public LoginViewModel(IAuthService authService, IUserService userService)
     {
         _authService = authService;
+        _userService = userService;
+    }
+    
+    /// <summary>
+    /// Cancels the current sign-in operation and resets UI state.
+    /// </summary>
+    [RelayCommand]
+    private void Cancel()
+    {
+        _signInCts?.Cancel();
+        _signInCts = null;
+        IsLoading = false;
+        LoadingMessage = "Signing in...";
+        System.Diagnostics.Debug.WriteLine("Sign-in cancelled by user");
     }
 
     /// <summary>
@@ -47,21 +69,55 @@ public partial class LoginViewModel : ObservableObject
     /// <summary>
     /// Performs the sign-in flow using Microsoft Entra External ID.
     /// </summary>
-    [RelayCommand]
+    [RelayCommand(AllowConcurrentExecutions = true)]
     private async Task SignInAsync()
     {
+        // Cancel any previous sign-in operation
+        _signInCts?.Cancel();
+        _signInCts = new CancellationTokenSource();
+        var cancellationToken = _signInCts.Token;
+        
         try
         {
             IsLoading = true;
             IsErrorVisible = false;
+            LoadingMessage = "Signing in...";
 
             var result = await _authService.LoginAsync();
+            
+            // Check if cancelled while waiting for browser
+            if (cancellationToken.IsCancellationRequested)
+            {
+                System.Diagnostics.Debug.WriteLine("Sign-in result ignored - operation was cancelled");
+                return;
+            }
 
             if (result != null)
             {
                 var displayName = await _authService.GetUserDisplayNameAsync();
                 System.Diagnostics.Debug.WriteLine($"User signed in: {displayName}");
-                NavigateToMainPage();
+                
+                // Register user in backend database
+                LoadingMessage = "Setting up your account...";
+                var user = await _userService.RegisterUserAsync();
+                
+                if (user == null)
+                {
+                    ShowError("Failed to register your account. Please try again.");
+                    return;
+                }
+                
+                // Check if user has a household
+                if (user.Household == null)
+                {
+                    // Navigate to household creation
+                    await NavigateToCreateHouseholdAsync();
+                }
+                else
+                {
+                    // Navigate to main app
+                    NavigateToMainPage();
+                }
             }
             else
             {
@@ -70,13 +126,31 @@ public partial class LoginViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Sign in error: {ex.Message}");
-            ShowError(GetUserFriendlyErrorMessage(ex));
+            if (!cancellationToken.IsCancellationRequested)
+            {
+                System.Diagnostics.Debug.WriteLine($"Sign in error: {ex.Message}");
+                ShowError(GetUserFriendlyErrorMessage(ex));
+            }
         }
         finally
         {
-            IsLoading = false;
+            // Only reset state if this operation wasn't cancelled
+            if (!cancellationToken.IsCancellationRequested)
+            {
+                IsLoading = false;
+                LoadingMessage = "Signing in...";
+            }
         }
+    }
+    
+    /// <summary>
+    /// Performs the sign-up flow (same as sign-in, Entra handles both).
+    /// </summary>
+    [RelayCommand]
+    private async Task SignUpAsync()
+    {
+        // Entra External ID handles sign-up through the same flow
+        await SignInAsync();
     }
 
     /// <summary>
@@ -124,6 +198,22 @@ public partial class LoginViewModel : ObservableObject
         {
             Application.Current.Windows[0].Page = new AppShell();
         }
+    }
+    
+    private Task NavigateToCreateHouseholdAsync()
+    {
+        // Navigate to household creation page
+        // Since we're outside the Shell (on LoginPage), we set the Window's Page directly
+        if (Application.Current?.Windows.Count > 0)
+        {
+            var services = Application.Current.Handler?.MauiContext?.Services;
+            if (services != null)
+            {
+                var page = services.GetRequiredService<CreateHouseholdPage>();
+                Application.Current.Windows[0].Page = page;
+            }
+        }
+        return Task.CompletedTask;
     }
 
     private static string GetUserFriendlyErrorMessage(Exception ex)

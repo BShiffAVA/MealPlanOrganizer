@@ -21,8 +21,14 @@ public partial class RecipeDetailPage : ContentPage, IQueryAttributable
 	{
 		try
 		{
-			if (query.TryGetValue("recipeId", out var recipeIdObj) &&
-				recipeIdObj is string recipeIdStr &&
+			// Try both "id" and "recipeId" for compatibility
+			object? recipeIdObj = null;
+			if (!query.TryGetValue("id", out recipeIdObj))
+			{
+				query.TryGetValue("recipeId", out recipeIdObj);
+			}
+			
+			if (recipeIdObj is string recipeIdStr &&
 				Guid.TryParse(recipeIdStr, out var recipeId))
 			{
 				if (!_isInitialized)

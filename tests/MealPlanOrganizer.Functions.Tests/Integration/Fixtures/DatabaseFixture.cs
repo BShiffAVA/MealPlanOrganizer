@@ -24,7 +24,9 @@ public class DatabaseFixture : IAsyncLifetime
         await _connection.OpenAsync();
         
         // Create schema using EnsureCreated (migrations don't work well with SQLite)
+        // First delete any existing database to avoid "table already exists" errors
         await using var context = CreateDbContext();
+        await context.Database.EnsureDeletedAsync();
         await context.Database.EnsureCreatedAsync();
         
         // Seed test data
@@ -84,6 +86,12 @@ public class DatabaseFixture : IAsyncLifetime
         context.Set<RecipeIngredient>().RemoveRange(context.Set<RecipeIngredient>());
         context.Set<RecipeStep>().RemoveRange(context.Set<RecipeStep>());
         context.Recipes.RemoveRange(context.Recipes);
+        
+        // Clear user/household data
+        context.HouseholdMembers.RemoveRange(context.HouseholdMembers);
+        context.Households.RemoveRange(context.Households);
+        context.Users.RemoveRange(context.Users);
+        
         await context.SaveChangesAsync();
         
         // Re-seed
