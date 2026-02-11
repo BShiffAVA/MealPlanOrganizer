@@ -579,4 +579,259 @@ public class RecipeRecommendationServiceTests : IDisposable
     }
 
     #endregion
+
+    #region WeightedAverageCalculation
+
+    /// <summary>
+    /// Tests that ratings are calculated using weighted average based on HouseholdMember.Weight.
+    /// Example: User1 (Weight 5) rates 1, User2 (Weight 1) rates 5
+    /// Weighted average = (1×5 + 5×1) / (5+1) = 10/6 ≈ 1.67 (rounded to 1.7)
+    /// </summary>
+    [Fact]
+    public async Task AverageRating_WithMemberWeights_CalculatesWeightedAverage()
+    {
+        // Arrange: Create two users with different weights
+        var user1ExternalId = "user1-external-id";
+        var user2ExternalId = "user2-external-id";
+        
+        var household = new Household
+        {
+            Id = Guid.NewGuid(),
+            Name = "Test Household",
+            CreatedUtc = DateTime.UtcNow
+        };
+        _context.Households.Add(household);
+        
+        var user1 = new User
+        {
+            Id = Guid.NewGuid(),
+            ExternalIdObjectId = user1ExternalId,
+            Email = "user1@example.com",
+            DisplayName = "User One",
+            CreatedUtc = DateTime.UtcNow
+        };
+        _context.Users.Add(user1);
+        
+        var user2 = new User
+        {
+            Id = Guid.NewGuid(),
+            ExternalIdObjectId = user2ExternalId,
+            Email = "user2@example.com",
+            DisplayName = "User Two",
+            CreatedUtc = DateTime.UtcNow
+        };
+        _context.Users.Add(user2);
+        
+        // User1 has weight 5, User2 has weight 1
+        var membership1 = new HouseholdMember
+        {
+            Id = Guid.NewGuid(),
+            UserId = user1.Id,
+            HouseholdId = household.Id,
+            Weight = 5,
+            JoinedUtc = DateTime.UtcNow
+        };
+        _context.HouseholdMembers.Add(membership1);
+        
+        var membership2 = new HouseholdMember
+        {
+            Id = Guid.NewGuid(),
+            UserId = user2.Id,
+            HouseholdId = household.Id,
+            Weight = 1,
+            JoinedUtc = DateTime.UtcNow
+        };
+        _context.HouseholdMembers.Add(membership2);
+        
+        // Create recipe with ratings: User1 rates 1, User2 rates 5
+        var recipe = CreateRecipe("Weighted Test Recipe");
+        recipe.Ratings = new List<RecipeRating>
+        {
+            CreateRating(recipe.Id, 1, user1ExternalId),  // Weight 5
+            CreateRating(recipe.Id, 5, user2ExternalId)   // Weight 1
+        };
+        _context.Recipes.Add(recipe);
+        
+        await _context.SaveChangesAsync();
+        
+        // Act
+        var recommendations = await _service.GetRecommendedRecipesAsync(_weekStartDate);
+        
+        // Assert
+        // Weighted average = (1×5 + 5×1) / (5+1) = 10/6 ≈ 1.67, rounded to 1.7
+        var result = recommendations.Single();
+        result.AverageRating.Should().BeApproximately(1.7, 0.1);
+    }
+
+    [Fact]
+    public async Task AverageRating_WithEqualWeights_MatchesSimpleAverage()
+    {
+        // Arrange: Create users with equal weights (default 3)
+        var user1ExternalId = "equal-weight-user1";
+        var user2ExternalId = "equal-weight-user2";
+        
+        var household = new Household
+        {
+            Id = Guid.NewGuid(),
+            Name = "Equal Weight Household",
+            CreatedUtc = DateTime.UtcNow
+        };
+        _context.Households.Add(household);
+        
+        var user1 = new User
+        {
+            Id = Guid.NewGuid(),
+            ExternalIdObjectId = user1ExternalId,
+            Email = "eq1@example.com",
+            DisplayName = "Equal User One",
+            CreatedUtc = DateTime.UtcNow
+        };
+        _context.Users.Add(user1);
+        
+        var user2 = new User
+        {
+            Id = Guid.NewGuid(),
+            ExternalIdObjectId = user2ExternalId,
+            Email = "eq2@example.com",
+            DisplayName = "Equal User Two",
+            CreatedUtc = DateTime.UtcNow
+        };
+        _context.Users.Add(user2);
+        
+        // Both users have weight 3 (default)
+        _context.HouseholdMembers.Add(new HouseholdMember
+        {
+            Id = Guid.NewGuid(),
+            UserId = user1.Id,
+            HouseholdId = household.Id,
+            Weight = 3,
+            JoinedUtc = DateTime.UtcNow
+        });
+        
+        _context.HouseholdMembers.Add(new HouseholdMember
+        {
+            Id = Guid.NewGuid(),
+            UserId = user2.Id,
+            HouseholdId = household.Id,
+            Weight = 3,
+            JoinedUtc = DateTime.UtcNow
+        });
+        
+        // Create recipe with ratings: 2 and 4
+        var recipe = CreateRecipe("Equal Weight Recipe");
+        recipe.Ratings = new List<RecipeRating>
+        {
+            CreateRating(recipe.Id, 2, user1ExternalId),
+            CreateRating(recipe.Id, 4, user2ExternalId)
+        };
+        _context.Recipes.Add(recipe);
+        
+        await _context.SaveChangesAsync();
+        
+        // Act
+        var recommendations = await _service.GetRecommendedRecipesAsync(_weekStartDate);
+        
+        // Assert: (2×3 + 4×3) / (3+3) = 18/6 = 3.0 = simple average
+        var result = recommendations.Single();
+        result.AverageRating.Should().Be(3.0);
+    }
+
+    [Fact]
+    public async Task AverageRating_WithUnknownUsers_UsesDefaultWeight()
+    {
+        // Arrange: Create recipe with ratings from users not in any household
+        // They should get default weight of 3
+        var recipe = CreateRecipe("Unknown Users Recipe");
+        recipe.Ratings = new List<RecipeRating>
+        {
+            CreateRating(recipe.Id, 2, "unknown-user-1"),
+            CreateRating(recipe.Id, 4, "unknown-user-2")
+        };
+        _context.Recipes.Add(recipe);
+        
+        await _context.SaveChangesAsync();
+        
+        // Act
+        var recommendations = await _service.GetRecommendedRecipesAsync(_weekStartDate);
+        
+        // Assert: (2×3 + 4×3) / (3+3) = 3.0 since both use default weight 3
+        var result = recommendations.Single();
+        result.AverageRating.Should().Be(3.0);
+    }
+
+    [Fact]
+    public async Task AverageRating_HighWeight5LowRating_LowersAverage()
+    {
+        // Arrange: User with max weight gives lowest rating
+        var heavyUserExternalId = "heavy-user";
+        var lightUserExternalId = "light-user";
+        
+        var household = new Household
+        {
+            Id = Guid.NewGuid(),
+            Name = "Weight Distribution Test",
+            CreatedUtc = DateTime.UtcNow
+        };
+        _context.Households.Add(household);
+        
+        var heavyUser = new User
+        {
+            Id = Guid.NewGuid(),
+            ExternalIdObjectId = heavyUserExternalId,
+            Email = "heavy@example.com",
+            DisplayName = "Heavy Weight User",
+            CreatedUtc = DateTime.UtcNow
+        };
+        _context.Users.Add(heavyUser);
+        
+        var lightUser = new User
+        {
+            Id = Guid.NewGuid(),
+            ExternalIdObjectId = lightUserExternalId,
+            Email = "light@example.com",
+            DisplayName = "Light Weight User",
+            CreatedUtc = DateTime.UtcNow
+        };
+        _context.Users.Add(lightUser);
+        
+        _context.HouseholdMembers.Add(new HouseholdMember
+        {
+            Id = Guid.NewGuid(),
+            UserId = heavyUser.Id,
+            HouseholdId = household.Id,
+            Weight = 5,
+            JoinedUtc = DateTime.UtcNow
+        });
+        
+        _context.HouseholdMembers.Add(new HouseholdMember
+        {
+            Id = Guid.NewGuid(),
+            UserId = lightUser.Id,
+            HouseholdId = household.Id,
+            Weight = 1,
+            JoinedUtc = DateTime.UtcNow
+        });
+        
+        // Heavy weight user gives 1 star, light weight gives 5 stars
+        var recipe = CreateRecipe("Heavy Low Rating Recipe");
+        recipe.Ratings = new List<RecipeRating>
+        {
+            CreateRating(recipe.Id, 1, heavyUserExternalId),  // Weight 5 × Rating 1 = 5
+            CreateRating(recipe.Id, 5, lightUserExternalId)    // Weight 1 × Rating 5 = 5
+        };
+        _context.Recipes.Add(recipe);
+        
+        await _context.SaveChangesAsync();
+        
+        // Act
+        var recommendations = await _service.GetRecommendedRecipesAsync(_weekStartDate);
+        
+        // Assert: (1×5 + 5×1) / (5+1) = 10/6 ≈ 1.67
+        // This is significantly lower than simple average of (1+5)/2 = 3.0
+        var result = recommendations.Single();
+        result.AverageRating.Should().BeLessThan(2.0);
+        result.AverageRating.Should().BeApproximately(1.7, 0.1);
+    }
+
+    #endregion
 }

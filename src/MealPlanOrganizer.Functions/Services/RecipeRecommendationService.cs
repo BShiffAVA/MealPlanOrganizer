@@ -49,6 +49,18 @@ public class RecipeRecommendationService : IRecipeRecommendationService
             .Select(g => new { RecipeId = g.Key, LastCooked = g.Max(x => x.Day) })
             .ToDictionaryAsync(x => x.RecipeId, x => x.LastCooked);
 
+        // Get household member weights mapped by ExternalIdObjectId for weighted average calculations
+        // This maps RecipeRating.UserId -> Weight (default 3 if user not found in any household)
+        var userWeights = await _context.Users
+            .Where(u => u.HouseholdMemberships.Any())
+            .Select(u => new
+            {
+                u.ExternalIdObjectId,
+                // Use the max weight across all household memberships (in case user is in multiple households)
+                Weight = u.HouseholdMemberships.Max(hm => hm.Weight)
+            })
+            .ToDictionaryAsync(x => x.ExternalIdObjectId, x => x.Weight);
+
         var recommendations = new List<RecommendedRecipe>();
 
         foreach (var recipe in recipes)
@@ -64,10 +76,24 @@ public class RecipeRecommendationService : IRecipeRecommendationService
                 RatingCount = recipe.Ratings?.Count ?? 0
             };
 
-            // Calculate average rating
+            // Calculate weighted average rating
+            // Formula: sum(rating × weight) / sum(weight)
+            // Uses HouseholdMember.Weight for each rater (default 3 if not found)
             if (recipe.Ratings != null && recipe.Ratings.Count > 0)
             {
-                result.AverageRating = Math.Round(recipe.Ratings.Average(r => r.Rating), 1);
+                var weightedSum = 0.0;
+                var totalWeight = 0;
+                
+                foreach (var rating in recipe.Ratings)
+                {
+                    var weight = userWeights.GetValueOrDefault(rating.UserId, 3); // Default weight 3
+                    weightedSum += rating.Rating * weight;
+                    totalWeight += weight;
+                }
+                
+                result.AverageRating = totalWeight > 0 
+                    ? Math.Round(weightedSum / totalWeight, 1) 
+                    : 0;
             }
 
             // Get last cooked date
