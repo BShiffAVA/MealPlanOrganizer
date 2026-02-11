@@ -46,22 +46,26 @@
                         Title="Cuisine"
                         Grid.Row="0"
                         Grid.Column="0"
-                        SelectedIndexChanged="OnCuisineFilterChanged" />
+                        ItemsSource="{Binding CuisineOptions}"
+                        SelectedItem="{Binding SelectedCuisine}" />
                 <Picker x:Name="PrepTimePicker"
                         Title="Prep Time"
                         Grid.Row="0"
                         Grid.Column="1"
-                        SelectedIndexChanged="OnPrepTimeFilterChanged" />
+                        ItemsSource="{Binding PrepTimeOptions}"
+                        SelectedItem="{Binding SelectedPrepTime}" />
                 <Picker x:Name="RatingPicker"
                         Title="Rating"
                         Grid.Row="1"
                         Grid.Column="0"
-                        SelectedIndexChanged="OnRatingFilterChanged" />
+                        ItemsSource="{Binding RatingOptions}"
+                        SelectedItem="{Binding SelectedRating}" />
                 <Picker x:Name="CreatorPicker"
                         Title="Creator"
                         Grid.Row="1"
                         Grid.Column="1"
-                        SelectedIndexChanged="OnCreatorFilterChanged" />
+                        ItemsSource="{Binding CreatorOptions}"
+                        SelectedItem="{Binding SelectedCreator}" />
             </Grid>
         </VerticalStackLayout>
 

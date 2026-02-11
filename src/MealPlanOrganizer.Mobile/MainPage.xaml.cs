@@ -35,26 +35,6 @@ public partial class MainPage : ContentPage
 		_viewModel.SearchText = e.NewTextValue;
 	}
 
-	private void OnCuisineFilterChanged(object? sender, EventArgs e)
-	{
-		// Filter logic handled by ViewModel
-	}
-
-	private void OnPrepTimeFilterChanged(object? sender, EventArgs e)
-	{
-		// Filter logic handled by ViewModel
-	}
-
-	private void OnRatingFilterChanged(object? sender, EventArgs e)
-	{
-		// Filter logic handled by ViewModel
-	}
-
-	private void OnCreatorFilterChanged(object? sender, EventArgs e)
-	{
-		// Filter logic handled by ViewModel
-	}
-
 	private async void OnRecipeTapped(object? sender, TappedEventArgs e)
 	{
 		if (sender is VisualElement element && element.BindingContext is RecipeCard recipe)
