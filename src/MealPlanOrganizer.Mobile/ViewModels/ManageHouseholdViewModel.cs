@@ -239,6 +239,101 @@ public partial class ManageHouseholdViewModel : ObservableObject
         }
     }
 
+    /// <summary>
+    /// Removes a member from the household.
+    /// </summary>
+    [RelayCommand]
+    private async Task RemoveMemberAsync(HouseholdMemberDto member)
+    {
+        if (!IsAdmin)
+        {
+            ShowError("Only admins can remove members.");
+            return;
+        }
+
+        try
+        {
+            IsErrorVisible = false;
+            IsSuccessVisible = false;
+
+            var success = await _userService.RemoveMemberAsync(HouseholdId, member.UserId);
+
+            if (success)
+            {
+                Members.Remove(member);
+                ShowSuccess($"{member.DisplayName} has been removed from the household.");
+            }
+            else
+            {
+                ShowError("Failed to remove member. If you're the only admin, you cannot remove yourself.");
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error removing member: {ex.Message}");
+            ShowError("An error occurred while removing the member.");
+        }
+    }
+
+    /// <summary>
+    /// Updates a member's weight.
+    /// </summary>
+    [RelayCommand]
+    private async Task UpdateMemberWeightAsync(HouseholdMemberDto member)
+    {
+        if (!IsAdmin)
+        {
+            ShowError("Only admins can update member weights.");
+            return;
+        }
+
+        try
+        {
+            IsErrorVisible = false;
+
+            var updatedMember = await _userService.UpdateMemberWeightAsync(HouseholdId, member.UserId, member.Weight);
+
+            if (updatedMember != null)
+            {
+                // Update succeeded - the member's weight is already updated in the UI through binding
+                ShowSuccess($"{member.DisplayName}'s weight updated to {member.Weight}.");
+            }
+            else
+            {
+                ShowError("Failed to update member weight.");
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error updating member weight: {ex.Message}");
+            ShowError("An error occurred while updating the member weight.");
+        }
+    }
+
+    /// <summary>
+    /// Increases a member's weight by 1 (max 5).
+    /// </summary>
+    [RelayCommand]
+    private async Task IncreaseWeightAsync(HouseholdMemberDto member)
+    {
+        if (member.Weight >= 5) return;
+        
+        member.Weight++;
+        await UpdateMemberWeightAsync(member);
+    }
+
+    /// <summary>
+    /// Decreases a member's weight by 1 (min 1).
+    /// </summary>
+    [RelayCommand]
+    private async Task DecreaseWeightAsync(HouseholdMemberDto member)
+    {
+        if (member.Weight <= 1) return;
+        
+        member.Weight--;
+        await UpdateMemberWeightAsync(member);
+    }
+
     private async Task CopyToClipboardAsync(string text)
     {
         try

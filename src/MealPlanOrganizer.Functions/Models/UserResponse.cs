@@ -29,6 +29,7 @@ namespace MealPlanOrganizer.Functions.Models
         public Guid UserId { get; set; }
         public string DisplayName { get; set; } = string.Empty;
         public string Role { get; set; } = string.Empty;
+        public int Weight { get; set; } = 3;
         public DateTime JoinedUtc { get; set; }
     }
 }

@@ -98,6 +98,7 @@ namespace MealPlanOrganizer.Functions.Functions
                                 UserId = m.UserId,
                                 DisplayName = m.User!.DisplayName,
                                 Role = m.Role.ToString(),
+                                Weight = m.Weight,
                                 JoinedUtc = m.JoinedUtc
                             }).ToList()
                     };

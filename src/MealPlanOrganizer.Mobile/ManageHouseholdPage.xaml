@@ -121,9 +121,10 @@
                                         Stroke="Transparent"
                                         Padding="12"
                                         Margin="0,4">
-                                        <Grid ColumnDefinitions="Auto,*,Auto">
+                                        <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*,Auto">
                                             <Frame 
                                                 Grid.Column="0"
+                                                Grid.RowSpan="2"
                                                 BackgroundColor="#6C63FF"
                                                 CornerRadius="20"
                                                 WidthRequest="40"
@@ -138,7 +139,7 @@
                                                     VerticalOptions="Center" />
                                             </Frame>
                                             
-                                            <VerticalStackLayout Grid.Column="1" Margin="12,0,0,0" VerticalOptions="Center">
+                                            <VerticalStackLayout Grid.Column="1" Grid.Row="0" Margin="12,0,0,0" VerticalOptions="Center">
                                                 <Label 
                                                     Text="{Binding DisplayName}"
                                                     FontSize="16"
@@ -150,34 +151,112 @@
                                                     TextColor="{AppThemeBinding Light=#888888, Dark=#AAAAAA}" />
                                             </VerticalStackLayout>
                                             
-                                            <Border 
-                                                Grid.Column="2"
-                                                BackgroundColor="{AppThemeBinding Light=#E8E8E8, Dark=#4C4C4E}"
-                                                StrokeShape="RoundRectangle 12"
-                                                Stroke="Transparent"
-                                                Padding="8,4"
-                                                VerticalOptions="Center">
-                                                <Border.Triggers>
-                                                    <DataTrigger TargetType="Border" Binding="{Binding Role}" Value="Admin">
-                                                        <Setter Property="BackgroundColor" Value="#E3F2FD" />
-                                                    </DataTrigger>
-                                                </Border.Triggers>
-                                                <Label 
-                                                    Text="{Binding Role}"
-                                                    FontSize="12"
-                                                    TextColor="{AppThemeBinding Light=#666666, Dark=#AAAAAA}">
-                                                    <Label.Triggers>
-                                                        <DataTrigger TargetType="Label" Binding="{Binding Role}" Value="Admin">
-                                                            <Setter Property="TextColor" Value="{AppThemeBinding Light=#1565C0, Dark=#64B5F6}" />
+                                            <HorizontalStackLayout Grid.Column="2" Grid.Row="0" Spacing="8" VerticalOptions="Center">
+                                                <Border 
+                                                    BackgroundColor="{AppThemeBinding Light=#E8E8E8, Dark=#4C4C4E}"
+                                                    StrokeShape="RoundRectangle 12"
+                                                    Stroke="Transparent"
+                                                    Padding="8,4"
+                                                    VerticalOptions="Center">
+                                                    <Border.Triggers>
+                                                        <DataTrigger TargetType="Border" Binding="{Binding Role}" Value="Admin">
+                                                            <Setter Property="BackgroundColor" Value="#E3F2FD" />
                                                         </DataTrigger>
-                                                    </Label.Triggers>
-                                                </Label>
-                                            </Border>
+                                                    </Border.Triggers>
+                                                    <Label 
+                                                        Text="{Binding Role}"
+                                                        FontSize="12"
+                                                        TextColor="{AppThemeBinding Light=#666666, Dark=#AAAAAA}">
+                                                        <Label.Triggers>
+                                                            <DataTrigger TargetType="Label" Binding="{Binding Role}" Value="Admin">
+                                                                <Setter Property="TextColor" Value="{AppThemeBinding Light=#1565C0, Dark=#64B5F6}" />
+                                                            </DataTrigger>
+                                                        </Label.Triggers>
+                                                    </Label>
+                                                </Border>
+                                            </HorizontalStackLayout>
+                                            
+                                            <!-- Weight and Remove Controls (Admin Only) -->
+                                            <HorizontalStackLayout 
+                                                Grid.Column="1" 
+                                                Grid.ColumnSpan="2" 
+                                                Grid.Row="1" 
+                                                Margin="12,8,0,0" 
+                                                Spacing="12"
+                                                IsVisible="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:ManageHouseholdViewModel}}, Path=IsAdmin}">
+                                                
+                                                <!-- Weight Controls -->
+                                                <HorizontalStackLayout Spacing="4" VerticalOptions="Center">
+                                                    <Label 
+                                                        Text="Weight:"
+                                                        FontSize="12"
+                                                        TextColor="{AppThemeBinding Light=#888888, Dark=#AAAAAA}"
+                                                        VerticalOptions="Center" />
+                                                    <Button 
+                                                        Text="-"
+                                                        Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:ManageHouseholdViewModel}}, Path=DecreaseWeightCommand}"
+                                                        CommandParameter="{Binding}"
+                                                        BackgroundColor="{AppThemeBinding Light=#E0E0E0, Dark=#4C4C4E}"
+                                                        TextColor="{AppThemeBinding Light=#333333, Dark=#FFFFFF}"
+                                                        FontSize="14"
+                                                        FontAttributes="Bold"
+                                                        HeightRequest="28"
+                                                        WidthRequest="28"
+                                                        CornerRadius="14"
+                                                        Padding="0" />
+                                                    <Border 
+                                                        BackgroundColor="{AppThemeBinding Light=#FFF3E0, Dark=#4A3A2A}"
+                                                        StrokeShape="RoundRectangle 4"
+                                                        Stroke="Transparent"
+                                                        Padding="8,4"
+                                                        WidthRequest="32"
+                                                        VerticalOptions="Center">
+                                                        <Label 
+                                                            Text="{Binding Weight}"
+                                                            FontSize="14"
+                                                            FontAttributes="Bold"
+                                                            HorizontalOptions="Center"
+                                                            TextColor="{AppThemeBinding Light=#E65100, Dark=#FFB74D}" />
+                                                    </Border>
+                                                    <Button 
+                                                        Text="+"
+                                                        Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:ManageHouseholdViewModel}}, Path=IncreaseWeightCommand}"
+                                                        CommandParameter="{Binding}"
+                                                        BackgroundColor="{AppThemeBinding Light=#E0E0E0, Dark=#4C4C4E}"
+                                                        TextColor="{AppThemeBinding Light=#333333, Dark=#FFFFFF}"
+                                                        FontSize="14"
+                                                        FontAttributes="Bold"
+                                                        HeightRequest="28"
+                                                        WidthRequest="28"
+                                                        CornerRadius="14"
+                                                        Padding="0" />
+                                                </HorizontalStackLayout>
+                                                
+                                                <!-- Remove Button -->
+                                                <Button 
+                                                    Text="🗑️ Remove"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:ManageHouseholdViewModel}}, Path=RemoveMemberCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    BackgroundColor="#FFEBEE"
+                                                    TextColor="#C62828"
+                                                    FontSize="12"
+                                                    HeightRequest="28"
+                                                    CornerRadius="4"
+                                                    Padding="8,0" />
+                                            </HorizontalStackLayout>
                                         </Grid>
                                     </Border>
                                 </DataTemplate>
                             </CollectionView.ItemTemplate>
                         </CollectionView>
+                        
+                        <!-- Weight explanation (Admin Only) -->
+                        <Label 
+                            IsVisible="{Binding IsAdmin}"
+                            Text="💡 Weight (1-5) determines how much a member's ratings influence household recommendations. Higher = more influence."
+                            FontSize="11"
+                            TextColor="{AppThemeBinding Light=#888888, Dark=#AAAAAA}"
+                            HorizontalTextAlignment="Center" />
                     </VerticalStackLayout>
                 </Border>
 

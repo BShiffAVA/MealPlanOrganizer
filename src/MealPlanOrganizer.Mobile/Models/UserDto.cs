@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace MealPlanOrganizer.Mobile.Models;
 
@@ -30,11 +31,15 @@ public class HouseholdInfoDto
 /// <summary>
 /// Member information within a household.
 /// </summary>
-public class HouseholdMemberDto
+public partial class HouseholdMemberDto : ObservableObject
 {
     public Guid UserId { get; set; }
     public string DisplayName { get; set; } = string.Empty;
     public string Role { get; set; } = string.Empty;
+    
+    [ObservableProperty]
+    private int _weight = 3;
+    
     public DateTime JoinedUtc { get; set; }
 }
 

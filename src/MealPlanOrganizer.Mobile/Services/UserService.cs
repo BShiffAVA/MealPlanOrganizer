@@ -360,4 +360,74 @@ public class UserService : IUserService
             return false;
         }
     }
+
+    /// <inheritdoc/>
+    public async Task<bool> RemoveMemberAsync(Guid householdId, Guid memberId)
+    {
+        try
+        {
+            _logger.LogInformation("Removing member {MemberId} from household {HouseholdId}", memberId, householdId);
+
+            await AttachBearerTokenAsync();
+
+            var url = $"{_baseUrl}/households/{householdId}/members/{memberId}?code={_functionKey}";
+            var response = await _httpClient.DeleteAsync(url);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                _logger.LogError("Failed to remove member: {StatusCode} - {Error}", response.StatusCode, errorContent);
+                return false;
+            }
+
+            _logger.LogInformation("Successfully removed member {MemberId} from household {HouseholdId}", memberId, householdId);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception removing member");
+            return false;
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<HouseholdMemberDto?> UpdateMemberWeightAsync(Guid householdId, Guid memberId, int weight)
+    {
+        try
+        {
+            _logger.LogInformation("Updating weight for member {MemberId} to {Weight} in household {HouseholdId}", memberId, weight, householdId);
+
+            await AttachBearerTokenAsync();
+
+            var url = $"{_baseUrl}/households/{householdId}/members/{memberId}/weight?code={_functionKey}";
+            var content = new StringContent(
+                JsonSerializer.Serialize(new { weight }, _jsonOptions),
+                System.Text.Encoding.UTF8,
+                "application/json");
+
+            var request = new HttpRequestMessage(HttpMethod.Patch, url)
+            {
+                Content = content
+            };
+            var response = await _httpClient.SendAsync(request);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                _logger.LogError("Failed to update member weight: {StatusCode} - {Error}", response.StatusCode, errorContent);
+                return null;
+            }
+
+            var responseBody = await response.Content.ReadAsStringAsync();
+            var memberDto = JsonSerializer.Deserialize<HouseholdMemberDto>(responseBody, _jsonOptions);
+
+            _logger.LogInformation("Successfully updated weight for member {MemberId} to {Weight}", memberId, weight);
+            return memberDto;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception updating member weight");
+            return null;
+        }
+    }
 }

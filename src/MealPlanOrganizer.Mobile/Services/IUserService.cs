@@ -52,4 +52,14 @@ public interface IUserService
     /// Revokes an invite code. Admin only.
     /// </summary>
     Task<bool> RevokeInviteCodeAsync(string code);
+    
+    /// <summary>
+    /// Removes a member from the household. Admin only.
+    /// </summary>
+    Task<bool> RemoveMemberAsync(Guid householdId, Guid memberId);
+    
+    /// <summary>
+    /// Updates a member's weight (1-5). Admin only.
+    /// </summary>
+    Task<HouseholdMemberDto?> UpdateMemberWeightAsync(Guid householdId, Guid memberId, int weight);
 }
