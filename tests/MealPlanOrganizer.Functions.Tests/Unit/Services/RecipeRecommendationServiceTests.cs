@@ -834,4 +834,242 @@ public class RecipeRecommendationServiceTests : IDisposable
     }
 
     #endregion
+
+    #region WeightedFrequencyCalculation
+
+    /// <summary>
+    /// Tests that frequency preference is calculated using weighted average based on HouseholdMember.Weight.
+    /// Example: User1 (Weight 5) prefers OnceAWeek (7 days), User2 (Weight 1) prefers OnceAMonth (30 days)
+    /// Weighted average = (7×5 + 30×1) / (5+1) = 65/6 ≈ 11 days (rounds to OnceAMonth threshold of 15+)
+    /// </summary>
+    [Fact]
+    public async Task FrequencyPreference_WithMemberWeights_CalculatesWeightedAverageDays()
+    {
+        // Arrange: Create two users with different weights and frequency preferences
+        var user1ExternalId = "freq-user1";
+        var user2ExternalId = "freq-user2";
+        
+        var household = new Household
+        {
+            Id = Guid.NewGuid(),
+            Name = "Frequency Test Household",
+            CreatedUtc = DateTime.UtcNow
+        };
+        _context.Households.Add(household);
+        
+        var user1 = new User
+        {
+            Id = Guid.NewGuid(),
+            ExternalIdObjectId = user1ExternalId,
+            Email = "freq1@example.com",
+            DisplayName = "Freq User One",
+            CreatedUtc = DateTime.UtcNow
+        };
+        _context.Users.Add(user1);
+        
+        var user2 = new User
+        {
+            Id = Guid.NewGuid(),
+            ExternalIdObjectId = user2ExternalId,
+            Email = "freq2@example.com",
+            DisplayName = "Freq User Two",
+            CreatedUtc = DateTime.UtcNow
+        };
+        _context.Users.Add(user2);
+        
+        // User1 has weight 5, User2 has weight 1
+        _context.HouseholdMembers.Add(new HouseholdMember
+        {
+            Id = Guid.NewGuid(),
+            UserId = user1.Id,
+            HouseholdId = household.Id,
+            Weight = 5,
+            JoinedUtc = DateTime.UtcNow
+        });
+        
+        _context.HouseholdMembers.Add(new HouseholdMember
+        {
+            Id = Guid.NewGuid(),
+            UserId = user2.Id,
+            HouseholdId = household.Id,
+            Weight = 1,
+            JoinedUtc = DateTime.UtcNow
+        });
+        
+        // User1 (weight 5) prefers OnceAWeek (7 days)
+        // User2 (weight 1) prefers OnceAMonth (30 days)
+        // Weighted average = (7×5 + 30×1) / 6 = 65/6 ≈ 10.8 days → OnceAWeek (< 15)
+        var recipe = CreateRecipe("Weighted Frequency Recipe");
+        recipe.Ratings = new List<RecipeRating>
+        {
+            CreateRating(recipe.Id, 4, user1ExternalId, "OnceAWeek"),
+            CreateRating(recipe.Id, 4, user2ExternalId, "OnceAMonth")
+        };
+        _context.Recipes.Add(recipe);
+        
+        // Last cooked 11 days ago - should meet weighted frequency of ~11 days
+        var mealPlanRecipe = CreateMealPlanRecipe(recipe.Id, _weekStartDate.AddDays(-11));
+        _context.MealPlanRecipes.Add(mealPlanRecipe);
+        
+        await _context.SaveChangesAsync();
+        
+        // Act
+        var recommendations = await _service.GetRecommendedRecipesAsync(_weekStartDate);
+        
+        // Assert: Weighted average ~11 days is displayed as OnceAWeek
+        var result = recommendations.Single();
+        result.FrequencyPreference.Should().Be("OnceAWeek");
+        result.ReasonCodes.Should().Contain("MeetsFrequency");
+    }
+
+    [Fact]
+    public async Task FrequencyPreference_HighWeightNever_ResultsInLowScore()
+    {
+        // Arrange: Heavy weight user says "Never" while light weight says "OnceAWeek"
+        var heavyUserExternalId = "never-heavy-user";
+        var lightUserExternalId = "never-light-user";
+        
+        var household = new Household
+        {
+            Id = Guid.NewGuid(),
+            Name = "Never Test Household",
+            CreatedUtc = DateTime.UtcNow
+        };
+        _context.Households.Add(household);
+        
+        var heavyUser = new User
+        {
+            Id = Guid.NewGuid(),
+            ExternalIdObjectId = heavyUserExternalId,
+            Email = "never-heavy@example.com",
+            DisplayName = "Never Heavy User",
+            CreatedUtc = DateTime.UtcNow
+        };
+        _context.Users.Add(heavyUser);
+        
+        var lightUser = new User
+        {
+            Id = Guid.NewGuid(),
+            ExternalIdObjectId = lightUserExternalId,
+            Email = "never-light@example.com",
+            DisplayName = "Never Light User",
+            CreatedUtc = DateTime.UtcNow
+        };
+        _context.Users.Add(lightUser);
+        
+        _context.HouseholdMembers.Add(new HouseholdMember
+        {
+            Id = Guid.NewGuid(),
+            UserId = heavyUser.Id,
+            HouseholdId = household.Id,
+            Weight = 5,
+            JoinedUtc = DateTime.UtcNow
+        });
+        
+        _context.HouseholdMembers.Add(new HouseholdMember
+        {
+            Id = Guid.NewGuid(),
+            UserId = lightUser.Id,
+            HouseholdId = household.Id,
+            Weight = 1,
+            JoinedUtc = DateTime.UtcNow
+        });
+        
+        // Heavy weight (5) says Never (5000 days), Light weight (1) says OnceAWeek (7 days)
+        // Weighted average = (5000×5 + 7×1) / 6 = 25007/6 ≈ 4168 days → "Never" (>= 2500)
+        var recipe = CreateRecipe("Never Recipe");
+        recipe.Ratings = new List<RecipeRating>
+        {
+            CreateRating(recipe.Id, 4, heavyUserExternalId, "Never"),
+            CreateRating(recipe.Id, 5, lightUserExternalId, "OnceAWeek")
+        };
+        _context.Recipes.Add(recipe);
+        
+        await _context.SaveChangesAsync();
+        
+        // Act
+        var recommendations = await _service.GetRecommendedRecipesAsync(_weekStartDate);
+        
+        // Assert: Should be marked as "Never" and get 0 score
+        var result = recommendations.Single();
+        result.FrequencyPreference.Should().Be("Never");
+        result.Score.Should().Be(0);
+        result.ReasonCodes.Should().Contain("MarkedNever");
+    }
+
+    [Fact]
+    public async Task FrequencyPreference_EqualWeightsDifferentFrequencies_CalculatesSimpleAverage()
+    {
+        // Arrange: Equal weights with different frequencies
+        var user1ExternalId = "equal-freq-user1";
+        var user2ExternalId = "equal-freq-user2";
+        
+        var household = new Household
+        {
+            Id = Guid.NewGuid(),
+            Name = "Equal Frequency Household",
+            CreatedUtc = DateTime.UtcNow
+        };
+        _context.Households.Add(household);
+        
+        var user1 = new User
+        {
+            Id = Guid.NewGuid(),
+            ExternalIdObjectId = user1ExternalId,
+            Email = "eqfreq1@example.com",
+            DisplayName = "EqFreq User One",
+            CreatedUtc = DateTime.UtcNow
+        };
+        _context.Users.Add(user1);
+        
+        var user2 = new User
+        {
+            Id = Guid.NewGuid(),
+            ExternalIdObjectId = user2ExternalId,
+            Email = "eqfreq2@example.com",
+            DisplayName = "EqFreq User Two",
+            CreatedUtc = DateTime.UtcNow
+        };
+        _context.Users.Add(user2);
+        
+        // Both have weight 3 (default)
+        _context.HouseholdMembers.Add(new HouseholdMember
+        {
+            Id = Guid.NewGuid(),
+            UserId = user1.Id,
+            HouseholdId = household.Id,
+            Weight = 3,
+            JoinedUtc = DateTime.UtcNow
+        });
+        
+        _context.HouseholdMembers.Add(new HouseholdMember
+        {
+            Id = Guid.NewGuid(),
+            UserId = user2.Id,
+            HouseholdId = household.Id,
+            Weight = 3,
+            JoinedUtc = DateTime.UtcNow
+        });
+        
+        // User1 prefers OnceAWeek (7 days), User2 prefers AFewTimesAYear (90 days)
+        // Simple average = (7×3 + 90×3) / 6 = 291/6 ≈ 49 days → AFewTimesAYear (45-249)
+        var recipe = CreateRecipe("Equal Freq Weight Recipe");
+        recipe.Ratings = new List<RecipeRating>
+        {
+            CreateRating(recipe.Id, 4, user1ExternalId, "OnceAWeek"),
+            CreateRating(recipe.Id, 4, user2ExternalId, "AFewTimesAYear")
+        };
+        _context.Recipes.Add(recipe);
+        
+        await _context.SaveChangesAsync();
+        
+        // Act
+        var recommendations = await _service.GetRecommendedRecipesAsync(_weekStartDate);
+        
+        // Assert: Average ~49 days is displayed as AFewTimesAYear
+        var result = recommendations.Single();
+        result.FrequencyPreference.Should().Be("AFewTimesAYear");
+    }
+
+    #endregion
 }

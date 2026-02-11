@@ -25,7 +25,7 @@ public class RecipeRecommendationService : IRecipeRecommendationService
         { "OnceAMonth", 30 },
         { "AFewTimesAYear", 90 },
         { "Yearly", 365 },
-        { "Never", int.MaxValue }
+        { "Never", 5000 }
     };
 
     public RecipeRecommendationService(AppDbContext context, ILogger<RecipeRecommendationService> logger)
@@ -102,14 +102,17 @@ public class RecipeRecommendationService : IRecipeRecommendationService
                 result.LastCookedDate = lastCooked;
             }
 
-            // Get most common frequency preference (mode)
-            result.FrequencyPreference = GetMostCommonFrequency(recipe.Ratings);
+            // Calculate weighted average frequency (in days) using HouseholdMember.Weight
+            var weightedIdealDays = CalculateWeightedFrequencyDays(recipe.Ratings, userWeights);
+            
+            // Set display frequency preference based on weighted average
+            result.FrequencyPreference = GetFrequencyPreferenceFromDays(weightedIdealDays);
 
             // Calculate score
             result.Score = CalculateScore(
                 result.AverageRating,
                 result.RatingCount,
-                result.FrequencyPreference,
+                weightedIdealDays,
                 result.LastCookedDate,
                 weekStartDate,
                 result.ReasonCodes
@@ -128,24 +131,60 @@ public class RecipeRecommendationService : IRecipeRecommendationService
         return sorted;
     }
 
-    private static string? GetMostCommonFrequency(ICollection<Data.Entities.RecipeRating>? ratings)
+    /// <summary>
+    /// Calculates a weighted average of frequency preferences (in days) using HouseholdMember.Weight.
+    /// Formula: sum(frequencyDays × weight) / sum(weight)
+    /// </summary>
+    private static int? CalculateWeightedFrequencyDays(
+        ICollection<Data.Entities.RecipeRating>? ratings,
+        Dictionary<string, int> userWeights)
     {
         if (ratings == null || ratings.Count == 0)
             return null;
 
-        var frequencies = ratings
-            .Where(r => !string.IsNullOrEmpty(r.FrequencyPreference))
-            .GroupBy(r => r.FrequencyPreference)
-            .OrderByDescending(g => g.Count())
-            .FirstOrDefault();
+        var ratingsWithFrequency = ratings
+            .Where(r => !string.IsNullOrEmpty(r.FrequencyPreference) && FrequencyToDays.ContainsKey(r.FrequencyPreference!))
+            .ToList();
 
-        return frequencies?.Key;
+        if (ratingsWithFrequency.Count == 0)
+            return null;
+
+        var weightedSum = 0.0;
+        var totalWeight = 0;
+
+        foreach (var rating in ratingsWithFrequency)
+        {
+            var weight = userWeights.GetValueOrDefault(rating.UserId, 3); // Default weight 3
+            var frequencyDays = FrequencyToDays[rating.FrequencyPreference!];
+            weightedSum += frequencyDays * weight;
+            totalWeight += weight;
+        }
+
+        return totalWeight > 0 ? (int)Math.Round(weightedSum / totalWeight) : null;
+    }
+
+    /// <summary>
+    /// Converts weighted average days back to a frequency preference string for display.
+    /// </summary>
+    private static string? GetFrequencyPreferenceFromDays(int? weightedDays)
+    {
+        if (!weightedDays.HasValue)
+            return null;
+
+        var days = weightedDays.Value;
+        
+        // Map to closest frequency preference
+        if (days >= 2500) return "Never"; // Threshold: >= 2500 days is effectively "Never"
+        if (days >= 250) return "Yearly";
+        if (days >= 45) return "AFewTimesAYear";
+        if (days >= 15) return "OnceAMonth";
+        return "OnceAWeek";
     }
 
     private double CalculateScore(
         double averageRating,
         int ratingCount,
-        string? frequencyPreference,
+        int? weightedIdealDays,
         DateTime? lastCookedDate,
         DateTime weekStartDate,
         List<string> reasonCodes)
@@ -172,10 +211,10 @@ public class RecipeRecommendationService : IRecipeRecommendationService
         }
 
         // 2. Frequency Fit Score (0-40 points)
-        // How well does "time since last cooked" match the frequency preference?
-        if (!string.IsNullOrEmpty(frequencyPreference) && frequencyPreference != "Never")
+        // How well does "time since last cooked" match the weighted average frequency preference?
+        if (weightedIdealDays.HasValue && weightedIdealDays.Value < 2500) // < 2500 means not "Never"
         {
-            var idealDays = FrequencyToDays.GetValueOrDefault(frequencyPreference, 30);
+            var idealDays = weightedIdealDays.Value;
             var daysSinceCooked = lastCookedDate.HasValue
                 ? (weekStartDate - lastCookedDate.Value).Days
                 : idealDays * 2; // If never cooked, treat as overdue
@@ -195,9 +234,9 @@ public class RecipeRecommendationService : IRecipeRecommendationService
                 score += frequencyScore;
             }
         }
-        else if (frequencyPreference == "Never")
+        else if (weightedIdealDays.HasValue && weightedIdealDays.Value >= 2500)
         {
-            // User doesn't want this recipe - heavily penalize
+            // Weighted average indicates "Never" - heavily penalize
             score = 0;
             reasonCodes.Add("MarkedNever");
             return score;
