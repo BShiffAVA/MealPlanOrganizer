@@ -215,11 +215,7 @@
                                 Padding="16,8"
                                 CornerRadius="8"
                                 VerticalOptions="Center"
-                                HeightRequest="36">
-                                <Button.GestureRecognizers>
-                                    <TapGestureRecognizer />
-                                </Button.GestureRecognizers>
-                            </Button>
+                                HeightRequest="36" />
                         </Grid>
                     </Frame>
                 </DataTemplate>
