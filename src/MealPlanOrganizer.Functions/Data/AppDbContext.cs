@@ -131,6 +131,12 @@ namespace MealPlanOrganizer.Functions.Data
                 b.Property(x => x.CuisineType).HasMaxLength(100);
                 b.Property(x => x.CreatedBy).HasMaxLength(200);
                 
+                // Foreign key to User table
+                b.HasOne(x => x.Creator)
+                    .WithMany(x => x.CreatedRecipes)
+                    .HasForeignKey(x => x.CreatedByUserId)
+                    .OnDelete(DeleteBehavior.SetNull);
+                
                 if (isSqlServer)
                 {
                     b.Property(x => x.ImageUrl).HasColumnType("nvarchar(max)");

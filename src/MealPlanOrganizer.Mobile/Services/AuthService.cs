@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Identity.Client;
@@ -318,5 +319,62 @@ public class AuthService : IAuthService
     {
         var account = await GetCurrentAccountAsync();
         return account?.Username;
+    }
+
+    public async Task<string?> GetUserIdAsync()
+    {
+        // Extract user ID from access token claims to match backend's JwtValidationService logic
+        var accessToken = await GetAccessTokenAsync();
+        if (string.IsNullOrEmpty(accessToken))
+        {
+            return null;
+        }
+
+        try
+        {
+            // Parse JWT payload (middle segment)
+            var segments = accessToken.Split('.');
+            if (segments.Length != 3)
+            {
+                _logger.LogWarning("Invalid JWT format for user ID extraction");
+                return null;
+            }
+
+            // Decode base64url payload
+            var payload = segments[1];
+            // Add padding if necessary for base64 decoding
+            payload = payload.Replace('-', '+').Replace('_', '/');
+            switch (payload.Length % 4)
+            {
+                case 2: payload += "=="; break;
+                case 3: payload += "="; break;
+            }
+
+            var jsonBytes = Convert.FromBase64String(payload);
+            using var doc = JsonDocument.Parse(jsonBytes);
+            var root = doc.RootElement;
+
+            // Match backend's claim extraction order: oid, then nameidentifier, then sub
+            if (root.TryGetProperty("oid", out var oid))
+            {
+                return oid.GetString();
+            }
+            if (root.TryGetProperty("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier", out var nameId))
+            {
+                return nameId.GetString();
+            }
+            if (root.TryGetProperty("sub", out var sub))
+            {
+                return sub.GetString();
+            }
+
+            _logger.LogWarning("No user ID claim found in access token");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to extract user ID from access token");
+            return null;
+        }
     }
 }

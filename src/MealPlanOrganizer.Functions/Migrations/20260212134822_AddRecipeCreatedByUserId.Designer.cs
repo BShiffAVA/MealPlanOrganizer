@@ -4,6 +4,7 @@ using MealPlanOrganizer.Functions.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace MealPlanOrganizer_Functions.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260212134822_AddRecipeCreatedByUserId")]
+    partial class AddRecipeCreatedByUserId
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -225,8 +228,9 @@ namespace MealPlanOrganizer_Functions.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.Property<Guid?>("CreatedByUserId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<string>("CreatedByUserId")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<DateTime>("CreatedUtc")
                         .ValueGeneratedOnAdd()
@@ -272,11 +276,14 @@ namespace MealPlanOrganizer_Functions.Migrations
                     b.Property<DateTime?>("UpdatedUtc")
                         .HasColumnType("datetime2");
 
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("CreatedByUserId");
-
                     b.HasIndex("HouseholdId");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("Recipes", (string)null);
 
@@ -284,7 +291,7 @@ namespace MealPlanOrganizer_Functions.Migrations
                         new
                         {
                             Id = new Guid("b3f9a1b6-7c1b-4b33-b17b-0d2f9b2a5e01"),
-                            CreatedUtc = new DateTime(2026, 2, 12, 21, 21, 58, 275, DateTimeKind.Utc).AddTicks(6692),
+                            CreatedUtc = new DateTime(2026, 2, 12, 13, 48, 22, 527, DateTimeKind.Utc).AddTicks(538),
                             Description = "Classic lasagna with noodles and sauce",
                             IsExtracted = false,
                             Title = "Sample Lasagna"
@@ -551,16 +558,13 @@ namespace MealPlanOrganizer_Functions.Migrations
 
             modelBuilder.Entity("MealPlanOrganizer.Functions.Data.Entities.Recipe", b =>
                 {
-                    b.HasOne("MealPlanOrganizer.Functions.Data.Entities.User", "Creator")
-                        .WithMany("CreatedRecipes")
-                        .HasForeignKey("CreatedByUserId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("MealPlanOrganizer.Functions.Data.Entities.Household", null)
                         .WithMany("Recipes")
                         .HasForeignKey("HouseholdId");
 
-                    b.Navigation("Creator");
+                    b.HasOne("MealPlanOrganizer.Functions.Data.Entities.User", null)
+                        .WithMany("CreatedRecipes")
+                        .HasForeignKey("UserId");
                 });
 
             modelBuilder.Entity("MealPlanOrganizer.Functions.Data.Entities.RecipeIngredient", b =>

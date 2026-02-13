@@ -13,7 +13,22 @@ namespace MealPlanOrganizer.Functions.Data.Entities
         public int? CookTimeMinutes { get; set; }
         public int? Servings { get; set; }
         public string? ImageUrl { get; set; }
+        
+        /// <summary>
+        /// Display name of the user who created the recipe
+        /// </summary>
         public string? CreatedBy { get; set; }
+        
+        /// <summary>
+        /// Foreign key to the User who created this recipe
+        /// </summary>
+        public Guid? CreatedByUserId { get; set; }
+        
+        /// <summary>
+        /// Navigation property to the creator
+        /// </summary>
+        public User? Creator { get; set; }
+        
         public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedUtc { get; set; }
 

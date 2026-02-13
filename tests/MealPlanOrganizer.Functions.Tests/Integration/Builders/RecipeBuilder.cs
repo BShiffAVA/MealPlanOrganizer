@@ -16,7 +16,8 @@ public class RecipeBuilder
     private int? _cookTimeMinutes = 30;
     private int? _servings = 4;
     private string? _imageUrl;
-    private string? _createdBy = TestData.User1Id.ToString();
+    private string? _createdBy = TestData.User1DisplayName;
+    private Guid? _createdByUserId = null; // Default to null; set explicitly for authorization tests
     private DateTime _createdUtc = DateTime.UtcNow;
     private DateTime? _updatedUtc;
     private bool _isExtracted = false;
@@ -79,6 +80,12 @@ public class RecipeBuilder
     public RecipeBuilder WithCreatedBy(string? createdBy)
     {
         _createdBy = createdBy;
+        return this;
+    }
+
+    public RecipeBuilder WithCreatedByUserId(Guid? createdByUserId)
+    {
+        _createdByUserId = createdByUserId;
         return this;
     }
 
@@ -198,6 +205,7 @@ public class RecipeBuilder
             Servings = _servings,
             ImageUrl = _imageUrl,
             CreatedBy = _createdBy,
+            CreatedByUserId = _createdByUserId,
             CreatedUtc = _createdUtc,
             UpdatedUtc = _updatedUtc,
             IsExtracted = _isExtracted,

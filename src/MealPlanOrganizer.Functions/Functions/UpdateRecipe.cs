@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MealPlanOrganizer.Functions.Data;
 using MealPlanOrganizer.Functions.Data.Entities;
+using MealPlanOrganizer.Functions.Services;
 
 namespace MealPlanOrganizer.Functions.Functions
 {
@@ -16,11 +17,13 @@ namespace MealPlanOrganizer.Functions.Functions
     {
         private readonly ILogger _logger;
         private readonly AppDbContext _context;
+        private readonly AuthenticationHelper _authHelper;
 
-        public UpdateRecipe(ILoggerFactory loggerFactory, AppDbContext context)
+        public UpdateRecipe(ILoggerFactory loggerFactory, AppDbContext context, AuthenticationHelper authHelper)
         {
             _logger = loggerFactory.CreateLogger<UpdateRecipe>();
             _context = context;
+            _authHelper = authHelper;
         }
 
         [Function("UpdateRecipe")]
@@ -32,6 +35,18 @@ namespace MealPlanOrganizer.Functions.Functions
 
             try
             {
+                // Authenticate the request
+                var authResult = await _authHelper.AuthenticateAsync(req);
+                if (!authResult.IsAuthenticated)
+                {
+                    _logger.LogWarning("Authentication failed: {Error}", authResult.ErrorMessage);
+                    var unauthorized = req.CreateResponse(HttpStatusCode.Unauthorized);
+                    await unauthorized.WriteStringAsync(JsonSerializer.Serialize(new { error = authResult.ErrorMessage ?? "Unauthorized" }));
+                    return unauthorized;
+                }
+                var userId = authResult.UserId;
+                _logger.LogInformation("Authenticated user: {UserId}", userId);
+
                 // Validate recipeId
                 if (string.IsNullOrWhiteSpace(recipeId) || !Guid.TryParse(recipeId, out var recipeGuid))
                 {
@@ -78,7 +93,28 @@ namespace MealPlanOrganizer.Functions.Functions
                     return notFound;
                 }
 
-                // Update basic properties
+                // Look up the User by their External ID to get the internal User.Id
+                var user = await _context.Users
+                    .FirstOrDefaultAsync(u => u.ExternalIdObjectId == userId);
+                
+                if (user == null)
+                {
+                    _logger.LogWarning("User with ExternalIdObjectId {UserId} not found in database", userId);
+                    var forbidden = req.CreateResponse(HttpStatusCode.Forbidden);
+                    await forbidden.WriteStringAsync(JsonSerializer.Serialize(new { error = "User not found" }));
+                    return forbidden;
+                }
+
+                // Authorization: Only the creator can edit a recipe
+                if (recipe.CreatedByUserId != user.Id)
+                {
+                    _logger.LogWarning("User {UserId} attempted to edit recipe {RecipeId} created by {CreatedByUserId}", user.Id, recipeId, recipe.CreatedByUserId);
+                    var forbidden = req.CreateResponse(HttpStatusCode.Forbidden);
+                    await forbidden.WriteStringAsync(JsonSerializer.Serialize(new { error = "Only the recipe creator can edit this recipe" }));
+                    return forbidden;
+                }
+
+                // Update basic properties (ratings are preserved - not touched during update)
                 recipe.Title = updateRequest.Title ?? recipe.Title;
                 recipe.Description = updateRequest.Description;
                 recipe.CuisineType = updateRequest.CuisineType;

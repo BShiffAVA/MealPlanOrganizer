@@ -57,7 +57,7 @@
                     </VerticalStackLayout>
                 </Frame>
 
-                <HorizontalStackLayout Spacing="10">
+                <HorizontalStackLayout Spacing="10" IsVisible="{Binding IsCurrentUserCreator}">
                     <Button Text="Edit Recipe"
                             Command="{Binding EditCommand}"
                             BackgroundColor="#FF9800"

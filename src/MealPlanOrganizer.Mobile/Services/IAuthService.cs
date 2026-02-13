@@ -51,4 +51,9 @@ public interface IAuthService
     /// Gets the current user's email from cached account.
     /// </summary>
     Task<string?> GetUserEmailAsync();
+
+    /// <summary>
+    /// Gets the current user's unique identifier (Object ID from Entra ID).
+    /// </summary>
+    Task<string?> GetUserIdAsync();
 }

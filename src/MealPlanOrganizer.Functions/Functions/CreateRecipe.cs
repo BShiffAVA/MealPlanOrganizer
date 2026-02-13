@@ -79,6 +79,25 @@ namespace MealPlanOrganizer.Functions.Functions
                 _logger.LogInformation("Parsed recipe: Title={Title}, Ingredients={IngrCount}, Steps={StepCount}", 
                     model.Title, model.Ingredients?.Count ?? 0, model.Steps?.Count ?? 0);
 
+                // Look up the User by their External ID to get the internal User.Id
+                // If user doesn't exist, create them (just-in-time provisioning)
+                var user = await _db.Users
+                    .FirstOrDefaultAsync(u => u.ExternalIdObjectId == userId);
+                
+                if (user == null)
+                {
+                    _logger.LogInformation("User with ExternalIdObjectId {UserId} not found, creating...", userId);
+                    user = new User
+                    {
+                        ExternalIdObjectId = userId,
+                        DisplayName = userDisplayName,
+                        Email = userDisplayName // Fallback if we don't have email
+                    };
+                    _db.Users.Add(user);
+                    await _db.SaveChangesAsync();
+                    _logger.LogInformation("Created new user with Id {UserId}", user.Id);
+                }
+
                 var recipe = new Recipe
                 {
                     Title = model.Title!.Trim(),
@@ -88,7 +107,8 @@ namespace MealPlanOrganizer.Functions.Functions
                     CookTimeMinutes = model.CookTimeMinutes,
                     Servings = model.Servings,
                     ImageUrl = string.IsNullOrWhiteSpace(model.ImageUrl) ? null : model.ImageUrl!.Trim(),
-                    CreatedBy = userDisplayName ?? userId // Use authenticated user's display name or ID
+                    CreatedBy = userDisplayName ?? user.DisplayName, // Display name for UI
+                    CreatedByUserId = user.Id // User.Id for authorization checks
                 };
 
                 if (model.Ingredients != null && model.Ingredients.Any())

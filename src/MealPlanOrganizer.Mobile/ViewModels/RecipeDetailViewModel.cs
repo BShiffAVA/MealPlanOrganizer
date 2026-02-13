@@ -13,6 +13,7 @@ public partial class RecipeDetailViewModel : ObservableObject
 {
     private readonly IRecipeService _recipeService;
     private readonly INavigationService _navigationService;
+    private readonly IAuthService _authService;
     private readonly ILogger<RecipeDetailViewModel> _logger;
 
     #region Observable Properties
@@ -47,6 +48,9 @@ public partial class RecipeDetailViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _hasImage;
+
+    [ObservableProperty]
+    private bool _isCurrentUserCreator;
 
     [ObservableProperty]
     private string _prepTime = "N/A";
@@ -193,10 +197,12 @@ public partial class RecipeDetailViewModel : ObservableObject
     public RecipeDetailViewModel(
         IRecipeService recipeService,
         INavigationService navigationService,
+        IAuthService authService,
         ILogger<RecipeDetailViewModel> logger)
     {
         _recipeService = recipeService;
         _navigationService = navigationService;
+        _authService = authService;
         _logger = logger;
     }
 
@@ -261,6 +267,9 @@ public partial class RecipeDetailViewModel : ObservableObject
 
             Recipe = recipe;
             PopulateFromRecipe(recipe);
+
+            // Use the isCurrentUserCreator flag from the API response
+            IsCurrentUserCreator = recipe.IsCurrentUserCreator;
         }
         catch (Exception ex)
         {

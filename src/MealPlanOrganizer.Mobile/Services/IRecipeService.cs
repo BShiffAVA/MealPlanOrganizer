@@ -77,6 +77,8 @@ public class RecipeDetailDto
     public int? Servings { get; set; }
     public string? ImageUrl { get; set; }
     public string? CreatedBy { get; set; }
+    public Guid? CreatedByUserId { get; set; }
+    public bool IsCurrentUserCreator { get; set; }
     public DateTime CreatedUtc { get; set; }
     public List<RecipeIngredientDto> Ingredients { get; set; } = new();
     public List<RecipeStepDto> Steps { get; set; } = new();

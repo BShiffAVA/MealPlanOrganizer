@@ -158,13 +158,14 @@ public class RecipeEndpointsTests : IAsyncLifetime
         using var scope = _fixture.TestHost.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var blobUrlService = scope.ServiceProvider.GetRequiredService<IBlobUrlService>();
+        var authHelper = scope.ServiceProvider.GetRequiredService<AuthenticationHelper>();
         var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
         var logger = loggerFactory.CreateLogger<GetRecipeById>();
         
         // Use the pre-seeded test recipe
         var recipeId = TestData.Recipe1Id;
         
-        var function = new GetRecipeById(logger, db, blobUrlService);
+        var function = new GetRecipeById(logger, db, blobUrlService, authHelper);
         var httpRequest = CreateMockHttpRequest(HttpMethod.Get);
         
         // Act
@@ -185,10 +186,11 @@ public class RecipeEndpointsTests : IAsyncLifetime
         using var scope = _fixture.TestHost.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var blobUrlService = scope.ServiceProvider.GetRequiredService<IBlobUrlService>();
+        var authHelper = scope.ServiceProvider.GetRequiredService<AuthenticationHelper>();
         var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
         var logger = loggerFactory.CreateLogger<GetRecipeById>();
         
-        var function = new GetRecipeById(logger, db, blobUrlService);
+        var function = new GetRecipeById(logger, db, blobUrlService, authHelper);
         var httpRequest = CreateMockHttpRequest(HttpMethod.Get);
         
         var nonExistentId = Guid.NewGuid();
@@ -218,10 +220,11 @@ public class RecipeEndpointsTests : IAsyncLifetime
         using var scope = _fixture.TestHost.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var blobUrlService = scope.ServiceProvider.GetRequiredService<IBlobUrlService>();
+        var authHelper = scope.ServiceProvider.GetRequiredService<AuthenticationHelper>();
         var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
         var logger = loggerFactory.CreateLogger<GetRecipeById>();
         
-        var function = new GetRecipeById(logger, db, blobUrlService);
+        var function = new GetRecipeById(logger, db, blobUrlService, authHelper);
         var httpRequest = CreateMockHttpRequest(HttpMethod.Get);
         
         // Act
@@ -302,6 +305,7 @@ public class RecipeEndpointsTests : IAsyncLifetime
         var recipe = RecipeBuilder.Create()
             .WithTitle("Original Title")
             .WithDescription("Original description")
+            .WithCreatedByUserId(TestData.User1InternalId)
             .Build();
         
         await using (var setupDb = _fixture.TestHost.CreateDbContext())
@@ -312,9 +316,10 @@ public class RecipeEndpointsTests : IAsyncLifetime
         
         using var scope = _fixture.TestHost.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var authHelper = scope.ServiceProvider.GetRequiredService<AuthenticationHelper>();
         var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
         
-        var function = new UpdateRecipe(loggerFactory, db);
+        var function = new UpdateRecipe(loggerFactory, db, authHelper);
         
         var updateRequest = new
         {
@@ -348,9 +353,10 @@ public class RecipeEndpointsTests : IAsyncLifetime
         // Arrange
         using var scope = _fixture.TestHost.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var authHelper = scope.ServiceProvider.GetRequiredService<AuthenticationHelper>();
         var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
         
-        var function = new UpdateRecipe(loggerFactory, db);
+        var function = new UpdateRecipe(loggerFactory, db, authHelper);
         
         var updateRequest = new { title = "New Title" };
         var httpRequest = CreateMockHttpRequest(
@@ -363,6 +369,204 @@ public class RecipeEndpointsTests : IAsyncLifetime
         
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+    
+    [Fact]
+    public async Task UpdateRecipe_ByNonCreator_ReturnsForbidden()
+    {
+        // Arrange - Create recipe by User1
+        var recipe = RecipeBuilder.Create()
+            .WithTitle("User1 Recipe")
+            .WithCreatedBy(TestUsers.User1.UserId)
+            .Build();
+        
+        await using (var setupDb = _fixture.TestHost.CreateDbContext())
+        {
+            setupDb.Recipes.Add(recipe);
+            await setupDb.SaveChangesAsync();
+        }
+        
+        using var scope = _fixture.TestHost.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var authHelper = scope.ServiceProvider.GetRequiredService<AuthenticationHelper>();
+        var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
+        
+        var function = new UpdateRecipe(loggerFactory, db, authHelper);
+        
+        var updateRequest = new { title = "Attempted Update By User2" };
+        
+        // Act - Attempt to update with User2's credentials
+        var httpRequest = CreateMockHttpRequest(
+            HttpMethod.Put,
+            JsonSerializer.Serialize(updateRequest),
+            TestUsers.User2.CreateAuthHeader().ToString());
+        
+        var response = await function.Run(httpRequest, recipe.Id.ToString());
+        
+        // Assert
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        
+        var responseBody = await ReadResponseBody<JsonElement>(response);
+        Assert.Contains("creator", responseBody.GetProperty("error").GetString()?.ToLower() ?? string.Empty);
+        
+        // Verify recipe was not modified
+        await using var verifyDb = _fixture.TestHost.CreateDbContext();
+        var unchangedRecipe = await verifyDb.Recipes.FindAsync(recipe.Id);
+        Assert.NotNull(unchangedRecipe);
+        Assert.Equal("User1 Recipe", unchangedRecipe.Title);
+    }
+    
+    [Fact]
+    public async Task UpdateRecipe_WithoutAuthentication_ReturnsUnauthorized()
+    {
+        // Arrange
+        var recipe = RecipeBuilder.Create()
+            .WithTitle("Recipe to Update")
+            .Build();
+        
+        await using (var setupDb = _fixture.TestHost.CreateDbContext())
+        {
+            setupDb.Recipes.Add(recipe);
+            await setupDb.SaveChangesAsync();
+        }
+        
+        using var scope = _fixture.TestHost.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var authHelper = scope.ServiceProvider.GetRequiredService<AuthenticationHelper>();
+        var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
+        
+        var function = new UpdateRecipe(loggerFactory, db, authHelper);
+        
+        var updateRequest = new { title = "Unauthenticated Update" };
+        var httpRequest = CreateMockHttpRequest(
+            HttpMethod.Put,
+            JsonSerializer.Serialize(updateRequest),
+            authHeader: null); // No auth header
+        
+        // Act
+        var response = await function.Run(httpRequest, recipe.Id.ToString());
+        
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+    
+    [Fact]
+    public async Task UpdateRecipe_PreservesRatings()
+    {
+        // Arrange - Create recipe with ratings
+        var recipe = RecipeBuilder.Create()
+            .WithTitle("Recipe With Ratings")
+            .WithDescription("Original description")
+            .WithCreatedBy(TestUsers.User1.UserId)
+            .WithCreatedByUserId(TestData.User1InternalId)
+            .WithRating(TestUsers.User1.UserId, 5, "Excellent!")
+            .WithRating(TestUsers.User2.UserId, 4, "Very good")
+            .Build();
+        
+        await using (var setupDb = _fixture.TestHost.CreateDbContext())
+        {
+            setupDb.Recipes.Add(recipe);
+            await setupDb.SaveChangesAsync();
+        }
+        
+        // Verify ratings exist before update
+        await using (var verifyBeforeDb = _fixture.TestHost.CreateDbContext())
+        {
+            var ratingsBefore = await verifyBeforeDb.RecipeRatings
+                .Where(r => r.RecipeId == recipe.Id)
+                .ToListAsync();
+            Assert.Equal(2, ratingsBefore.Count);
+        }
+        
+        using var scope = _fixture.TestHost.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var authHelper = scope.ServiceProvider.GetRequiredService<AuthenticationHelper>();
+        var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
+        
+        var function = new UpdateRecipe(loggerFactory, db, authHelper);
+        
+        var updateRequest = new
+        {
+            title = "Updated Recipe With Ratings",
+            description = "Updated description",
+            ingredients = new[]
+            {
+                new { name = "New Ingredient", quantity = "1 cup" }
+            },
+            steps = new[] { "New step 1", "New step 2" }
+        };
+        
+        var httpRequest = CreateMockHttpRequest(
+            HttpMethod.Put,
+            JsonSerializer.Serialize(updateRequest),
+            TestUsers.User1.CreateAuthHeader().ToString());
+        
+        // Act
+        var response = await function.Run(httpRequest, recipe.Id.ToString());
+        
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        
+        // Verify recipe was updated
+        await using var verifyDb = _fixture.TestHost.CreateDbContext();
+        var updatedRecipe = await verifyDb.Recipes
+            .Include(r => r.Ratings)
+            .FirstOrDefaultAsync(r => r.Id == recipe.Id);
+        
+        Assert.NotNull(updatedRecipe);
+        Assert.Equal("Updated Recipe With Ratings", updatedRecipe.Title);
+        Assert.Equal("Updated description", updatedRecipe.Description);
+        
+        // Verify ratings are preserved
+        Assert.Equal(2, updatedRecipe.Ratings.Count);
+        Assert.Contains(updatedRecipe.Ratings, r => r.UserId == TestUsers.User1.UserId && r.Rating == 5);
+        Assert.Contains(updatedRecipe.Ratings, r => r.UserId == TestUsers.User2.UserId && r.Rating == 4);
+    }
+    
+    [Fact]
+    public async Task UpdateRecipe_ByCreator_Succeeds()
+    {
+        // Arrange - Create recipe explicitly by User1
+        var recipe = RecipeBuilder.Create()
+            .WithTitle("Creator's Recipe")
+            .WithCreatedBy(TestUsers.User1.UserId)
+            .WithCreatedByUserId(TestData.User1InternalId)
+            .Build();
+        
+        await using (var setupDb = _fixture.TestHost.CreateDbContext())
+        {
+            setupDb.Recipes.Add(recipe);
+            await setupDb.SaveChangesAsync();
+        }
+        
+        using var scope = _fixture.TestHost.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var authHelper = scope.ServiceProvider.GetRequiredService<AuthenticationHelper>();
+        var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
+        
+        var function = new UpdateRecipe(loggerFactory, db, authHelper);
+        
+        var updateRequest = new
+        {
+            title = "Updated By Creator",
+            description = "Creator updated this"
+        };
+        
+        var httpRequest = CreateMockHttpRequest(
+            HttpMethod.Put,
+            JsonSerializer.Serialize(updateRequest),
+            TestUsers.User1.CreateAuthHeader().ToString());
+        
+        // Act
+        var response = await function.Run(httpRequest, recipe.Id.ToString());
+        
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        
+        await using var verifyDb = _fixture.TestHost.CreateDbContext();
+        var updatedRecipe = await verifyDb.Recipes.FindAsync(recipe.Id);
+        Assert.NotNull(updatedRecipe);
+        Assert.Equal("Updated By Creator", updatedRecipe.Title);
     }
     
     #endregion

@@ -106,6 +106,28 @@ public class DatabaseFixture : IAsyncLifetime
     /// </summary>
     public async Task SeedTestDataAsync(AppDbContext context)
     {
+        // Seed test users first (needed for Recipe.CreatedByUserId FK)
+        var users = new List<User>
+        {
+            new()
+            {
+                Id = TestData.User1InternalId,
+                ExternalIdObjectId = TestData.User1Id,
+                Email = TestData.User1Email,
+                DisplayName = TestData.User1DisplayName
+            },
+            new()
+            {
+                Id = TestData.User2InternalId,
+                ExternalIdObjectId = TestData.User2Id,
+                Email = TestData.User2Email,
+                DisplayName = TestData.User2DisplayName
+            }
+        };
+        
+        context.Users.AddRange(users);
+        await context.SaveChangesAsync();
+        
         // Seed test recipes
         var recipes = new List<Recipe>
         {
@@ -118,7 +140,8 @@ public class DatabaseFixture : IAsyncLifetime
                 PrepTimeMinutes = 15,
                 CookTimeMinutes = 20,
                 Servings = 4,
-                CreatedBy = TestData.User1Id,
+                CreatedBy = TestData.User1DisplayName,
+                CreatedByUserId = TestData.User1InternalId,
                 Ingredients = new List<RecipeIngredient>
                 {
                     new() { Id = Guid.NewGuid(), Name = "Spaghetti", Quantity = "400", QuantityValue = 400, Unit = "g" },
@@ -143,7 +166,8 @@ public class DatabaseFixture : IAsyncLifetime
                 PrepTimeMinutes = 30,
                 CookTimeMinutes = 45,
                 Servings = 6,
-                CreatedBy = TestData.User1Id,
+                CreatedBy = TestData.User1DisplayName,
+                CreatedByUserId = TestData.User1InternalId,
                 Ingredients = new List<RecipeIngredient>
                 {
                     new() { Id = Guid.NewGuid(), Name = "Chicken Breast", Quantity = "800", QuantityValue = 800, Unit = "g" },
@@ -167,7 +191,8 @@ public class DatabaseFixture : IAsyncLifetime
                 PrepTimeMinutes = 10,
                 CookTimeMinutes = 0,
                 Servings = 2,
-                CreatedBy = TestData.User2Id
+                CreatedBy = TestData.User2DisplayName,
+                CreatedByUserId = TestData.User2InternalId
             }
         };
         
@@ -248,8 +273,14 @@ public static class TestData
     
     public static readonly Guid MealPlan1Id = Guid.Parse("00000002-0000-0000-0000-000000000001");
     
+    // External IDs (from JWT oid claims)
     public static readonly string User1Id = "test-user-1";
     public static readonly string User2Id = "test-user-2";
+    
+    // Internal database User.Id GUIDs
+    public static readonly Guid User1InternalId = Guid.Parse("00000003-0000-0000-0000-000000000001");
+    public static readonly Guid User2InternalId = Guid.Parse("00000003-0000-0000-0000-000000000002");
+    
     public static readonly string User1Email = "user1@test.com";
     public static readonly string User2Email = "user2@test.com";
     public static readonly string User1DisplayName = "Test User 1";
