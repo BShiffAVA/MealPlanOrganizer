@@ -17,7 +17,7 @@
                 FontAttributes="Bold"
                 TextColor="White" />
             <Label
-                Text="Tap recipes to select them for your meal plan"
+                Text="Tap recipe to view details, tap Add button to add to plan"
                 FontSize="14"
                 TextColor="#AAAAAA" />
         </VerticalStackLayout>
@@ -99,10 +99,10 @@
                         HasShadow="False">
                         <Frame.GestureRecognizers>
                             <TapGestureRecognizer
-                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:RecipePickerPageViewModel}}, Path=SelectRecipeCommand}"
+                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:RecipePickerPageViewModel}}, Path=ViewRecipeDetailsCommand}"
                                 CommandParameter="{Binding .}" />
                         </Frame.GestureRecognizers>
-                        <Grid ColumnDefinitions="Auto,60,*,Auto" ColumnSpacing="12">
+                        <Grid ColumnDefinitions="Auto,60,*,Auto,Auto" ColumnSpacing="12">
                             
                             <!-- Selection Order Badge -->
                             <Frame
@@ -202,6 +202,24 @@
                                     FontAttributes="Bold"
                                     TextColor="#1976D2" />
                             </Frame>
+                            
+                            <!-- Add Button -->
+                            <Button
+                                Grid.Column="4"
+                                Text="Add"
+                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:RecipePickerPageViewModel}}, Path=AddRecipeCommand}"
+                                CommandParameter="{Binding .}"
+                                BackgroundColor="#4CAF50"
+                                TextColor="White"
+                                FontSize="12"
+                                Padding="16,8"
+                                CornerRadius="8"
+                                VerticalOptions="Center"
+                                HeightRequest="36">
+                                <Button.GestureRecognizers>
+                                    <TapGestureRecognizer />
+                                </Button.GestureRecognizers>
+                            </Button>
                         </Grid>
                     </Frame>
                 </DataTemplate>

@@ -161,7 +161,7 @@ public partial class RecipePickerPageViewModel : ObservableObject
         if (IsMultiSelectMode)
         {
             PageTitle = "Select Recipes";
-            DayLabelText = $"Tap recipes in order to assign them to your meal plan (up to {MaxSelections})";
+            DayLabelText = $"Tap Add to select recipes for your meal plan (up to {MaxSelections})";
         }
         else if (_dayDate.HasValue)
         {
@@ -171,7 +171,7 @@ public partial class RecipePickerPageViewModel : ObservableObject
         else
         {
             PageTitle = "Select Recipes";
-            DayLabelText = "Tap recipes to select them for your meal plan";
+            DayLabelText = "Tap recipe to view details, tap Add to add to plan";
         }
     }
 
@@ -247,7 +247,24 @@ public partial class RecipePickerPageViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task SelectRecipeAsync(RecipePickerItemViewModel? item)
+    private async Task ViewRecipeDetailsAsync(RecipePickerItemViewModel? item)
+    {
+        if (item == null) return;
+
+        try
+        {
+            _logger.LogInformation("Navigating to recipe details for {RecipeId}", item.RecipeId);
+            await Shell.Current.GoToAsync($"{nameof(RecipeDetailPage)}?recipeId={item.RecipeId}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to navigate to recipe details {RecipeId}", item.RecipeId);
+            ErrorMessage = "Failed to view recipe details. Please try again.";
+        }
+    }
+
+    [RelayCommand]
+    private async Task AddRecipeAsync(RecipePickerItemViewModel? item)
     {
         if (item == null) return;
 
@@ -264,8 +281,8 @@ public partial class RecipePickerPageViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to select recipe {RecipeId}", item.RecipeId);
-            ErrorMessage = "Failed to select recipe. Please try again.";
+            _logger.LogError(ex, "Failed to add recipe {RecipeId}", item.RecipeId);
+            ErrorMessage = "Failed to add recipe. Please try again.";
         }
     }
 
@@ -276,15 +293,6 @@ public partial class RecipePickerPageViewModel : ObservableObject
             await Shell.Current.DisplayAlertAsync("Error", "Invalid date", "OK");
             return;
         }
-
-        // Confirm selection
-        var confirm = await Shell.Current.DisplayAlertAsync(
-            "Add Recipe",
-            $"Add \"{item.Title}\" to {_dayDate.Value:dddd, MMMM d}?",
-            "Add",
-            "Cancel");
-
-        if (!confirm) return;
 
         try
         {
