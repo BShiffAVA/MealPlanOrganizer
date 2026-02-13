@@ -147,6 +147,18 @@ public partial class MealPlanDetailViewModel : ObservableObject
     }
 
     /// <summary>
+    /// Navigates to recipe details page.
+    /// </summary>
+    [RelayCommand]
+    private async Task ViewRecipeAsync(MealPlanDayViewModel? day)
+    {
+        if (day?.Recipe == null) return;
+
+        await _navigationService.GoToAsync(
+            $"{nameof(RecipeDetailPage)}?recipeId={day.Recipe.RecipeId}");
+    }
+
+    /// <summary>
     /// Moves a recipe between days in the meal plan.
     /// Called from code-behind after drag-drop completes.
     /// </summary>
