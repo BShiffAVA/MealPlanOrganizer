@@ -206,10 +206,10 @@
                             <!-- Add Button -->
                             <Button
                                 Grid.Column="4"
-                                Text="Add"
+                                Text="{Binding ButtonText}"
                                 Command="{Binding Source={RelativeSource AncestorType={x:Type vm:RecipePickerPageViewModel}}, Path=AddRecipeCommand}"
                                 CommandParameter="{Binding .}"
-                                BackgroundColor="#4CAF50"
+                                BackgroundColor="{Binding ButtonBackgroundColor}"
                                 TextColor="White"
                                 FontSize="12"
                                 Padding="16,8"
