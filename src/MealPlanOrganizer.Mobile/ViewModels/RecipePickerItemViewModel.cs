@@ -12,6 +12,8 @@ public partial class RecipePickerItemViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsNotSelected))]
     [NotifyPropertyChangedFor(nameof(BorderColor))]
     [NotifyPropertyChangedFor(nameof(BackgroundColor))]
+    [NotifyPropertyChangedFor(nameof(ButtonText))]
+    [NotifyPropertyChangedFor(nameof(ButtonBackgroundColor))]
     private bool _isSelected;
 
     [ObservableProperty]
@@ -48,6 +50,10 @@ public partial class RecipePickerItemViewModel : ObservableObject
     public string BorderColor => IsSelected ? "#4CAF50" : "#333333";
     public string BackgroundColor => IsSelected ? "#1B3D1B" : "Black";
     public string SelectionBadgeColor => "#4CAF50";
+    
+    // Button properties
+    public string ButtonText => IsSelected ? "Remove" : "Add";
+    public string ButtonBackgroundColor => IsSelected ? "#F44336" : "#4CAF50";
 
     public bool HasImage => !string.IsNullOrEmpty(ImageUrl);
     public bool HasCuisine => !string.IsNullOrEmpty(CuisineType);
