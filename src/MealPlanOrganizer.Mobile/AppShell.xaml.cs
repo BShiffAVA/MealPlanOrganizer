@@ -8,26 +8,31 @@ public partial class AppShell : Shell
 {
 	private readonly IAuthService _authService;
 	private readonly IPushNotificationService _pushNotificationService;
+	private readonly IDeepLinkService _deepLinkService;
 
 	public AppShell()
 	{
 		InitializeComponent();
 		
-		// Get auth service from DI
-		_authService = Application.Current?.Handler?.MauiContext?.Services.GetService<IAuthService>()
+		// Get services from DI
+		var services = Application.Current?.Handler?.MauiContext?.Services;
+		if (services == null)
+		{
+			throw new InvalidOperationException("Services not available");
+		}
+
+		_authService = services.GetService<IAuthService>()
 			?? throw new InvalidOperationException("IAuthService not registered");
 
-		// Get push notification service from DI
-		_pushNotificationService = Application.Current?.Handler?.MauiContext?.Services.GetService<IPushNotificationService>()
+		_pushNotificationService = services.GetService<IPushNotificationService>()
 			?? throw new InvalidOperationException("IPushNotificationService not registered");
 
-		// Resolve pages from DI for ShellContent that require constructor injection
-		var services = Application.Current?.Handler?.MauiContext?.Services;
-		if (services != null)
-		{
-			HomeShellContent.Content = services.GetRequiredService<MainPage>();
-			MealPlansShellContent.Content = services.GetRequiredService<MealPlansPage>();
-		}
+		_deepLinkService = services.GetService<IDeepLinkService>()
+			?? throw new InvalidOperationException("IDeepLinkService not registered");
+
+		// Resolve pages from DI for ShellContent
+		HomeShellContent.Content = services.GetRequiredService<MainPage>();
+		MealPlansShellContent.Content = services.GetRequiredService<MealPlansPage>();
 		
 		// Register routes for programmatic navigation via GoToAsync()
 		// NOTE: ShellContent tabs use unique Route names in XAML (HomeTab, MealPlansTab, etc.)
@@ -51,16 +56,38 @@ public partial class AppShell : Shell
 		// Rating reminder route (for push notification deep links)
 		Routing.RegisterRoute(nameof(QuickRateRecipePage), typeof(QuickRateRecipePage));
 
-		// Subscribe to push notification events for deep link navigation
+		// Subscribe to push notification events for deep link navigation (foreground notifications)
 		_pushNotificationService.NotificationReceived += OnPushNotificationReceived;
 
 		// Subscribe to navigation events for logging and tab switch handling
 		Navigating += OnNavigating;
 		Navigated += OnNavigated;
+
+		// Process any pending deep link actions after Shell is fully loaded
+		Loaded += OnShellLoaded;
 	}
 
 	/// <summary>
-	/// Handles push notification received event for deep link navigation.
+	/// Handles Shell loaded event to process any pending deep link actions.
+	/// </summary>
+	private async void OnShellLoaded(object? sender, EventArgs e)
+	{
+		try
+		{
+			// Small delay to ensure Shell is fully initialized and navigable
+			await Task.Delay(100);
+			
+			// Process any pending deep link action from cold start or pre-auth notification
+			await _deepLinkService.ProcessPendingActionAsync();
+		}
+		catch (Exception ex)
+		{
+			Log.Error(ex, "Error processing pending deep link action");
+		}
+	}
+
+	/// <summary>
+	/// Handles push notification received event for deep link navigation (foreground only).
 	/// </summary>
 	private async void OnPushNotificationReceived(object? sender, PushNotificationReceivedEventArgs e)
 	{
@@ -68,26 +95,11 @@ public partial class AppShell : Shell
 		{
 			Log.Information("Push notification received: {Title}", e.Title);
 			
-			if (e.Data != null && e.Data.TryGetValue("action", out var action))
+			// Use DeepLinkService to parse and handle the notification
+			var action = _deepLinkService.ParseNotificationData(e.Data);
+			if (action != null)
 			{
-				Log.Debug("Notification action: {Action}", action);
-				
-				if (action == "rate_recipe")
-				{
-					// Navigate to QuickRateRecipePage for rating reminders
-					await MainThread.InvokeOnMainThreadAsync(async () =>
-					{
-						try
-						{
-							await Shell.Current.GoToAsync(nameof(QuickRateRecipePage));
-							Log.Information("Navigated to QuickRateRecipePage from notification");
-						}
-						catch (Exception navEx)
-						{
-							Log.Error(navEx, "Failed to navigate to QuickRateRecipePage");
-						}
-					});
-				}
+				await _deepLinkService.ProcessDeepLinkAsync(action);
 			}
 		}
 		catch (Exception ex)

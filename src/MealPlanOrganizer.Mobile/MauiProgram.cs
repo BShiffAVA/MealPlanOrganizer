@@ -50,6 +50,9 @@ public static class MauiProgram
 		builder.Services.AddHttpClient<PushNotificationService>();
 		builder.Services.AddSingleton<IPushNotificationService>(sp => sp.GetRequiredService<PushNotificationService>());
 
+		// Register deep link service
+		builder.Services.AddSingleton<IDeepLinkService, DeepLinkService>();
+
 		// Register ViewModels
 		builder.Services.AddTransient<LoginViewModel>();
 		builder.Services.AddTransient<CreateHouseholdViewModel>();

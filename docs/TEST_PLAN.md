@@ -52,7 +52,8 @@ tests/
     │   ├── RecipeServiceTests.cs
     │   ├── AuthServiceTests.cs
     │   ├── PushNotificationServiceHttpTests.cs
-    │   └── RecipeServicePendingRatingsTests.cs
+    │   ├── RecipeServicePendingRatingsTests.cs
+    │   └── DeepLinkServiceTests.cs
     ├── ViewModels/
     │   └── QuickRateRecipeViewModelTests.cs
     └── Mocks/
@@ -349,6 +350,53 @@ Tests HTTP interactions for pending rating operations (GetPendingRatings, Comple
 | `DismissPendingRating_WhenServerReturns401_ReturnsFalse` | 401 response | Returns false |
 | `DismissPendingRating_WhenServerReturns500_ReturnsFalse` | 500 response | Returns false |
 | `DismissPendingRating_WhenNetworkError_ReturnsFalse` | Connection failure | Returns false |
+
+#### DeepLinkServiceTests
+
+Tests deep link URI parsing, notification data parsing, and navigation logic for deep link handling.
+
+| Test Case | Description | Expected Result |
+|-----------|-------------|-----------------|
+| `ParseUri_RateScheme_ReturnsRateRecipesAction` | mealplanorganizer://rate | Returns RateRecipes action |
+| `ParseUri_RateRecipesScheme_ReturnsRateRecipesAction` | mealplanorganizer://rate-recipes | Returns RateRecipes action |
+| `ParseUri_RateRecipeScheme_ReturnsRateRecipesAction` | mealplanorganizer://rate-recipe | Returns RateRecipes action |
+| `ParseUri_CaseInsensitive_ReturnsRateRecipesAction` | Various case combinations | Returns RateRecipes action |
+| `ParseUri_RecipeWithId_ReturnsViewRecipeAction` | mealplanorganizer://recipe/{id} | Returns ViewRecipe with recipeId |
+| `ParseUri_MealPlanWithId_ReturnsViewMealPlanAction` | mealplanorganizer://mealplan/{id} | Returns ViewMealPlan with mealPlanId |
+| `ParseUri_RecipeWithoutId_ReturnsNull` | mealplanorganizer://recipe | Returns null |
+| `ParseUri_MealPlanWithoutId_ReturnsNull` | mealplanorganizer://mealplan | Returns null |
+| `ParseUri_UnknownScheme_ReturnsNull` | otherscheme://rate | Returns null |
+| `ParseUri_UnknownHost_ReturnsNull` | mealplanorganizer://unknown | Returns null |
+| `ParseUri_EmptyString_ReturnsNull` | Empty string | Returns null |
+| `ParseUri_NullString_ReturnsNull` | Null string | Returns null |
+| `ParseUri_WhitespaceString_ReturnsNull` | Whitespace only | Returns null |
+| `ParseUri_InvalidUri_ReturnsNull` | Malformed URI | Returns null |
+| `ParseUri_TrimsWhitespace_ReturnsAction` | URI with surrounding spaces | Returns trimmed action |
+| `ParseNotificationData_RateRecipeAction_ReturnsRateRecipesAction` | action=rate_recipe | Returns RateRecipes action |
+| `ParseNotificationData_RateRecipesAction_ReturnsRateRecipesAction` | action=rate_recipes | Returns RateRecipes action |
+| `ParseNotificationData_RateRecipeWithHouseholdId_IncludesHouseholdId` | action with householdId | Includes householdId parameter |
+| `ParseNotificationData_ViewRecipeAction_ReturnsViewRecipeAction` | action=view_recipe | Returns ViewRecipe action |
+| `ParseNotificationData_ViewRecipeWithoutId_ReturnsNull` | Missing recipeId | Returns null |
+| `ParseNotificationData_ViewMealPlanAction_ReturnsViewMealPlanAction` | action=view_mealplan | Returns ViewMealPlan action |
+| `ParseNotificationData_ViewMealPlanWithoutId_ReturnsNull` | Missing mealPlanId | Returns null |
+| `ParseNotificationData_UnknownAction_ReturnsNull` | Unknown action type | Returns null |
+| `ParseNotificationData_NoActionKey_ReturnsNull` | Missing action key | Returns null |
+| `ParseNotificationData_EmptyDictionary_ReturnsNull` | Empty dictionary | Returns null |
+| `ParseNotificationData_NullDictionary_ReturnsNull` | Null dictionary | Returns null |
+| `ParseNotificationData_CaseInsensitiveAction_ReturnsRateRecipesAction` | Various case combinations | Returns RateRecipes action |
+| `ProcessDeepLinkAsync_RateRecipes_NavigatesToQuickRatePage` | RateRecipes action | Navigates to QuickRateRecipePage |
+| `ProcessDeepLinkAsync_ViewRecipe_NavigatesToRecipeDetail` | ViewRecipe action | Navigates to RecipeDetailPage |
+| `ProcessDeepLinkAsync_ViewRecipeWithoutId_ReturnsFalse` | Missing recipeId | Returns false |
+| `ProcessDeepLinkAsync_ViewMealPlan_NavigatesToMealPlanDetail` | ViewMealPlan action | Navigates to MealPlanDetailPage |
+| `ProcessDeepLinkAsync_ViewMealPlanWithoutId_ReturnsFalse` | Missing mealPlanId | Returns false |
+| `ProcessDeepLinkAsync_NavigationThrows_ReturnsFalse` | Navigation exception | Returns false |
+| `ProcessPendingActionAsync_NoPendingAction_ReturnsFalse` | No pending action | Returns false |
+| `ProcessPendingActionAsync_WithPendingAction_ProcessesAndClears` | Pending action exists | Processes and clears action |
+| `ProcessPendingActionAsync_ClearsPendingActionBeforeProcessing` | Pending action exists | Cleared before processing to avoid re-entry |
+| `DeepLinkAction_RateRecipe_CreatesCorrectAction` | Factory method | Creates RateRecipes action |
+| `DeepLinkAction_RateRecipeWithHouseholdId_IncludesParameter` | Factory with householdId | Includes householdId parameter |
+| `DeepLinkAction_ViewRecipe_CreatesCorrectAction` | Factory method | Creates ViewRecipe action |
+| `DeepLinkAction_ViewMealPlan_CreatesCorrectAction` | Factory method | Creates ViewMealPlan action |
 
 ---
 
@@ -699,6 +747,7 @@ jobs:
 - [ ] AuthServiceTests (8 tests)
 - [x] PushNotificationServiceHttpTests (15 tests)
 - [x] RecipeServicePendingRatingsTests (19 tests)
+- [x] DeepLinkServiceTests (44 tests)
 - [x] QuickRateRecipeViewModelTests (26 tests)
 - [ ] MockHttpMessageHandler implementation
 - [x] MockAuthService implementation
