@@ -53,6 +53,9 @@ public static class MauiProgram
 		// Register deep link service
 		builder.Services.AddSingleton<IDeepLinkService, DeepLinkService>();
 
+		// Register app startup service (checks for pending ratings on app open)
+		builder.Services.AddSingleton<IAppStartupService, AppStartupService>();
+
 		// Register ViewModels
 		builder.Services.AddTransient<LoginViewModel>();
 		builder.Services.AddTransient<CreateHouseholdViewModel>();

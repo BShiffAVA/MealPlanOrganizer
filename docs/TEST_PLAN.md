@@ -53,7 +53,8 @@ tests/
     │   ├── AuthServiceTests.cs
     │   ├── PushNotificationServiceHttpTests.cs
     │   ├── RecipeServicePendingRatingsTests.cs
-    │   └── DeepLinkServiceTests.cs
+    │   ├── DeepLinkServiceTests.cs
+    │   └── AppStartupServiceTests.cs
     ├── ViewModels/
     │   └── QuickRateRecipeViewModelTests.cs
     └── Mocks/
@@ -397,6 +398,30 @@ Tests deep link URI parsing, notification data parsing, and navigation logic for
 | `DeepLinkAction_RateRecipeWithHouseholdId_IncludesParameter` | Factory with householdId | Includes householdId parameter |
 | `DeepLinkAction_ViewRecipe_CreatesCorrectAction` | Factory method | Creates ViewRecipe action |
 | `DeepLinkAction_ViewMealPlan_CreatesCorrectAction` | Factory method | Creates ViewMealPlan action |
+
+#### AppStartupServiceTests
+
+Tests the AppStartupService that checks for pending ratings when the app opens or resumes from background.
+
+| Test Case | Description | Expected Result |
+|-----------|-------------|-----------------|
+| `CheckPendingRatingsAsync_WhenNotAuthenticated_ReturnsFalse` | User not authenticated | Returns false, no prompt |
+| `CheckPendingRatingsAsync_WhenNoPendingRatings_ReturnsFalse` | No pending ratings | Returns false, no prompt |
+| `CheckPendingRatingsAsync_WhenPendingRatingsExist_PromptsUser` | Ratings exist | Shows prompt, returns correct count |
+| `CheckPendingRatingsAsync_WhenUserAcceptsPrompt_NavigatesToQuickRate` | User accepts | Navigates to QuickRateRecipePage |
+| `CheckPendingRatingsAsync_WhenUserDeclinesPrompt_DoesNotNavigate` | User declines | Does not navigate |
+| `CheckPendingRatingsAsync_WhenAlreadyPerformedCheck_SkipsWithoutForce` | Already checked this session | Skips check |
+| `CheckPendingRatingsAsync_WhenForceCheck_BypassesStartupCheckFlag` | Force flag set | Bypasses session check |
+| `CheckPendingRatingsAsync_SetsStartupCheckFlagAfterFirstCheck` | First check | Sets HasPerformedStartupCheck |
+| `CheckPendingRatingsAsync_WithMultipleRatings_ShowsCorrectCount` | 3 ratings | Shows count of 3 |
+| `CheckPendingRatingsAsync_WhenExceptionOccurs_ReturnsFalseGracefully` | Exception thrown | Returns false gracefully |
+| `CheckPendingRatingsAsync_RespectsThrottleCooldown` | Within cooldown | Skips prompt |
+| `CheckPendingRatingsAsync_ForceCheck_BypassesCooldown` | Force with cooldown | Bypasses cooldown |
+| `GetPendingRatingsCountAsync_WhenNotAuthenticated_ReturnsZero` | User not authenticated | Returns 0 |
+| `GetPendingRatingsCountAsync_ReturnsCorrectCount` | 2 ratings | Returns 2 |
+| `GetPendingRatingsCountAsync_WhenNoPendingRatings_ReturnsZero` | No ratings | Returns 0 |
+| `GetPendingRatingsCountAsync_WhenExceptionOccurs_ReturnsZero` | Exception thrown | Returns 0 |
+| `OnAppResumedAsync_ResetsStartupCheckFlag` | App resumes | Resets HasPerformedStartupCheck |
 
 ---
 
@@ -748,6 +773,7 @@ jobs:
 - [x] PushNotificationServiceHttpTests (15 tests)
 - [x] RecipeServicePendingRatingsTests (19 tests)
 - [x] DeepLinkServiceTests (44 tests)
+- [x] AppStartupServiceTests (17 tests)
 - [x] QuickRateRecipeViewModelTests (26 tests)
 - [ ] MockHttpMessageHandler implementation
 - [x] MockAuthService implementation

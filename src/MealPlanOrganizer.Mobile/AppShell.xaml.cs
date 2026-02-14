@@ -9,6 +9,7 @@ public partial class AppShell : Shell
 	private readonly IAuthService _authService;
 	private readonly IPushNotificationService _pushNotificationService;
 	private readonly IDeepLinkService _deepLinkService;
+	private readonly IAppStartupService _appStartupService;
 
 	public AppShell()
 	{
@@ -29,6 +30,9 @@ public partial class AppShell : Shell
 
 		_deepLinkService = services.GetService<IDeepLinkService>()
 			?? throw new InvalidOperationException("IDeepLinkService not registered");
+
+		_appStartupService = services.GetService<IAppStartupService>()
+			?? throw new InvalidOperationException("IAppStartupService not registered");
 
 		// Resolve pages from DI for ShellContent
 		HomeShellContent.Content = services.GetRequiredService<MainPage>();
@@ -68,7 +72,8 @@ public partial class AppShell : Shell
 	}
 
 	/// <summary>
-	/// Handles Shell loaded event to process any pending deep link actions.
+	/// Handles Shell loaded event to process any pending deep link actions
+	/// and check for pending ratings on app open.
 	/// </summary>
 	private async void OnShellLoaded(object? sender, EventArgs e)
 	{
@@ -78,11 +83,20 @@ public partial class AppShell : Shell
 			await Task.Delay(100);
 			
 			// Process any pending deep link action from cold start or pre-auth notification
+			// If there was a pending action, don't prompt for ratings (user came from notification)
+			var hadPendingAction = _deepLinkService.PendingAction != null;
 			await _deepLinkService.ProcessPendingActionAsync();
+			
+			// Check for pending ratings on app startup (Step 8 of rate recipes feature)
+			// Only prompt if the user wasn't already navigated by a deep link
+			if (!hadPendingAction)
+			{
+				await _appStartupService.CheckPendingRatingsAsync();
+			}
 		}
 		catch (Exception ex)
 		{
-			Log.Error(ex, "Error processing pending deep link action");
+			Log.Error(ex, "Error in shell loaded handler");
 		}
 	}
 

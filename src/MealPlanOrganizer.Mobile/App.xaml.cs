@@ -63,13 +63,63 @@ public partial class App : Application
 		{
 			// Start with LoginPage - it will check auth state and navigate accordingly
 			var loginPage = _serviceProvider.GetRequiredService<LoginPage>();
-			return new Window(new NavigationPage(loginPage));
+			var window = new Window(new NavigationPage(loginPage));
+			
+			// Subscribe to window lifecycle events for pending ratings check on resume
+			window.Resumed += OnWindowResumed;
+			window.Stopped += OnWindowStopped;
+			
+			return window;
 		}
 		catch (Exception ex)
 		{
 			Log.Fatal(ex, "Failed to create main window");
 			Log.CloseAndFlush();
 			throw;
+		}
+	}
+
+	/// <summary>
+	/// Called when the app window resumes from background.
+	/// </summary>
+	private async void OnWindowResumed(object? sender, EventArgs e)
+	{
+		Log.Information("App resumed from background");
+		
+		try
+		{
+			var appStartupService = _serviceProvider.GetService<IAppStartupService>();
+			if (appStartupService != null)
+			{
+				await appStartupService.OnAppResumedAsync();
+				await appStartupService.CheckPendingRatingsAsync();
+			}
+		}
+		catch (Exception ex)
+		{
+			Log.Error(ex, "Error handling app resume");
+		}
+	}
+
+	/// <summary>
+	/// Called when the app window is stopped (going to background).
+	/// </summary>
+	private void OnWindowStopped(object? sender, EventArgs e)
+	{
+		Log.Information("App going to background");
+		
+		try
+		{
+			// Reset the startup check flag for next resume
+			var appStartupService = _serviceProvider.GetService<IAppStartupService>();
+			if (appStartupService != null)
+			{
+				appStartupService.HasPerformedStartupCheck = false;
+			}
+		}
+		catch (Exception ex)
+		{
+			Log.Error(ex, "Error handling app stop");
 		}
 	}
 }
