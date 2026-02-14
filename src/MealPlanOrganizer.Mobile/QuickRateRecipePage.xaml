@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:MealPlanOrganizer.Mobile.ViewModels"
+             xmlns:converters="clr-namespace:MealPlanOrganizer.Mobile.Converters"
+             x:Class="MealPlanOrganizer.Mobile.QuickRateRecipePage"
+             x:DataType="viewmodels:QuickRateRecipeViewModel"
+             Title="Rate Your Meals"
+             Shell.PresentationMode="Modal">
+    <ContentPage.Resources>
+        <converters:InvertedBoolConverter x:Key="InverseBoolConverter"/>
+    </ContentPage.Resources>
+    
+    <Grid>
+        <!-- Loading State -->
+        <VerticalStackLayout IsVisible="{Binding IsLoading}"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center"
+                           Spacing="16">
+            <ActivityIndicator IsRunning="{Binding IsLoading}" 
+                             Color="{StaticResource Primary}"
+                             HeightRequest="50"/>
+            <Label Text="Loading recipes to rate..."
+                   FontSize="16"
+                   TextColor="{StaticResource Gray400}"
+                   HorizontalOptions="Center"/>
+        </VerticalStackLayout>
+
+        <!-- Error State -->
+        <VerticalStackLayout IsVisible="{Binding HasError}"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center"
+                           Spacing="16"
+                           Padding="20">
+            <Label Text="😕" FontSize="48" HorizontalOptions="Center"/>
+            <Label Text="{Binding ErrorMessage}"
+                   FontSize="16"
+                   TextColor="{StaticResource Gray400}"
+                   HorizontalTextAlignment="Center"/>
+            <Button Text="Try Again"
+                    Command="{Binding InitializeCommand}"
+                    BackgroundColor="{StaticResource Primary}"
+                    TextColor="White"
+                    WidthRequest="150"/>
+            <Button Text="Close"
+                    Command="{Binding CloseCommand}"
+                    BackgroundColor="Transparent"
+                    TextColor="{StaticResource Gray400}"
+                    WidthRequest="150"/>
+        </VerticalStackLayout>
+
+        <!-- No Pending Ratings / Complete State -->
+        <VerticalStackLayout IsVisible="{Binding IsComplete}"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center"
+                           Spacing="20"
+                           Padding="20">
+            <Label Text="🎉" FontSize="64" HorizontalOptions="Center"/>
+            <Label Text="All Done!"
+                   FontSize="28"
+                   FontAttributes="Bold"
+                   TextColor="White"
+                   HorizontalOptions="Center"/>
+            <Label Text="{Binding RatingsCompleted, StringFormat='You rated {0} recipe(s). Thank you!'}"
+                   FontSize="16"
+                   TextColor="{StaticResource Gray400}"
+                   HorizontalTextAlignment="Center"
+                   IsVisible="{Binding RatingsCompleted}"/>
+            <Label Text="No recipes to rate right now."
+                   FontSize="16"
+                   TextColor="{StaticResource Gray400}"
+                   HorizontalTextAlignment="Center"
+                   IsVisible="{Binding RatingsCompleted, Converter={StaticResource InverseBoolConverter}}"/>
+            <Button Text="Done"
+                    Command="{Binding CloseCommand}"
+                    BackgroundColor="{StaticResource Primary}"
+                    TextColor="White"
+                    WidthRequest="200"
+                    HeightRequest="50"
+                    Margin="0,20,0,0"/>
+        </VerticalStackLayout>
+
+        <!-- Rating Card -->
+        <ScrollView IsVisible="{Binding HasPendingRatings}">
+            <VerticalStackLayout Padding="16" Spacing="16">
+                
+                <!-- Progress Header -->
+                <Frame BackgroundColor="#2A2A2A"
+                       Padding="12"
+                       CornerRadius="8"
+                       BorderColor="Transparent">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <VerticalStackLayout Grid.Column="0">
+                            <Label Text="Rate Tonight's Dinner"
+                                   FontSize="18"
+                                   FontAttributes="Bold"
+                                   TextColor="White"/>
+                            <Label Text="{Binding ProgressText}"
+                                   FontSize="14"
+                                   TextColor="{StaticResource Gray400}"/>
+                        </VerticalStackLayout>
+                        <Button Grid.Column="1"
+                                Text="✕"
+                                Command="{Binding CloseCommand}"
+                                BackgroundColor="Transparent"
+                                TextColor="{StaticResource Gray400}"
+                                FontSize="18"
+                                WidthRequest="44"
+                                HeightRequest="44"/>
+                    </Grid>
+                </Frame>
+
+                <!-- Recipe Card -->
+                <Frame BackgroundColor="#1A1A1A"
+                       Padding="16"
+                       CornerRadius="12"
+                       BorderColor="{StaticResource Primary}">
+                    <VerticalStackLayout Spacing="12">
+                        
+                        <!-- Recipe Image (if available) -->
+                        <Frame Padding="0"
+                               CornerRadius="10"
+                               HasShadow="False"
+                               IsVisible="{Binding CurrentRating.RecipeImageUrl, Converter={StaticResource InverseBoolConverter}, ConverterParameter=inverse}"
+                               BorderColor="Transparent"
+                               HeightRequest="150">
+                            <Image Source="{Binding CurrentRating.RecipeImageUrl}"
+                                   Aspect="AspectFill"/>
+                        </Frame>
+
+                        <!-- Recipe Info -->
+                        <Label Text="{Binding CurrentRating.RecipeTitle}"
+                               FontSize="22"
+                               FontAttributes="Bold"
+                               TextColor="White"/>
+                        
+                        <HorizontalStackLayout Spacing="12">
+                            <Label Text="{Binding CurrentRating.CuisineType, StringFormat='🍴 {0}'}"
+                                   FontSize="14"
+                                   TextColor="{StaticResource Gray400}"
+                                   IsVisible="{Binding CurrentRating.CuisineType, Converter={StaticResource InverseBoolConverter}, ConverterParameter=inverse}"/>
+                            <Label Text="{Binding CurrentRating.ServedDateDisplay, StringFormat='📅 {0}'}"
+                                   FontSize="14"
+                                   TextColor="{StaticResource Gray400}"/>
+                        </HorizontalStackLayout>
+
+                        <!-- View Recipe Link -->
+                        <Button Text="View Full Recipe →"
+                                Command="{Binding ViewRecipeCommand}"
+                                BackgroundColor="Transparent"
+                                TextColor="{StaticResource Primary}"
+                                FontSize="14"
+                                Padding="0"
+                                HorizontalOptions="Start"/>
+                    </VerticalStackLayout>
+                </Frame>
+
+                <!-- Rating Form -->
+                <Frame BackgroundColor="#1A1A1A"
+                       Padding="16"
+                       CornerRadius="12"
+                       BorderColor="Transparent">
+                    <VerticalStackLayout Spacing="16">
+                        
+                        <Label Text="How was it?"
+                               FontSize="18"
+                               FontAttributes="Bold"
+                               TextColor="White"/>
+
+                        <!-- Star Rating Buttons -->
+                        <HorizontalStackLayout Spacing="8" HorizontalOptions="Center">
+                            <Button Text="1★" Command="{Binding SelectRatingCommand}" CommandParameter="{x:Int32 1}"
+                                    WidthRequest="56" HeightRequest="50" FontSize="16"
+                                    BackgroundColor="{Binding Star1Color}" TextColor="White"/>
+                            <Button Text="2★" Command="{Binding SelectRatingCommand}" CommandParameter="{x:Int32 2}"
+                                    WidthRequest="56" HeightRequest="50" FontSize="16"
+                                    BackgroundColor="{Binding Star2Color}" TextColor="White"/>
+                            <Button Text="3★" Command="{Binding SelectRatingCommand}" CommandParameter="{x:Int32 3}"
+                                    WidthRequest="56" HeightRequest="50" FontSize="16"
+                                    BackgroundColor="{Binding Star3Color}" TextColor="White"/>
+                            <Button Text="4★" Command="{Binding SelectRatingCommand}" CommandParameter="{x:Int32 4}"
+                                    WidthRequest="56" HeightRequest="50" FontSize="16"
+                                    BackgroundColor="{Binding Star4Color}" TextColor="White"/>
+                            <Button Text="5★" Command="{Binding SelectRatingCommand}" CommandParameter="{x:Int32 5}"
+                                    WidthRequest="56" HeightRequest="50" FontSize="16"
+                                    BackgroundColor="{Binding Star5Color}" TextColor="White"/>
+                        </HorizontalStackLayout>
+
+                        <!-- Selected Rating Display -->
+                        <Label Text="{Binding SelectedRatingText}"
+                               FontSize="16"
+                               TextColor="{Binding SelectedRatingTextColor}"
+                               HorizontalOptions="Center"/>
+
+                        <!-- Frequency Preference -->
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="How often would you like this?"
+                                   FontSize="14"
+                                   TextColor="{StaticResource Gray400}"/>
+                            <Picker Title="Select frequency (optional)"
+                                    ItemsSource="{Binding FrequencyOptions}"
+                                    SelectedItem="{Binding SelectedFrequency}"
+                                    TextColor="White"
+                                    TitleColor="{StaticResource Gray600}"/>
+                        </VerticalStackLayout>
+
+                        <!-- Comments -->
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="Comments (optional)"
+                                   FontSize="14"
+                                   TextColor="{StaticResource Gray400}"/>
+                            <Editor Text="{Binding Comments}"
+                                    Placeholder="Quick thoughts..."
+                                    PlaceholderColor="{StaticResource Gray600}"
+                                    TextColor="White"
+                                    BackgroundColor="#2A2A2A"
+                                    HeightRequest="60"
+                                    MaxLength="200"/>
+                            <Label Text="{Binding CommentsLength, StringFormat='{0}/200'}"
+                                   FontSize="11"
+                                   TextColor="{StaticResource Gray600}"
+                                   HorizontalOptions="End"/>
+                        </VerticalStackLayout>
+
+                        <!-- Status Message -->
+                        <Label Text="{Binding StatusMessage}"
+                               TextColor="{Binding StatusMessageColor}"
+                               FontSize="14"
+                               HorizontalOptions="Center"
+                               IsVisible="{Binding ShowStatus}"/>
+
+                        <!-- Action Buttons -->
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                            <Button Grid.Column="0"
+                                    Text="Skip"
+                                    Command="{Binding SkipCommand}"
+                                    BackgroundColor="#3A3A3A"
+                                    TextColor="{StaticResource Gray400}"
+                                    HeightRequest="50"/>
+                            <Button Grid.Column="1"
+                                    Text="{Binding SubmitButtonText}"
+                                    Command="{Binding SubmitRatingCommand}"
+                                    BackgroundColor="{StaticResource Primary}"
+                                    TextColor="White"
+                                    IsEnabled="{Binding CanSubmitRating}"
+                                    HeightRequest="50"/>
+                        </Grid>
+                    </VerticalStackLayout>
+                </Frame>
+
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>

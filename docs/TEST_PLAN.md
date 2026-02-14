@@ -51,7 +51,10 @@ tests/
     ├── Services/
     │   ├── RecipeServiceTests.cs
     │   ├── AuthServiceTests.cs
-    │   └── PushNotificationServiceHttpTests.cs
+    │   ├── PushNotificationServiceHttpTests.cs
+    │   └── RecipeServicePendingRatingsTests.cs
+    ├── ViewModels/
+    │   └── QuickRateRecipeViewModelTests.cs
     └── Mocks/
         ├── MockHttpMessageHandler.cs
         └── MockAuthService.cs
@@ -321,9 +324,71 @@ Tests HTTP interactions for push notification device registration/unregistration
 | `UnregisterDevice_NotFound_ReturnsFalse` | 404 response | Returns false |
 | `UnregisterDevice_WithSpecialCharacters_EncodesUrl` | Token with special chars | URL properly encoded |
 
+#### RecipeServicePendingRatingsTests
+
+Tests HTTP interactions for pending rating operations (GetPendingRatings, CompletePendingRating, DismissPendingRating).
+
+| Test Case | Description | Expected Result |
+|-----------|-------------|-----------------|
+| `GetPendingRatings_SendsCorrectHttpRequest` | Authenticated request | GET to /api/pending-ratings with bearer token |
+| `GetPendingRatings_WhenServerReturns200WithData_ReturnsRatings` | 200 with ratings | Deserializes pending ratings list |
+| `GetPendingRatings_WhenServerReturnsEmptyArray_ReturnsEmptyList` | 200 with [] | Returns empty list |
+| `GetPendingRatings_WhenServerReturns401_ReturnsEmptyList` | 401 response | Returns empty list |
+| `GetPendingRatings_WhenServerReturns500_ReturnsEmptyList` | 500 response | Returns empty list |
+| `GetPendingRatings_WhenNetworkError_ReturnsEmptyList` | Connection failure | Returns empty list |
+| `GetPendingRatings_WhenMultipleRatings_ReturnsAll` | 200 with 3 ratings | Returns all 3 ratings |
+| `CompletePendingRating_SendsCorrectHttpRequest` | Valid pending rating ID | PUT to /api/pending-ratings/{id}/complete |
+| `CompletePendingRating_WhenServerReturns200_ReturnsTrue` | 200 response | Returns true |
+| `CompletePendingRating_WhenServerReturns404_ReturnsFalse` | 404 response | Returns false |
+| `CompletePendingRating_WhenServerReturns401_ReturnsFalse` | 401 response | Returns false |
+| `CompletePendingRating_WhenServerReturns500_ReturnsFalse` | 500 response | Returns false |
+| `CompletePendingRating_WhenNetworkError_ReturnsFalse` | Connection failure | Returns false |
+| `DismissPendingRating_SendsCorrectHttpRequest` | Valid pending rating ID | PUT to /api/pending-ratings/{id}/dismiss |
+| `DismissPendingRating_WhenServerReturns200_ReturnsTrue` | 200 response | Returns true |
+| `DismissPendingRating_WhenServerReturns404_ReturnsFalse` | 404 response | Returns false |
+| `DismissPendingRating_WhenServerReturns401_ReturnsFalse` | 401 response | Returns false |
+| `DismissPendingRating_WhenServerReturns500_ReturnsFalse` | 500 response | Returns false |
+| `DismissPendingRating_WhenNetworkError_ReturnsFalse` | Connection failure | Returns false |
+
 ---
 
-### 2.2 Test Mocks
+### 2.2 Unit Tests - ViewModels
+
+#### QuickRateRecipeViewModelTests
+
+Tests the QuickRateRecipeViewModel state management and business logic for rating recipes from push notification reminders.
+
+| Test Case | Description | Expected Result |
+|-----------|-------------|-----------------|
+| `Initialize_WhenNoPendingRatings_SetsIsCompleteTrue` | No pending ratings | IsComplete=true, HasPendingRatings=false |
+| `Initialize_WhenPendingRatingsExist_SetsHasPendingRatingsTrue` | Ratings exist | HasPendingRatings=true, CurrentRating set |
+| `Initialize_ShowsLoadingDuringFetch` | During API call | IsLoading=true while fetching |
+| `Initialize_WhenServiceThrows_SetsHasErrorTrue` | Service exception | HasError=true, ErrorMessage set |
+| `Initialize_SetsProgressTextCorrectly` | 3 pending ratings | ProgressText="1 of 3" |
+| `Initialize_SetsCurrentRatingToFirst` | Multiple ratings | CurrentRating is first in list |
+| `SelectRating_SetsCorrectRatingText` | Select 1-5 stars | Displays emoji and text (😟 Poor to 😍 Excellent!) |
+| `SelectRating_EnablesSubmitButton` | Select 1-5 stars | CanSubmitRating=true |
+| `SelectRating_WhenZero_DisablesSubmitButton` | Deselect rating | CanSubmitRating=false |
+| `SelectRating_UpdatesStarColorsCorrectly` | Select 3 stars | Stars 1-3 highlighted, 4-5 unlit |
+| `SubmitRating_CallsRateRecipeWithCorrectParameters` | Submit rating | API called with rating, comments, frequency |
+| `SubmitRating_WhenSuccessful_MarksCompleteAndAdvances` | API success | CompletePendingRating called, advances to next |
+| `SubmitRating_WhenLastRating_SetsIsCompleteTrue` | Last rating submitted | IsComplete=true, HasPendingRatings=false |
+| `SubmitRating_WhenNoRatingSelected_ShowsError` | No stars selected | ShowStatus=true, error message shown |
+| `SubmitRating_WhenAlreadyRatedToday_SkipsToNext` | AlreadyRatedToday=true | Advances to next rating |
+| `SubmitRating_WhenServiceFails_ShowsError` | Service exception | Error message displayed |
+| `SubmitRating_ConvertsFrequencyCorrectly` | "Once a week" selected | Converts to "OnceAWeek" for API |
+| `Skip_DismissesPendingRating` | User skips | DismissPendingRating called |
+| `Skip_AdvancesToNextRating` | User skips | CurrentIndex incremented, ProgressText updated |
+| `Skip_WhenLastRating_SetsIsCompleteTrue` | Skip last rating | IsComplete=true |
+| `Skip_ResetsFormForNextRating` | Skip to next | SelectedRating=0, Comments empty |
+| `Close_NavigatesBack` | User closes page | GoBack navigation called |
+| `ViewRecipe_NavigatesToRecipeDetail` | User taps view | Navigates to RecipeDetailPage |
+| `ViewRecipe_WhenNoCurrentRating_DoesNothing` | No current rating | No navigation |
+| `AfterSubmit_FormIsResetForNextRating` | Submit and advance | Form fields reset for next rating |
+
+---
+
+### 2.3 Test Mocks
 
 #### MockHttpMessageHandler
 
@@ -632,7 +697,9 @@ jobs:
 ### Phase 4: Mobile Unit Tests (Sprint 4)
 - [ ] RecipeServiceTests (16 tests)
 - [ ] AuthServiceTests (8 tests)
-- [x] PushNotificationServiceHttpTests (13 tests)
+- [x] PushNotificationServiceHttpTests (15 tests)
+- [x] RecipeServicePendingRatingsTests (19 tests)
+- [x] QuickRateRecipeViewModelTests (26 tests)
 - [ ] MockHttpMessageHandler implementation
 - [x] MockAuthService implementation
 

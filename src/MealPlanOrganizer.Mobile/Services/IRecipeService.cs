@@ -53,6 +53,25 @@ public interface IRecipeService
     /// Remove a recipe from a specific day in a meal plan.
     /// </summary>
     Task<RemoveRecipeFromMealPlanResponse> RemoveRecipeFromMealPlanAsync(Guid mealPlanId, DateTime day);
+    
+    // =============================================
+    // Pending Rating Methods
+    // =============================================
+    
+    /// <summary>
+    /// Get pending ratings for the current user (recipes they need to rate).
+    /// </summary>
+    Task<List<PendingRatingDto>> GetPendingRatingsAsync();
+    
+    /// <summary>
+    /// Mark a pending rating as completed (after rating is submitted).
+    /// </summary>
+    Task<bool> CompletePendingRatingAsync(Guid pendingRatingId);
+    
+    /// <summary>
+    /// Dismiss a pending rating (user chose not to rate).
+    /// </summary>
+    Task<bool> DismissPendingRatingAsync(Guid pendingRatingId);
 }
 
 public class RecipeDto
@@ -342,4 +361,25 @@ public class RemoveRecipeFromMealPlanResponse
 {
     public bool Success { get; set; }
     public string? ErrorMessage { get; set; }
+}
+
+/// <summary>
+/// Represents a pending rating request for a recipe that was served.
+/// </summary>
+public class PendingRatingDto
+{
+    public Guid Id { get; set; }
+    public Guid RecipeId { get; set; }
+    public string RecipeTitle { get; set; } = string.Empty;
+    public string? RecipeImageUrl { get; set; }
+    public string? CuisineType { get; set; }
+    public Guid MealPlanId { get; set; }
+    public Guid MealPlanRecipeId { get; set; }
+    public DateTime ServedDate { get; set; }
+    public DateTime CreatedUtc { get; set; }
+    
+    /// <summary>
+    /// Formatted display string for the served date.
+    /// </summary>
+    public string ServedDateDisplay => ServedDate.ToString("dddd, MMMM d");
 }

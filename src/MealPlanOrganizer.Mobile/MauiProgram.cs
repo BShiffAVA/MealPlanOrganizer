@@ -64,6 +64,7 @@ public static class MauiProgram
 		builder.Services.AddTransient<ExtractRecipeViewModel>();
 		builder.Services.AddTransient<ExtractedRecipePreviewViewModel>();
 		builder.Services.AddTransient<ManageHouseholdViewModel>();
+		builder.Services.AddTransient<QuickRateRecipeViewModel>();
 
 		// Register pages for dependency injection
 		builder.Services.AddTransient<LoginPage>();
@@ -80,6 +81,7 @@ public static class MauiProgram
 		builder.Services.AddTransient<RecipePickerPage>();
 		builder.Services.AddTransient<CreateMealPlanPage>();
 		builder.Services.AddTransient<ManageHouseholdPage>();
+		builder.Services.AddTransient<QuickRateRecipePage>();
 
 		// Configure logging
 		//var logPath = Path.Combine(FileSystem.CacheDirectory, "logs");

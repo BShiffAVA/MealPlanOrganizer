@@ -47,10 +47,53 @@ public partial class AppShell : Shell
 		
 		// Household management route
 		Routing.RegisterRoute(nameof(ManageHouseholdPage), typeof(ManageHouseholdPage));
+		
+		// Rating reminder route (for push notification deep links)
+		Routing.RegisterRoute(nameof(QuickRateRecipePage), typeof(QuickRateRecipePage));
+
+		// Subscribe to push notification events for deep link navigation
+		_pushNotificationService.NotificationReceived += OnPushNotificationReceived;
 
 		// Subscribe to navigation events for logging and tab switch handling
 		Navigating += OnNavigating;
 		Navigated += OnNavigated;
+	}
+
+	/// <summary>
+	/// Handles push notification received event for deep link navigation.
+	/// </summary>
+	private async void OnPushNotificationReceived(object? sender, PushNotificationReceivedEventArgs e)
+	{
+		try
+		{
+			Log.Information("Push notification received: {Title}", e.Title);
+			
+			if (e.Data != null && e.Data.TryGetValue("action", out var action))
+			{
+				Log.Debug("Notification action: {Action}", action);
+				
+				if (action == "rate_recipe")
+				{
+					// Navigate to QuickRateRecipePage for rating reminders
+					await MainThread.InvokeOnMainThreadAsync(async () =>
+					{
+						try
+						{
+							await Shell.Current.GoToAsync(nameof(QuickRateRecipePage));
+							Log.Information("Navigated to QuickRateRecipePage from notification");
+						}
+						catch (Exception navEx)
+						{
+							Log.Error(navEx, "Failed to navigate to QuickRateRecipePage");
+						}
+					});
+				}
+			}
+		}
+		catch (Exception ex)
+		{
+			Log.Error(ex, "Error handling push notification");
+		}
 	}
 
 	private void OnNavigating(object? sender, ShellNavigatingEventArgs e)

@@ -776,4 +776,102 @@ public class RecipeService : IRecipeService
             };
         }
     }
+
+    // =============================================
+    // Pending Rating Methods
+    // =============================================
+
+    /// <inheritdoc/>
+    public async Task<List<PendingRatingDto>> GetPendingRatingsAsync()
+    {
+        try
+        {
+            _logger.LogInformation("Getting pending ratings for current user");
+            
+            await AttachBearerTokenAsync();
+            
+            var url = $"{_baseUrl}/pending-ratings?code={_functionKey}";
+            var response = await _httpClient.GetAsync(url);
+            
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                _logger.LogWarning("Unauthorized pending ratings request");
+                return new List<PendingRatingDto>();
+            }
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError("Failed to get pending ratings: {StatusCode}", response.StatusCode);
+                return new List<PendingRatingDto>();
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var ratings = JsonSerializer.Deserialize<List<PendingRatingDto>>(content, options);
+            
+            _logger.LogInformation("Retrieved {Count} pending ratings", ratings?.Count ?? 0);
+            return ratings ?? new List<PendingRatingDto>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception getting pending ratings");
+            return new List<PendingRatingDto>();
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<bool> CompletePendingRatingAsync(Guid pendingRatingId)
+    {
+        try
+        {
+            _logger.LogInformation("Completing pending rating {PendingRatingId}", pendingRatingId);
+            
+            await AttachBearerTokenAsync();
+            
+            var url = $"{_baseUrl}/pending-ratings/{pendingRatingId}/complete?code={_functionKey}";
+            var response = await _httpClient.PutAsync(url, null);
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError("Failed to complete pending rating: {StatusCode}", response.StatusCode);
+                return false;
+            }
+            
+            _logger.LogInformation("Successfully completed pending rating");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception completing pending rating");
+            return false;
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<bool> DismissPendingRatingAsync(Guid pendingRatingId)
+    {
+        try
+        {
+            _logger.LogInformation("Dismissing pending rating {PendingRatingId}", pendingRatingId);
+            
+            await AttachBearerTokenAsync();
+            
+            var url = $"{_baseUrl}/pending-ratings/{pendingRatingId}/dismiss?code={_functionKey}";
+            var response = await _httpClient.PutAsync(url, null);
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError("Failed to dismiss pending rating: {StatusCode}", response.StatusCode);
+                return false;
+            }
+            
+            _logger.LogInformation("Successfully dismissed pending rating");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception dismissing pending rating");
+            return false;
+        }
+    }
 }
