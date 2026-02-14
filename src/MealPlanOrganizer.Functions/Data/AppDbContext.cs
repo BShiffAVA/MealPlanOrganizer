@@ -50,6 +50,7 @@ namespace MealPlanOrganizer.Functions.Data
                 b.ToTable("Households");
                 b.HasKey(x => x.Id);
                 b.Property(x => x.Name).IsRequired().HasMaxLength(200);
+                b.Property(x => x.TimeZoneId).IsRequired().HasMaxLength(100).HasDefaultValue("America/New_York");
                 
                 if (isSqlServer)
                 {

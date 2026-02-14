@@ -62,4 +62,14 @@ public interface IUserService
     /// Updates a member's weight (1-5). Admin only.
     /// </summary>
     Task<HouseholdMemberDto?> UpdateMemberWeightAsync(Guid householdId, Guid memberId, int weight);
+    
+    /// <summary>
+    /// Updates household settings (name, timezone). Admin only.
+    /// </summary>
+    Task<HouseholdDto?> UpdateHouseholdAsync(Guid householdId, string? name = null, string? timeZoneId = null);
+    
+    /// <summary>
+    /// Gets the list of supported timezone identifiers from the API.
+    /// </summary>
+    Task<List<string>> GetTimezonesAsync();
 }

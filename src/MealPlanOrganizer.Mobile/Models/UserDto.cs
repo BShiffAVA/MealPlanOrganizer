@@ -25,6 +25,7 @@ public class HouseholdInfoDto
     public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Role { get; set; } = string.Empty;
+    public string TimeZoneId { get; set; } = "America/New_York";
     public List<HouseholdMemberDto> Members { get; set; } = new();
 }
 
@@ -52,4 +53,5 @@ public class HouseholdDto
     public string Name { get; set; } = string.Empty;
     public DateTime CreatedUtc { get; set; }
     public Guid CreatedByUserId { get; set; }
+    public string TimeZoneId { get; set; } = "America/New_York";
 }

@@ -127,7 +127,8 @@ namespace MealPlanOrganizer.Functions.Functions
                     Id = household.Id,
                     Name = household.Name,
                     CreatedUtc = household.CreatedUtc,
-                    CreatedByUserId = household.CreatedByUserId
+                    CreatedByUserId = household.CreatedByUserId,
+                    TimeZoneId = household.TimeZoneId
                 };
 
                 var response = req.CreateResponse(HttpStatusCode.Created);

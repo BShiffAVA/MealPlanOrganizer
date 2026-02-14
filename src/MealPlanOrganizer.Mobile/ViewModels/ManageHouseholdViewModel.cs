@@ -50,6 +50,15 @@ public partial class ManageHouseholdViewModel : ObservableObject
     [ObservableProperty]
     private string? _copiedCode;
 
+    [ObservableProperty]
+    private string _selectedTimeZone = "America/New_York";
+    
+    [ObservableProperty]
+    private bool _isSavingTimezone;
+
+    [ObservableProperty]
+    private List<string> _availableTimeZones = new() { "America/New_York" };
+
     public ManageHouseholdViewModel(IUserService userService)
     {
         _userService = userService;
@@ -67,6 +76,9 @@ public partial class ManageHouseholdViewModel : ObservableObject
             IsErrorVisible = false;
             IsSuccessVisible = false;
 
+            // Load timezones from API (fire and forget, UI shows current selection while loading)
+            _ = LoadTimezonesAsync();
+
             var user = await _userService.GetCurrentUserAsync();
             
             if (user?.Household == null)
@@ -78,6 +90,7 @@ public partial class ManageHouseholdViewModel : ObservableObject
             HouseholdId = user.Household.Id;
             HouseholdName = user.Household.Name;
             IsAdmin = user.Household.Role.Equals("Admin", StringComparison.OrdinalIgnoreCase);
+            SelectedTimeZone = user.Household.TimeZoneId ?? "America/New_York";
 
             // Load members
             Members.Clear();
@@ -118,6 +131,59 @@ public partial class ManageHouseholdViewModel : ObservableObject
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Error loading invite codes: {ex.Message}");
+        }
+    }
+
+    private async Task LoadTimezonesAsync()
+    {
+        try
+        {
+            var timezones = await _userService.GetTimezonesAsync();
+            AvailableTimeZones = timezones;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error loading timezones: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Saves the selected timezone for the household.
+    /// </summary>
+    [RelayCommand]
+    private async Task SaveTimezoneAsync()
+    {
+        if (!IsAdmin || HouseholdId == Guid.Empty)
+        {
+            ShowError("Only admins can change household settings.");
+            return;
+        }
+
+        try
+        {
+            IsSavingTimezone = true;
+            IsErrorVisible = false;
+            IsSuccessVisible = false;
+
+            var result = await _userService.UpdateHouseholdAsync(HouseholdId, timeZoneId: SelectedTimeZone);
+
+            if (result != null)
+            {
+                ShowSuccess($"Timezone updated to {SelectedTimeZone}");
+            }
+            else
+            {
+                ShowError("Failed to update timezone.");
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error saving timezone: {ex.Message}");
+            ShowError("Failed to update timezone.");
+        }
+        finally
+        {
+            IsSavingTimezone = false;
         }
     }
 

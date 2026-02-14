@@ -19,6 +19,12 @@ namespace MealPlanOrganizer.Functions.Data.Entities
         /// </summary>
         public Guid CreatedByUserId { get; set; }
         
+        /// <summary>
+        /// IANA timezone identifier for the household (e.g., "America/New_York").
+        /// Used for scheduling notifications at the correct local time.
+        /// </summary>
+        public string TimeZoneId { get; set; } = "America/New_York";
+        
         // Navigation properties
         public User? CreatedByUser { get; set; }
         public ICollection<HouseholdMember> Members { get; set; } = new List<HouseholdMember>();

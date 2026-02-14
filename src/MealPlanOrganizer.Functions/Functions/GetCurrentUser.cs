@@ -91,6 +91,7 @@ namespace MealPlanOrganizer.Functions.Functions
                         Id = membership.Household.Id,
                         Name = membership.Household.Name,
                         Role = membership.Role.ToString(),
+                        TimeZoneId = membership.Household.TimeZoneId,
                         Members = membership.Household.Members
                             .Where(m => m.User != null)
                             .Select(m => new HouseholdMemberInfo

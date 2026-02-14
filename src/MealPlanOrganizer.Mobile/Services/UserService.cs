@@ -430,4 +430,102 @@ public class UserService : IUserService
             return null;
         }
     }
+
+    /// <inheritdoc/>
+    public async Task<HouseholdDto?> UpdateHouseholdAsync(Guid householdId, string? name = null, string? timeZoneId = null)
+    {
+        try
+        {
+            _logger.LogInformation("Updating household {HouseholdId}: Name={Name}, TimeZoneId={TimeZoneId}", 
+                householdId, name, timeZoneId);
+
+            await AttachBearerTokenAsync();
+
+            var url = $"{_baseUrl}/households/{householdId}?code={_functionKey}";
+            var requestBody = new Dictionary<string, string?>();
+            
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                requestBody["name"] = name;
+            }
+            
+            if (!string.IsNullOrWhiteSpace(timeZoneId))
+            {
+                requestBody["timeZoneId"] = timeZoneId;
+            }
+
+            var content = new StringContent(
+                JsonSerializer.Serialize(requestBody, _jsonOptions),
+                System.Text.Encoding.UTF8,
+                "application/json");
+
+            var request = new HttpRequestMessage(HttpMethod.Patch, url)
+            {
+                Content = content
+            };
+            var response = await _httpClient.SendAsync(request);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                _logger.LogError("Failed to update household: {StatusCode} - {Error}", response.StatusCode, errorContent);
+                return null;
+            }
+
+            var responseBody = await response.Content.ReadAsStringAsync();
+            var householdDto = JsonSerializer.Deserialize<HouseholdDto>(responseBody, _jsonOptions);
+
+            // Invalidate user cache so next GetCurrentUserAsync() fetches fresh data
+            _cachedUser = null;
+
+            _logger.LogInformation("Successfully updated household {HouseholdId}", householdId);
+            return householdDto;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception updating household");
+            return null;
+        }
+    }
+
+    // Cache timezones since they rarely change
+    private List<string>? _cachedTimezones;
+
+    /// <inheritdoc/>
+    public async Task<List<string>> GetTimezonesAsync()
+    {
+        if (_cachedTimezones != null)
+        {
+            return _cachedTimezones;
+        }
+
+        try
+        {
+            _logger.LogInformation("Fetching available timezones");
+
+            var url = $"{_baseUrl}/timezones?code={_functionKey}";
+            var response = await _httpClient.GetAsync(url);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError("Failed to fetch timezones: {StatusCode}", response.StatusCode);
+                return GetFallbackTimezones();
+            }
+
+            var responseBody = await response.Content.ReadAsStringAsync();
+            _cachedTimezones = JsonSerializer.Deserialize<List<string>>(responseBody, _jsonOptions) ?? GetFallbackTimezones();
+            
+            return _cachedTimezones;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception fetching timezones");
+            return GetFallbackTimezones();
+        }
+    }
+
+    private static List<string> GetFallbackTimezones() => new()
+    {
+        "America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles", "UTC"
+    };
 }

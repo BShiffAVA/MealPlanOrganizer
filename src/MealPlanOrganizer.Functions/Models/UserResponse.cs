@@ -21,6 +21,7 @@ namespace MealPlanOrganizer.Functions.Models
         public Guid Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Role { get; set; } = string.Empty;
+        public string TimeZoneId { get; set; } = "America/New_York";
         public List<HouseholdMemberInfo> Members { get; set; } = new();
     }
 
