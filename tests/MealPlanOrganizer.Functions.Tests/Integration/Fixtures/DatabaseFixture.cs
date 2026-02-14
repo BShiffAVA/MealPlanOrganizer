@@ -80,6 +80,11 @@ public class DatabaseFixture : IAsyncLifetime
         await using var context = CreateDbContext();
         
         // Clear all data in correct order to respect foreign keys
+        // PendingRatings must be cleared first (references MealPlanRecipe, Recipe, User, Household)
+        context.PendingRatings.RemoveRange(context.PendingRatings);
+        // DeviceRegistrations references User and Household
+        context.DeviceRegistrations.RemoveRange(context.DeviceRegistrations);
+        
         context.Set<MealPlanRecipe>().RemoveRange(context.Set<MealPlanRecipe>());
         context.MealPlans.RemoveRange(context.MealPlans);
         context.RecipeRatings.RemoveRange(context.RecipeRatings);

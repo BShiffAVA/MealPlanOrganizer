@@ -8,6 +8,9 @@
     "environment": {
       "value": "prod"
     },
+    "baseName": {
+      "value": "mealplan"
+    },
     "signalRName": {
       "value": "signalr-mealplan-organizer"
     },
@@ -16,6 +19,12 @@
     },
     "signalRCapacity": {
       "value": 1
+    },
+    "deployNotificationHub": {
+      "value": true
+    },
+    "notificationHubSku": {
+      "value": "Basic"
     },
     "logAnalyticsWorkspaceId": {
       "value": "/subscriptions/46c4ffee-60f3-4055-813c-3037475e62ca/resourceGroups/rg-mealplan-organizer/providers/Microsoft.OperationalInsights/workspaces/log-mealplan-organizer"

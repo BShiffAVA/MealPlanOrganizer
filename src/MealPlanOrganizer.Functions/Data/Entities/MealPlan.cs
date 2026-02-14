@@ -38,6 +38,26 @@ public class MealPlan
     public string Status { get; set; } = "Draft";
     
     /// <summary>
+    /// The household this meal plan belongs to.
+    /// </summary>
+    public Guid? HouseholdId { get; set; }
+    
+    /// <summary>
+    /// The user who created this meal plan.
+    /// </summary>
+    public Guid? UserId { get; set; }
+    
+    /// <summary>
+    /// Navigation property to the household.
+    /// </summary>
+    public Household? Household { get; set; }
+    
+    /// <summary>
+    /// Navigation property to the creator.
+    /// </summary>
+    public User? User { get; set; }
+    
+    /// <summary>
     /// Navigation property to meal plan recipes.
     /// </summary>
     public ICollection<MealPlanRecipe> Recipes { get; set; } = new List<MealPlanRecipe>();

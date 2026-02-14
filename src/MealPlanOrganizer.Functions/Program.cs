@@ -121,6 +121,9 @@ builder.Services.AddScoped<IRecipeRecommendationService, RecipeRecommendationSer
 builder.Services.AddSingleton<IJwtValidationService, JwtValidationService>();
 builder.Services.AddScoped<AuthenticationHelper>();
 
+// Register notification service for push notifications
+builder.Services.AddSingleton<INotificationService, NotificationService>();
+
 var app = builder.Build();
 
 // Apply EF Core migrations on startup (dev/local)

@@ -1,8 +1,8 @@
-# Phase 4: Real-Time Communication - Azure SignalR Service
+# Phase 4: Real-Time Communication - Azure SignalR Service & Notification Hub
 
 ## Overview
 
-Phase 4 deploys the real-time communication infrastructure for the Meal Plan Organizer application. Azure SignalR Service enables push notifications to mobile clients when family members update recipes, add ratings, or modify meal plans.
+Phase 4 deploys the real-time communication infrastructure for the Meal Plan Organizer application. Azure SignalR Service enables push notifications to mobile clients when family members update recipes, add ratings, or modify meal plans. Azure Notification Hub provides native push notifications to iOS, Android, and Windows devices for rating reminders and other alerts.
 
 ## Resources Deployed
 
@@ -12,12 +12,20 @@ Phase 4 deploys the real-time communication infrastructure for the Meal Plan Org
   - Service Mode: Serverless
   - Network: Private endpoint only, public access disabled
   - Features: Connectivity and messaging logs enabled
+
+- **Azure Notification Hub Namespace** (`ntfns-mealplan-[environment]-[hash]`)
+  - Tier: Basic
+  - Feature: Push notifications to mobile devices
+
+- **Azure Notification Hub** (`ntf-mealplan-[environment]`)
+  - Parent: Notification Hub Namespace
+  - Platforms: iOS (APNS), Android (FCM), Windows (WNS) - credentials configured post-deployment
   
 - **Private Endpoint** (`signalr-mealplan-organizer-pep-[hash]`)
   - Subnet: snet-private-endpoints (from Phase 1)
   - DNS Zone: privatelink.service.signalr.net (from Phase 1)
   
-- **Diagnostic Settings** (`signalr-mealplan-organizer-diag`)
+- **Diagnostic Settings** (`signalr-mealplan-organizer-diag`, `ntfns-*-diag`)
   - Destination: Log Analytics Workspace (from Phase 1)
   - Logs: All log categories
   - Metrics: AllMetrics
@@ -26,6 +34,9 @@ Phase 4 deploys the real-time communication infrastructure for the Meal Plan Org
   - `SignalRConnectionString`: Full connection string with access key
   - `SignalRPrimaryKey`: Primary access key for authentication
   - `SignalREndpoint`: HTTPS endpoint URL
+  - `NotificationHubConnectionString`: Full access connection string for hub operations
+  - `NotificationHubListenConnectionString`: Listen-only connection string for device registration
+  - `NotificationHubName`: Name of the notification hub
 
 ## Prerequisites
 
@@ -337,16 +348,70 @@ After successful Phase 4 deployment:
 
 1. ✅ SignalR Service deployed and accessible via private endpoint
 2. ✅ Connection details stored securely in Key Vault
-3. ⏭️ **Phase 5**: Deploy Azure Functions App Service Plan and Function App
+3. ✅ Notification Hub deployed (Basic tier)
+4. ⏭️ **Configure Push Notification Credentials** (see below)
+5. ⏭️ **Phase 5**: Deploy Azure Functions App Service Plan and Function App
    - Configure VNet integration
    - Set up managed identity authentication
    - Install SignalR bindings
    - Grant RBAC roles for SignalR access
 
+## Configuring Push Notification Credentials
+
+After deployment, configure platform-specific credentials in the Azure Portal or via CLI:
+
+### iOS (Apple Push Notification Service - APNS)
+
+```powershell
+# Update APNS credentials (requires .p12 certificate file)
+az notification-hub credential apns update `
+  --namespace-name ntfns-mealplan-prod-[hash] `
+  --notification-hub-name ntf-mealplan-prod `
+  --resource-group rg-mealplan-organizer `
+  --apns-certificate "path/to/certificate.p12" `
+  --certificate-key "certificate-password" `
+  --endpoint-type Production
+```
+
+### Android (Firebase Cloud Messaging - FCM)
+
+```powershell
+# Update FCM credentials (requires FCM server key from Firebase Console)
+az notification-hub credential gcm update `
+  --namespace-name ntfns-mealplan-prod-[hash] `
+  --notification-hub-name ntf-mealplan-prod `
+  --resource-group rg-mealplan-organizer `
+  --google-api-key "your-fcm-server-key"
+```
+
+### Windows (Windows Notification Service - WNS)
+
+```powershell
+# Update WNS credentials (from Windows Dev Center)
+az notification-hub credential wns update `
+  --namespace-name ntfns-mealplan-prod-[hash] `
+  --notification-hub-name ntf-mealplan-prod `
+  --resource-group rg-mealplan-organizer `
+  --package-sid "your-package-sid" `
+  --secret-key "your-secret-key"
+```
+
+### Verify Notification Hub
+
+```powershell
+# Check Notification Hub status
+az notification-hub show `
+  --namespace-name ntfns-mealplan-prod-[hash] `
+  --name ntf-mealplan-prod `
+  --resource-group rg-mealplan-organizer
+```
+
 ## Resources
 
 - [Azure SignalR Service Documentation](https://learn.microsoft.com/en-us/azure/azure-signalr/)
 - [SignalR Service Serverless Mode](https://learn.microsoft.com/en-us/azure/azure-signalr/signalr-concept-serverless-development-config)
+- [Azure Notification Hubs Documentation](https://learn.microsoft.com/en-us/azure/notification-hubs/)
+- [Notification Hubs SDK for .NET](https://learn.microsoft.com/en-us/azure/notification-hubs/notification-hubs-dotnet-backend-how-to)
 - [Azure Functions SignalR Bindings](https://learn.microsoft.com/en-us/azure/azure-functions/functions-bindings-signalr-service)
 - [SignalR Service Pricing](https://azure.microsoft.com/en-us/pricing/details/signalr-service/)
 - [Private Endpoints for SignalR](https://learn.microsoft.com/en-us/azure/azure-signalr/howto-private-endpoints)

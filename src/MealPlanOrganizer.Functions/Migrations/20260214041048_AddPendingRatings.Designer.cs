@@ -4,6 +4,7 @@ using MealPlanOrganizer.Functions.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace MealPlanOrganizer_Functions.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260214041048_AddPendingRatings")]
+    partial class AddPendingRatings
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,52 +24,6 @@ namespace MealPlanOrganizer_Functions.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
-
-            modelBuilder.Entity("MealPlanOrganizer.Functions.Data.Entities.DeviceRegistration", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedUtc")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
-
-                    b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(true);
-
-                    b.Property<string>("NotificationHubRegistrationId")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("Platform")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<string>("PushToken")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<DateTime?>("UpdatedUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.HasIndex("UserId", "Platform", "PushToken")
-                        .IsUnique();
-
-                    b.ToTable("DeviceRegistrations", (string)null);
-                });
 
             modelBuilder.Entity("MealPlanOrganizer.Functions.Data.Entities.Household", b =>
                 {
@@ -394,7 +351,7 @@ namespace MealPlanOrganizer_Functions.Migrations
                         new
                         {
                             Id = new Guid("b3f9a1b6-7c1b-4b33-b17b-0d2f9b2a5e01"),
-                            CreatedUtc = new DateTime(2026, 2, 14, 4, 28, 2, 972, DateTimeKind.Utc).AddTicks(667),
+                            CreatedUtc = new DateTime(2026, 2, 14, 4, 10, 47, 982, DateTimeKind.Utc).AddTicks(2521),
                             Description = "Classic lasagna with noodles and sauce",
                             IsExtracted = false,
                             Title = "Sample Lasagna"
@@ -573,17 +530,6 @@ namespace MealPlanOrganizer_Functions.Migrations
                     b.ToTable("Users", (string)null);
                 });
 
-            modelBuilder.Entity("MealPlanOrganizer.Functions.Data.Entities.DeviceRegistration", b =>
-                {
-                    b.HasOne("MealPlanOrganizer.Functions.Data.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("MealPlanOrganizer.Functions.Data.Entities.Household", b =>
                 {
                     b.HasOne("MealPlanOrganizer.Functions.Data.Entities.User", "CreatedByUser")
@@ -642,17 +588,13 @@ namespace MealPlanOrganizer_Functions.Migrations
 
             modelBuilder.Entity("MealPlanOrganizer.Functions.Data.Entities.MealPlan", b =>
                 {
-                    b.HasOne("MealPlanOrganizer.Functions.Data.Entities.Household", "Household")
+                    b.HasOne("MealPlanOrganizer.Functions.Data.Entities.Household", null)
                         .WithMany("MealPlans")
                         .HasForeignKey("HouseholdId");
 
-                    b.HasOne("MealPlanOrganizer.Functions.Data.Entities.User", "User")
+                    b.HasOne("MealPlanOrganizer.Functions.Data.Entities.User", null)
                         .WithMany("CreatedMealPlans")
                         .HasForeignKey("UserId");
-
-                    b.Navigation("Household");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("MealPlanOrganizer.Functions.Data.Entities.MealPlanRecipe", b =>

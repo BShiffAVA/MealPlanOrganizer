@@ -17,6 +17,8 @@ namespace MealPlanOrganizer.Functions.Data
         public DbSet<Household> Households => Set<Household>();
         public DbSet<HouseholdMember> HouseholdMembers => Set<HouseholdMember>();
         public DbSet<InviteCode> InviteCodes => Set<InviteCode>();
+        public DbSet<PendingRating> PendingRatings => Set<PendingRating>();
+        public DbSet<DeviceRegistration> DeviceRegistrations => Set<DeviceRegistration>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -244,6 +246,78 @@ namespace MealPlanOrganizer.Functions.Data
                 b.HasIndex(x => new { x.MealPlanId, x.Day });
                 // Index for finding when a recipe was last cooked
                 b.HasIndex(x => new { x.RecipeId, x.Day });
+            });
+
+            modelBuilder.Entity<PendingRating>(b =>
+            {
+                b.ToTable("PendingRatings");
+                b.HasKey(x => x.Id);
+                b.Property(x => x.Status).IsRequired().HasMaxLength(50).HasDefaultValue("Pending");
+                
+                if (isSqlServer)
+                {
+                    b.Property(x => x.ServedDate).HasColumnType("date");
+                    b.Property(x => x.CreatedUtc).HasDefaultValueSql("GETUTCDATE()");
+                    b.Property(x => x.CompletedUtc).HasColumnType("datetime2");
+                }
+                
+                b.HasOne(x => x.Household)
+                    .WithMany()
+                    .HasForeignKey(x => x.HouseholdId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                
+                b.HasOne(x => x.User)
+                    .WithMany()
+                    .HasForeignKey(x => x.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                
+                b.HasOne(x => x.Recipe)
+                    .WithMany()
+                    .HasForeignKey(x => x.RecipeId)
+                    .OnDelete(DeleteBehavior.Restrict); // Don't cascade delete recipes
+                
+                b.HasOne(x => x.MealPlan)
+                    .WithMany()
+                    .HasForeignKey(x => x.MealPlanId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                
+                b.HasOne(x => x.MealPlanRecipeEntry)
+                    .WithMany()
+                    .HasForeignKey(x => x.MealPlanRecipeId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                
+                // Index for finding pending ratings by user
+                b.HasIndex(x => new { x.UserId, x.Status });
+                // Index for finding pending ratings by household
+                b.HasIndex(x => new { x.HouseholdId, x.Status });
+                // Unique constraint: one pending rating per user per MealPlanRecipe
+                b.HasIndex(x => new { x.UserId, x.MealPlanRecipeId }).IsUnique();
+            });
+
+            modelBuilder.Entity<DeviceRegistration>(b =>
+            {
+                b.ToTable("DeviceRegistrations");
+                b.HasKey(x => x.Id);
+                b.Property(x => x.Platform).IsRequired().HasMaxLength(20);
+                b.Property(x => x.PushToken).IsRequired().HasMaxLength(500);
+                b.Property(x => x.NotificationHubRegistrationId).HasMaxLength(500);
+                b.Property(x => x.IsActive).HasDefaultValue(true);
+                
+                if (isSqlServer)
+                {
+                    b.Property(x => x.CreatedUtc).HasDefaultValueSql("GETUTCDATE()");
+                    b.Property(x => x.UpdatedUtc).HasColumnType("datetime2");
+                }
+                
+                b.HasOne(x => x.User)
+                    .WithMany()
+                    .HasForeignKey(x => x.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                
+                // Index for finding devices by user
+                b.HasIndex(x => x.UserId);
+                // Unique constraint: one registration per user per platform per token
+                b.HasIndex(x => new { x.UserId, x.Platform, x.PushToken }).IsUnique();
             });
 
             // Seed sample data via HasData

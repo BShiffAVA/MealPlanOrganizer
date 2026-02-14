@@ -43,6 +43,21 @@ param vnetId string
 @description('Key Vault resource ID from Phase 2')
 param keyVaultId string
 
+// Notification Hub Parameters
+@description('Deploy Notification Hub for push notifications')
+param deployNotificationHub bool = true
+
+@description('Notification Hub SKU (Free, Basic, or Standard)')
+@allowed([
+  'Free'
+  'Basic'
+  'Standard'
+])
+param notificationHubSku string = 'Basic'
+
+@description('Base name for Notification Hub resources')
+param baseName string = 'mealplan'
+
 // ============================================================================
 // VARIABLES
 // ============================================================================
@@ -52,6 +67,22 @@ var tags = {
   Project: 'MealPlanOrganizer'
   Phase: '4-RealTime'
   ManagedBy: 'Bicep'
+}
+
+// ============================================================================
+// NOTIFICATION HUB MODULE
+// ============================================================================
+
+module notificationHub '../modules/notificationhub.bicep' = if (deployNotificationHub) {
+  name: 'notificationHub-deployment'
+  params: {
+    location: location
+    environment: environment
+    baseName: baseName
+    sku: notificationHubSku
+    keyVaultId: keyVaultId
+    logAnalyticsWorkspaceId: logAnalyticsWorkspaceId
+  }
 }
 
 // ============================================================================
@@ -232,3 +263,12 @@ output signalRHostname string = signalRService.properties.hostName
 
 @description('SignalR Service endpoint URL')
 output signalREndpoint string = 'https://${signalRService.properties.hostName}'
+
+@description('Notification Hub Namespace name')
+output notificationHubNamespaceName string = deployNotificationHub ? notificationHub.outputs.namespaceName! : ''
+
+@description('Notification Hub name')
+output notificationHubName string = deployNotificationHub ? notificationHub.outputs.hubName! : ''
+
+@description('Notification Hub endpoint')
+output notificationHubEndpoint string = deployNotificationHub ? notificationHub.outputs.hubEndpoint! : ''
