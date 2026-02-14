@@ -7,6 +7,7 @@ namespace MealPlanOrganizer.Mobile;
 public partial class AppShell : Shell
 {
 	private readonly IAuthService _authService;
+	private readonly IPushNotificationService _pushNotificationService;
 
 	public AppShell()
 	{
@@ -15,6 +16,10 @@ public partial class AppShell : Shell
 		// Get auth service from DI
 		_authService = Application.Current?.Handler?.MauiContext?.Services.GetService<IAuthService>()
 			?? throw new InvalidOperationException("IAuthService not registered");
+
+		// Get push notification service from DI
+		_pushNotificationService = Application.Current?.Handler?.MauiContext?.Services.GetService<IPushNotificationService>()
+			?? throw new InvalidOperationException("IPushNotificationService not registered");
 
 		// Resolve pages from DI for ShellContent that require constructor injection
 		var services = Application.Current?.Handler?.MauiContext?.Services;
@@ -124,6 +129,18 @@ public partial class AppShell : Shell
 	{
 		try
 		{
+			// Unregister device from push notifications before logout
+			try
+			{
+				await _pushNotificationService.UnregisterDeviceAsync();
+				Log.Information("Device unregistered from push notifications");
+			}
+			catch (Exception ex)
+			{
+				// Don't block logout if push unregistration fails
+				Log.Warning(ex, "Failed to unregister device from push notifications");
+			}
+			
 			await _authService.LogoutAsync();
 			
 			// Navigate back to login page

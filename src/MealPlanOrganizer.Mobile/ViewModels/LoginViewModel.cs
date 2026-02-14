@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MealPlanOrganizer.Mobile.Services;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace MealPlanOrganizer.Mobile.ViewModels;
 
@@ -12,6 +13,8 @@ public partial class LoginViewModel : ObservableObject
 {
     private readonly IAuthService _authService;
     private readonly IUserService _userService;
+    private readonly IPushNotificationService _pushNotificationService;
+    private readonly ILogger<LoginViewModel> _logger;
 
     [ObservableProperty]
     private bool _isLoading;
@@ -28,10 +31,16 @@ public partial class LoginViewModel : ObservableObject
     // CancellationTokenSource to cancel ongoing sign-in operations
     private CancellationTokenSource? _signInCts;
 
-    public LoginViewModel(IAuthService authService, IUserService userService)
+    public LoginViewModel(
+        IAuthService authService, 
+        IUserService userService,
+        IPushNotificationService pushNotificationService,
+        ILogger<LoginViewModel> logger)
     {
         _authService = authService;
         _userService = userService;
+        _pushNotificationService = pushNotificationService;
+        _logger = logger;
     }
     
     /// <summary>
@@ -106,6 +115,9 @@ public partial class LoginViewModel : ObservableObject
                     ShowError("Failed to register your account. Please try again.");
                     return;
                 }
+                
+                // Initialize and register push notifications
+                await InitializePushNotificationsAsync();
                 
                 // Check if user has a household
                 if (user.Household == null)
@@ -189,6 +201,43 @@ public partial class LoginViewModel : ObservableObject
     {
         ErrorMessage = message;
         IsErrorVisible = true;
+    }
+
+    /// <summary>
+    /// Initializes push notification services and registers the device with the backend.
+    /// </summary>
+    private async Task InitializePushNotificationsAsync()
+    {
+        try
+        {
+            _logger.LogInformation("Initializing push notifications after login");
+            
+            // Initialize platform-specific push notification services
+            await _pushNotificationService.InitializeAsync();
+            
+            // Register the device with the backend if we have a token
+            if (!string.IsNullOrEmpty(_pushNotificationService.CurrentPushToken))
+            {
+                var registered = await _pushNotificationService.RegisterDeviceAsync();
+                if (registered)
+                {
+                    _logger.LogInformation("Device registered for push notifications");
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to register device for push notifications");
+                }
+            }
+            else
+            {
+                _logger.LogDebug("No push token available - device will be registered when token is acquired");
+            }
+        }
+        catch (Exception ex)
+        {
+            // Push notification failures should not block login
+            _logger.LogError(ex, "Error initializing push notifications");
+        }
     }
 
     private void NavigateToMainPage()

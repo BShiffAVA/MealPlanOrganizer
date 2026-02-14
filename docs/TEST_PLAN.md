@@ -50,7 +50,8 @@ tests/
     ├── MealPlanOrganizer.Mobile.Tests.csproj
     ├── Services/
     │   ├── RecipeServiceTests.cs
-    │   └── AuthServiceTests.cs
+    │   ├── AuthServiceTests.cs
+    │   └── PushNotificationServiceHttpTests.cs
     └── Mocks/
         ├── MockHttpMessageHandler.cs
         └── MockAuthService.cs
@@ -299,6 +300,26 @@ Tests MSAL authentication flow with mocked identity client.
 | `Logout_ClearsCache` | User logs out | Token cache cleared |
 | `IsAuthenticated_WithToken_ReturnsTrue` | Valid token exists | Returns true |
 | `IsAuthenticated_NoToken_ReturnsFalse` | No cached token | Returns false |
+
+#### PushNotificationServiceHttpTests
+
+Tests HTTP interactions for push notification device registration/unregistration.
+
+| Test Case | Description | Expected Result |
+|-----------|-------------|------------------|
+| `RegisterDevice_SendsCorrectHttpRequest` | Valid device token | POST to /api/devices/register with correct payload |
+| `RegisterDevice_SendsCorrectPayload` | Device registration | JSON contains deviceToken, platform, notificationToken |
+| `RegisterDevice_IncludesBearerToken` | Authenticated request | Authorization header includes bearer token |
+| `RegisterDevice_Success_ReturnsTrue` | 200 response | Returns true |
+| `RegisterDevice_BadRequest_ReturnsFalse` | 400 response | Returns false |
+| `RegisterDevice_Unauthorized_ReturnsFalse` | 401 response | Returns false |
+| `RegisterDevice_ServerError_ThrowsException` | 500 response | Throws HttpRequestException |
+| `RegisterDevice_NetworkError_ThrowsException` | Connection failure | Throws HttpRequestException |
+| `RegisterDevice_WithAllPlatforms_SendsCorrectPlatform` | ios, android, windows | Platform string correctly formatted |
+| `UnregisterDevice_SendsCorrectHttpRequest` | Valid device token | DELETE to /api/devices/unregister/{token} |
+| `UnregisterDevice_Success_ReturnsTrue` | 200/204 response | Returns true |
+| `UnregisterDevice_NotFound_ReturnsFalse` | 404 response | Returns false |
+| `UnregisterDevice_WithSpecialCharacters_EncodesUrl` | Token with special chars | URL properly encoded |
 
 ---
 
@@ -611,8 +632,9 @@ jobs:
 ### Phase 4: Mobile Unit Tests (Sprint 4)
 - [ ] RecipeServiceTests (16 tests)
 - [ ] AuthServiceTests (8 tests)
+- [x] PushNotificationServiceHttpTests (13 tests)
 - [ ] MockHttpMessageHandler implementation
-- [ ] MockAuthService implementation
+- [x] MockAuthService implementation
 
 ### Phase 5: UI Tests (Future - When UI Stabilizes)
 - [ ] Set up UITest project
@@ -657,8 +679,8 @@ jobs:
 | Backend Services | 34 | - | 34 |
 | Backend Functions | 19 | - | 19 |
 | Backend Endpoints | - | 29 | 29 |
-| Mobile Services | 24 | - | 24 |
-| **Total** | **77** | **29** | **106** |
+| Mobile Services | 37 | - | 37 |
+| **Total** | **90** | **29** | **119** |
 
 UI Tests (future): ~45 scenarios across 9 pages
 

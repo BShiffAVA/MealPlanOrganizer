@@ -1,4 +1,5 @@
 ﻿using Foundation;
+using MealPlanOrganizer.Mobile.Services;
 using Microsoft.Identity.Client;
 using UIKit;
 
@@ -20,5 +21,17 @@ public class AppDelegate : MauiUIApplicationDelegate
 
 		AuthenticationContinuationHelper.SetAuthenticationContinuationEventArgs(url);
 		return base.OpenUrl(application, url, options);
+	}
+
+	// Handle APNs device token registration
+	public override void RegisteredForRemoteNotifications(UIApplication application, NSData deviceToken)
+	{
+		PushNotificationService.Instance?.OnRegisteredForRemoteNotifications(deviceToken);
+	}
+
+	// Handle APNs registration failure
+	public override void FailedToRegisterForRemoteNotifications(UIApplication application, NSError error)
+	{
+		PushNotificationService.Instance?.OnFailedToRegisterForRemoteNotifications(error);
 	}
 }

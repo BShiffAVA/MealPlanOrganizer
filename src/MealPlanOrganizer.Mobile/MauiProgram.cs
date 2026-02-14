@@ -46,6 +46,10 @@ public static class MauiProgram
 		// Register navigation service
 		builder.Services.AddSingleton<INavigationService, NavigationService>();
 
+		// Register push notification service
+		builder.Services.AddHttpClient<PushNotificationService>();
+		builder.Services.AddSingleton<IPushNotificationService>(sp => sp.GetRequiredService<PushNotificationService>());
+
 		// Register ViewModels
 		builder.Services.AddTransient<LoginViewModel>();
 		builder.Services.AddTransient<CreateHouseholdViewModel>();

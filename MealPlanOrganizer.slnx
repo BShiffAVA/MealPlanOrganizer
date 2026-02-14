@@ -5,5 +5,6 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests\MealPlanOrganizer.Functions.Tests\MealPlanOrganizer.Functions.Tests.csproj" />
+    <Project Path="tests\MealPlanOrganizer.Mobile.Tests\MealPlanOrganizer.Mobile.Tests.csproj" />
   </Folder>
 </Solution>
