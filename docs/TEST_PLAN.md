@@ -33,6 +33,7 @@ tests/
 │   │   │   ├── RecipeEndpointsTests.cs
 │   │   │   ├── ExtractionEndpointsTests.cs
 │   │   │   ├── RatingsEndpointsTests.cs
+│   │   │   ├── PendingRatingsEndpointsTests.cs
 │   │   │   ├── MealPlanEndpointsTests.cs
 │   │   │   ├── RecommendationsEndpointsTests.cs
 │   │   │   └── AuthEndpointsTests.cs
@@ -233,6 +234,32 @@ Integration tests use Testcontainers for SQL Server and Azurite for blob storage
 | `GET_Ratings_FiltersByRecipe` | Only ratings for specified recipe |
 | `GET_UserHistory_PaginatesCorrectly` | Respects page/pageSize |
 | `POST_Rating_WithFrequency_SavesPreference` | frequencyPreference stored |
+
+#### PendingRatingsEndpointsTests
+
+| Test Case | Description |
+|-----------|-------------|
+| `GetPendingRatings_ReturnsUserPendingRatings` | Returns pending ratings for authenticated user |
+| `GetPendingRatings_WithoutAuthentication_ReturnsUnauthorized` | 401 without token |
+| `GetPendingRatings_ReturnsOnlyPendingStatus` | Excludes completed/dismissed ratings |
+| `GetPendingRatings_IncludesRecipeDetails` | Recipe title/image populated |
+| `UpdatePendingRating_ToCompleted_UpdatesStatus` | Status changed to Completed |
+| `UpdatePendingRating_ToDismissed_UpdatesStatus` | Status changed to Dismissed |
+| `UpdatePendingRating_InvalidStatus_ReturnsBadRequest` | Invalid status rejected |
+| `UpdatePendingRating_MissingStatus_ReturnsBadRequest` | Missing status returns 400 |
+| `UpdatePendingRating_NonExistentRating_ReturnsNotFound` | 404 for missing rating |
+| `UpdatePendingRating_OtherUserRating_ReturnsNotFound` | Can't update other user's rating |
+| `CompletePendingRating_SuccessfullyCompletesRating` | PUT /complete marks completed |
+| `CompletePendingRating_AlreadyCompleted_ReturnsOkWithMessage` | Idempotent for already completed |
+| `CompletePendingRating_WithoutAuthentication_ReturnsUnauthorized` | 401 without token |
+| `CompletePendingRating_NonExistentRating_ReturnsNotFound` | 404 for missing rating |
+| `CompletePendingRating_OtherUserRating_ReturnsNotFound` | Can't complete other's rating |
+| `DismissPendingRating_SuccessfullyDismissesRating` | PUT /dismiss marks dismissed |
+| `DismissPendingRating_AlreadyDismissed_ReturnsOkWithMessage` | Idempotent for already dismissed |
+| `DismissPendingRating_AlreadyCompleted_ReturnsConflict` | Can't dismiss completed rating |
+| `DismissPendingRating_WithoutAuthentication_ReturnsUnauthorized` | 401 without token |
+| `DismissPendingRating_NonExistentRating_ReturnsNotFound` | 404 for missing rating |
+| `DismissPendingRating_OtherUserRating_ReturnsNotFound` | Can't dismiss other's rating |
 
 #### MealPlanEndpointsTests
 
@@ -763,6 +790,7 @@ jobs:
 - [ ] RecipeEndpointsTests (6 tests)
 - [ ] ExtractionEndpointsTests (5 tests)
 - [ ] RatingsEndpointsTests (5 tests)
+- [x] PendingRatingsEndpointsTests (23 tests)
 - [ ] MealPlanEndpointsTests (5 tests)
 - [ ] RecommendationsEndpointsTests (4 tests)
 - [ ] AuthEndpointsTests (4 tests)

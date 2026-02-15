@@ -469,6 +469,345 @@ public class PendingRatingsEndpointsTests : IAsyncLifetime
 
     #endregion
 
+    #region CompletePendingRating Tests
+
+    [Fact]
+    public async Task CompletePendingRating_SuccessfullyCompletesRating()
+    {
+        // Arrange
+        using var scope = _fixture.TestHost.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var authHelper = scope.ServiceProvider.GetRequiredService<AuthenticationHelper>();
+        var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
+        var logger = loggerFactory.CreateLogger<CompletePendingRating>();
+
+        var function = new CompletePendingRating(logger, db, authHelper);
+
+        var (user, household, recipe, pendingRating) = await CreatePendingRatingAsync(db);
+
+        var token = TestAuthHandler.CreateToken(user.ExternalIdObjectId);
+        var httpRequest = CreateMockHttpRequest(HttpMethod.Put, authHeader: $"Bearer {token}");
+
+        // Act
+        var response = await function.Run(httpRequest, pendingRating.Id);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var result = await ReadResponseBody<CompletePendingRatingResponse>(response);
+        Assert.NotNull(result);
+        Assert.Equal("Completed", result.Status);
+        Assert.NotNull(result.CompletedUtc);
+
+        // Verify database was updated
+        var updatedRating = await db.PendingRatings.FindAsync(pendingRating.Id);
+        Assert.NotNull(updatedRating);
+        Assert.Equal("Completed", updatedRating.Status);
+    }
+
+    [Fact]
+    public async Task CompletePendingRating_AlreadyCompleted_ReturnsOkWithMessage()
+    {
+        // Arrange
+        using var scope = _fixture.TestHost.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var authHelper = scope.ServiceProvider.GetRequiredService<AuthenticationHelper>();
+        var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
+        var logger = loggerFactory.CreateLogger<CompletePendingRating>();
+
+        var function = new CompletePendingRating(logger, db, authHelper);
+
+        var (user, household, recipe, pendingRating) = await CreatePendingRatingAsync(db);
+        
+        // Mark as already completed
+        pendingRating.Status = "Completed";
+        pendingRating.CompletedUtc = DateTime.UtcNow.AddMinutes(-5);
+        await db.SaveChangesAsync();
+
+        var token = TestAuthHandler.CreateToken(user.ExternalIdObjectId);
+        var httpRequest = CreateMockHttpRequest(HttpMethod.Put, authHeader: $"Bearer {token}");
+
+        // Act
+        var response = await function.Run(httpRequest, pendingRating.Id);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task CompletePendingRating_WithoutAuthentication_ReturnsUnauthorized()
+    {
+        // Arrange
+        using var scope = _fixture.TestHost.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var authHelper = scope.ServiceProvider.GetRequiredService<AuthenticationHelper>();
+        var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
+        var logger = loggerFactory.CreateLogger<CompletePendingRating>();
+
+        var function = new CompletePendingRating(logger, db, authHelper);
+
+        var httpRequest = CreateMockHttpRequest(HttpMethod.Put, authHeader: null);
+
+        // Act
+        var response = await function.Run(httpRequest, Guid.NewGuid());
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task CompletePendingRating_NonExistentRating_ReturnsNotFound()
+    {
+        // Arrange
+        using var scope = _fixture.TestHost.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var authHelper = scope.ServiceProvider.GetRequiredService<AuthenticationHelper>();
+        var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
+        var logger = loggerFactory.CreateLogger<CompletePendingRating>();
+
+        var function = new CompletePendingRating(logger, db, authHelper);
+
+        var user = new User
+        {
+            Id = Guid.NewGuid(),
+            ExternalIdObjectId = Guid.NewGuid().ToString(),
+            Email = "test@test.com",
+            DisplayName = "Test User"
+        };
+        db.Users.Add(user);
+        await db.SaveChangesAsync();
+
+        var token = TestAuthHandler.CreateToken(user.ExternalIdObjectId);
+        var httpRequest = CreateMockHttpRequest(HttpMethod.Put, authHeader: $"Bearer {token}");
+
+        // Act
+        var response = await function.Run(httpRequest, Guid.NewGuid());
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task CompletePendingRating_OtherUserRating_ReturnsNotFound()
+    {
+        // Arrange
+        using var scope = _fixture.TestHost.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var authHelper = scope.ServiceProvider.GetRequiredService<AuthenticationHelper>();
+        var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
+        var logger = loggerFactory.CreateLogger<CompletePendingRating>();
+
+        var function = new CompletePendingRating(logger, db, authHelper);
+
+        var (originalUser, household, recipe, pendingRating) = await CreatePendingRatingAsync(db);
+
+        // Create another user trying to complete the rating
+        var anotherUser = new User
+        {
+            Id = Guid.NewGuid(),
+            ExternalIdObjectId = Guid.NewGuid().ToString(),
+            Email = "another@test.com",
+            DisplayName = "Another User"
+        };
+        db.Users.Add(anotherUser);
+        await db.SaveChangesAsync();
+
+        var token = TestAuthHandler.CreateToken(anotherUser.ExternalIdObjectId);
+        var httpRequest = CreateMockHttpRequest(HttpMethod.Put, authHeader: $"Bearer {token}");
+
+        // Act
+        var response = await function.Run(httpRequest, pendingRating.Id);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    #endregion
+
+    #region DismissPendingRating Tests
+
+    [Fact]
+    public async Task DismissPendingRating_SuccessfullyDismissesRating()
+    {
+        // Arrange
+        using var scope = _fixture.TestHost.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var authHelper = scope.ServiceProvider.GetRequiredService<AuthenticationHelper>();
+        var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
+        var logger = loggerFactory.CreateLogger<DismissPendingRating>();
+
+        var function = new DismissPendingRating(logger, db, authHelper);
+
+        var (user, household, recipe, pendingRating) = await CreatePendingRatingAsync(db);
+
+        var token = TestAuthHandler.CreateToken(user.ExternalIdObjectId);
+        var httpRequest = CreateMockHttpRequest(HttpMethod.Put, authHeader: $"Bearer {token}");
+
+        // Act
+        var response = await function.Run(httpRequest, pendingRating.Id);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var result = await ReadResponseBody<DismissPendingRatingResponse>(response);
+        Assert.NotNull(result);
+        Assert.Equal("Dismissed", result.Status);
+        Assert.NotNull(result.CompletedUtc);
+
+        // Verify database was updated
+        var updatedRating = await db.PendingRatings.FindAsync(pendingRating.Id);
+        Assert.NotNull(updatedRating);
+        Assert.Equal("Dismissed", updatedRating.Status);
+    }
+
+    [Fact]
+    public async Task DismissPendingRating_AlreadyDismissed_ReturnsOkWithMessage()
+    {
+        // Arrange
+        using var scope = _fixture.TestHost.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var authHelper = scope.ServiceProvider.GetRequiredService<AuthenticationHelper>();
+        var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
+        var logger = loggerFactory.CreateLogger<DismissPendingRating>();
+
+        var function = new DismissPendingRating(logger, db, authHelper);
+
+        var (user, household, recipe, pendingRating) = await CreatePendingRatingAsync(db);
+        
+        // Mark as already dismissed
+        pendingRating.Status = "Dismissed";
+        pendingRating.CompletedUtc = DateTime.UtcNow.AddMinutes(-5);
+        await db.SaveChangesAsync();
+
+        var token = TestAuthHandler.CreateToken(user.ExternalIdObjectId);
+        var httpRequest = CreateMockHttpRequest(HttpMethod.Put, authHeader: $"Bearer {token}");
+
+        // Act
+        var response = await function.Run(httpRequest, pendingRating.Id);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DismissPendingRating_AlreadyCompleted_ReturnsConflict()
+    {
+        // Arrange
+        using var scope = _fixture.TestHost.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var authHelper = scope.ServiceProvider.GetRequiredService<AuthenticationHelper>();
+        var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
+        var logger = loggerFactory.CreateLogger<DismissPendingRating>();
+
+        var function = new DismissPendingRating(logger, db, authHelper);
+
+        var (user, household, recipe, pendingRating) = await CreatePendingRatingAsync(db);
+        
+        // Mark as completed (cannot dismiss)
+        pendingRating.Status = "Completed";
+        pendingRating.CompletedUtc = DateTime.UtcNow.AddMinutes(-5);
+        await db.SaveChangesAsync();
+
+        var token = TestAuthHandler.CreateToken(user.ExternalIdObjectId);
+        var httpRequest = CreateMockHttpRequest(HttpMethod.Put, authHeader: $"Bearer {token}");
+
+        // Act
+        var response = await function.Run(httpRequest, pendingRating.Id);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DismissPendingRating_WithoutAuthentication_ReturnsUnauthorized()
+    {
+        // Arrange
+        using var scope = _fixture.TestHost.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var authHelper = scope.ServiceProvider.GetRequiredService<AuthenticationHelper>();
+        var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
+        var logger = loggerFactory.CreateLogger<DismissPendingRating>();
+
+        var function = new DismissPendingRating(logger, db, authHelper);
+
+        var httpRequest = CreateMockHttpRequest(HttpMethod.Put, authHeader: null);
+
+        // Act
+        var response = await function.Run(httpRequest, Guid.NewGuid());
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DismissPendingRating_NonExistentRating_ReturnsNotFound()
+    {
+        // Arrange
+        using var scope = _fixture.TestHost.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var authHelper = scope.ServiceProvider.GetRequiredService<AuthenticationHelper>();
+        var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
+        var logger = loggerFactory.CreateLogger<DismissPendingRating>();
+
+        var function = new DismissPendingRating(logger, db, authHelper);
+
+        var user = new User
+        {
+            Id = Guid.NewGuid(),
+            ExternalIdObjectId = Guid.NewGuid().ToString(),
+            Email = "test@test.com",
+            DisplayName = "Test User"
+        };
+        db.Users.Add(user);
+        await db.SaveChangesAsync();
+
+        var token = TestAuthHandler.CreateToken(user.ExternalIdObjectId);
+        var httpRequest = CreateMockHttpRequest(HttpMethod.Put, authHeader: $"Bearer {token}");
+
+        // Act
+        var response = await function.Run(httpRequest, Guid.NewGuid());
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DismissPendingRating_OtherUserRating_ReturnsNotFound()
+    {
+        // Arrange
+        using var scope = _fixture.TestHost.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var authHelper = scope.ServiceProvider.GetRequiredService<AuthenticationHelper>();
+        var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
+        var logger = loggerFactory.CreateLogger<DismissPendingRating>();
+
+        var function = new DismissPendingRating(logger, db, authHelper);
+
+        var (originalUser, household, recipe, pendingRating) = await CreatePendingRatingAsync(db);
+
+        // Create another user trying to dismiss the rating
+        var anotherUser = new User
+        {
+            Id = Guid.NewGuid(),
+            ExternalIdObjectId = Guid.NewGuid().ToString(),
+            Email = "another@test.com",
+            DisplayName = "Another User"
+        };
+        db.Users.Add(anotherUser);
+        await db.SaveChangesAsync();
+
+        var token = TestAuthHandler.CreateToken(anotherUser.ExternalIdObjectId);
+        var httpRequest = CreateMockHttpRequest(HttpMethod.Put, authHeader: $"Bearer {token}");
+
+        // Act
+        var response = await function.Run(httpRequest, pendingRating.Id);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    #endregion
+
     #region Helper Methods
 
     private static HttpRequestData CreateMockHttpRequest(
@@ -556,4 +895,26 @@ public class PendingRatingsEndpointsTests : IAsyncLifetime
     }
 
     #endregion
+}
+
+/// <summary>
+/// Response DTO for CompletePendingRating tests.
+/// </summary>
+internal class CompletePendingRatingResponse
+{
+    public Guid Id { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public DateTime? CompletedUtc { get; set; }
+    public string? Message { get; set; }
+}
+
+/// <summary>
+/// Response DTO for DismissPendingRating tests.
+/// </summary>
+internal class DismissPendingRatingResponse
+{
+    public Guid Id { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public DateTime? CompletedUtc { get; set; }
+    public string? Message { get; set; }
 }
