@@ -1,0 +1,45 @@
+meta {
+  name: Join Household
+  type: http
+  seq: 32
+}
+
+post {
+  url: {{baseUrl}}/api/households/join?code={{functionKey}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "inviteCode": "ABC12345"
+  }
+}
+
+docs {
+  # Join Household
+  
+  Allows an authenticated user to join a household using an invite code.
+  
+  ## Authentication
+  Requires a valid JWT token in the Authorization header (Bearer token).
+  
+  ## Request Body
+  - `inviteCode` (required): 8-character invite code
+  
+  ## Response Fields
+  - `id` (guid): Household identifier
+  - `name` (string): Household name
+  - `timeZoneId` (string): IANA timezone identifier
+  - `members` (array): List of household members
+  
+  ## Behavior
+  - The invite code is invalidated after successful use
+  - User is added as a regular member (not admin)
+  
+  ## Error Responses
+  - `400 Bad Request`: Invalid invite code format (must be 8 characters)
+  - `401 Unauthorized`: Invalid or missing authentication token
+  - `404 Not Found`: Invite code not found or expired
+  - `409 Conflict`: User already belongs to a household
+}

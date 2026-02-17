@@ -1,0 +1,37 @@
+meta {
+  name: Validate Invite Code
+  type: http
+  seq: 42
+}
+
+get {
+  url: {{baseUrl}}/api/households/invites/{{inviteCode}}/validate?code={{functionKey}}
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  inviteCode: ABC12345
+}
+
+docs {
+  # Validate Invite Code
+  
+  Validates an invite code and returns the associated household information.
+  
+  ## Authentication
+  Requires a valid JWT token in the Authorization header (Bearer token).
+  
+  ## Path Parameters
+  - `code` (string): The 8-character invite code to validate
+  
+  ## Response Fields
+  - `isValid` (bool): Whether the code is valid and can be used
+  - `householdId` (guid): The household ID (if valid)
+  - `householdName` (string): The household name (if valid)
+  - `expiresUtc` (datetime): When the code expires (if valid)
+  
+  ## Error Responses
+  - `401 Unauthorized`: Invalid or missing authentication token
+  - `404 Not Found`: Invite code not found or expired
+}

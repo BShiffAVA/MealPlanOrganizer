@@ -790,7 +790,7 @@ public class RecipeService : IRecipeService
             
             await AttachBearerTokenAsync();
             
-            var url = $"{_baseUrl}/pending-ratings?code={_functionKey}";
+            var url = $"{_baseUrl}/ratings/pending?code={_functionKey}";
             var response = await _httpClient.GetAsync(url);
             
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)

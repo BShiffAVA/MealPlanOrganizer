@@ -1,0 +1,50 @@
+meta {
+  name: Update Household
+  type: http
+  seq: 31
+}
+
+patch {
+  url: {{baseUrl}}/api/households/{{householdId}}?code={{functionKey}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "Updated Family Name",
+    "timeZoneId": "America/New_York"
+  }
+}
+
+vars:pre-request {
+  householdId: 00000000-0000-0000-0000-000000000000
+}
+
+docs {
+  # Update Household
+  
+  Updates household settings. Only admins can update household settings.
+  
+  ## Authentication
+  Requires a valid JWT token in the Authorization header (Bearer token).
+  
+  ## Path Parameters
+  - `householdId` (guid): The unique identifier of the household
+  
+  ## Request Body
+  All fields are optional. Only provided fields will be updated.
+  - `name` (optional): New household name
+  - `timeZoneId` (optional): IANA timezone identifier (e.g., "America/New_York")
+  
+  ## Response Fields
+  - `id` (guid): Household identifier
+  - `name` (string): Household name
+  - `timeZoneId` (string): IANA timezone identifier
+  - `members` (array): List of household members
+  
+  ## Error Responses
+  - `401 Unauthorized`: Invalid or missing authentication token
+  - `403 Forbidden`: User is not an admin of this household
+  - `404 Not Found`: Household not found
+}

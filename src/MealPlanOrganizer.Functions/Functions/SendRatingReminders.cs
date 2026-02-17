@@ -5,6 +5,8 @@ using MealPlanOrganizer.Functions.Data;
 using MealPlanOrganizer.Functions.Data.Entities;
 using MealPlanOrganizer.Functions.Services;
 using TimeZoneConverter;
+using Microsoft.Azure.Functions.Worker.Http;
+using System.Net;
 
 namespace MealPlanOrganizer.Functions.Functions;
 
@@ -32,6 +34,27 @@ public class SendRatingReminders
     [Function("SendRatingReminders")]
     public async Task Run([TimerTrigger("0 0 * * * *")] TimerInfo timerInfo)
     {
+        await SendRatingRemindersToHouseholdsAsync();
+    }
+
+
+
+    /// <summary>
+    /// Manual HTTP trigger for testing rating reminders.
+    /// </summary>
+    [Function("SendRatingRemindersManual")]
+    public async Task<HttpResponseData> RunManual(
+    [HttpTrigger(AuthorizationLevel.Function, "post", Route = "SendRatingRemindersManual")] HttpRequestData req)
+    {
+        await SendRatingRemindersToHouseholdsAsync(true);
+
+        var created = req.CreateResponse(HttpStatusCode.OK);
+        return created;
+    }
+
+
+    private async Task SendRatingRemindersToHouseholdsAsync(bool isManual = false)
+    {
         _logger.LogInformation("SendRatingReminders triggered at {UtcNow}", DateTime.UtcNow);
 
         try
@@ -40,7 +63,7 @@ public class SendRatingReminders
             await AutoDismissOldPendingRatingsAsync();
 
             // 2. Create pending ratings for households where it's 8pm
-            await CreatePendingRatingsFor8pmHouseholdsAsync();
+            await CreatePendingRatingsFor8pmHouseholdsAsync(isManual);
         }
         catch (Exception ex)
         {
@@ -80,7 +103,7 @@ public class SendRatingReminders
     /// Find households where it's currently 8pm in their timezone and create pending ratings
     /// for any recipes served today.
     /// </summary>
-    private async Task CreatePendingRatingsFor8pmHouseholdsAsync()
+    private async Task CreatePendingRatingsFor8pmHouseholdsAsync(bool isManual = false)
     {
         var utcNow = DateTime.UtcNow;
         
@@ -99,7 +122,7 @@ public class SendRatingReminders
                 var localTime = ConvertUtcToHouseholdTime(utcNow, household.TimeZoneId);
                 
                 // Check if it's currently the 8pm hour (20:xx)
-                if (localTime.Hour == 20)
+                if (isManual || localTime.Hour == 20)
                 {
                     householdsAt8pm.Add(household);
                     _logger.LogDebug("Household {HouseholdId} ({Name}) is at 8pm local time", 

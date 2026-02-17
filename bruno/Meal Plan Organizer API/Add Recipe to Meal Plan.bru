@@ -1,0 +1,50 @@
+meta {
+  name: Add Recipe to Meal Plan
+  type: http
+  seq: 53
+}
+
+post {
+  url: {{baseUrl}}/api/mealplans/{{mealPlanId}}/recipes?code={{functionKey}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "recipeId": "00000000-0000-0000-0000-000000000000",
+    "day": "2026-02-18"
+  }
+}
+
+vars:pre-request {
+  mealPlanId: 00000000-0000-0000-0000-000000000000
+}
+
+docs {
+  # Add Recipe to Meal Plan
+  
+  Assigns a recipe to a specific day in a meal plan.
+  
+  ## Authentication
+  Requires a valid JWT token in the Authorization header (Bearer token).
+  
+  ## Path Parameters
+  - `id` (guid): The unique identifier of the meal plan
+  
+  ## Request Body
+  - `recipeId` (required): The ID of the recipe to add
+  - `day` (required): The day to assign this recipe to (must be within meal plan date range)
+  
+  ## Response Fields
+  - `message`: Confirmation message
+  - `mealPlanId` (guid): The meal plan ID
+  - `recipeId` (guid): The recipe ID
+  - `day` (date): The assigned day
+  
+  ## Error Responses
+  - `400 Bad Request`: Missing required fields or day outside meal plan range
+  - `401 Unauthorized`: Invalid or missing authentication token
+  - `404 Not Found`: Meal plan or recipe not found
+  - `409 Conflict`: Recipe already assigned to this day
+}

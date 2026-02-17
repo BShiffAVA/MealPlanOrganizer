@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MealPlanOrganizer.Functions.Data;
 using MealPlanOrganizer.Functions.Data.Entities;
@@ -41,6 +42,39 @@ public class CreateMealPlan
             var unauthorizedResponse = req.CreateResponse(HttpStatusCode.Unauthorized);
             await unauthorizedResponse.WriteAsJsonAsync(new { message = "Authentication required" });
             return unauthorizedResponse;
+        }
+
+        var externalId = authResult.UserId;
+        if (string.IsNullOrEmpty(externalId))
+        {
+            _logger.LogWarning("Missing user ID in token");
+            var badRequest = req.CreateResponse(HttpStatusCode.BadRequest);
+            await badRequest.WriteAsJsonAsync(new { message = "Missing user ID in token" });
+            return badRequest;
+        }
+
+        // Find user by external ID
+        var user = await _context.Users
+            .FirstOrDefaultAsync(u => u.ExternalIdObjectId == externalId);
+
+        if (user == null)
+        {
+            _logger.LogWarning("User not found: {ExternalId}", externalId);
+            var notFound = req.CreateResponse(HttpStatusCode.NotFound);
+            await notFound.WriteAsJsonAsync(new { message = "User not registered. Call POST /users/register first." });
+            return notFound;
+        }
+
+        // Get household membership
+        var membership = await _context.HouseholdMembers
+            .FirstOrDefaultAsync(hm => hm.UserId == user.Id);
+
+        if (membership == null)
+        {
+            _logger.LogWarning("User {UserId} does not belong to a household", user.Id);
+            var badRequest = req.CreateResponse(HttpStatusCode.BadRequest);
+            await badRequest.WriteAsJsonAsync(new { message = "User must belong to a household to create a meal plan" });
+            return badRequest;
         }
 
         // Get user identifier (display name or email or userId)
@@ -104,16 +138,15 @@ public class CreateMealPlan
             Name = request.Name.Trim(),
             StartDate = request.StartDate.Date,
             EndDate = request.EndDate.Date,
+            HouseholdId = membership.HouseholdId,
+            UserId = user.Id,
             CreatedBy = createdBy,
             CreatedUtc = DateTime.UtcNow,
-            Status = "Draft"
+            Status = "Active" //TODO: MealPlan status management (Draft, Active, Completed, Archived)
         };
 
         _context.MealPlans.Add(mealPlan);
         await _context.SaveChangesAsync();
-
-        _logger.LogInformation("Created meal plan {MealPlanId} '{Name}' for {StartDate} to {EndDate}",
-            mealPlan.Id, mealPlan.Name, mealPlan.StartDate, mealPlan.EndDate);
 
         var response = req.CreateResponse(HttpStatusCode.Created);
         await response.WriteAsJsonAsync(new
@@ -122,6 +155,8 @@ public class CreateMealPlan
             name = mealPlan.Name,
             startDate = mealPlan.StartDate.ToString("yyyy-MM-dd"),
             endDate = mealPlan.EndDate.ToString("yyyy-MM-dd"),
+            householdId = mealPlan.HouseholdId,
+            userId = mealPlan.UserId,
             createdBy = mealPlan.CreatedBy,
             status = mealPlan.Status,
             createdUtc = mealPlan.CreatedUtc

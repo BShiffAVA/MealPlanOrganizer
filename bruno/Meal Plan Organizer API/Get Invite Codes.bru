@@ -1,0 +1,40 @@
+meta {
+  name: Get Invite Codes
+  type: http
+  seq: 41
+}
+
+get {
+  url: {{baseUrl}}/api/households/{{householdId}}/invites?code={{functionKey}}
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  householdId: 00000000-0000-0000-0000-000000000000
+}
+
+docs {
+  # Get Invite Codes
+  
+  Retrieves all active invite codes for a household. Only admins can view invite codes.
+  
+  ## Authentication
+  Requires a valid JWT token in the Authorization header (Bearer token).
+  
+  ## Path Parameters
+  - `householdId` (guid): The unique identifier of the household
+  
+  ## Response Fields
+  Array of invite codes:
+  - `code` (string): 8-character invite code
+  - `householdId` (guid): The household ID
+  - `createdUtc` (datetime): When the code was created
+  - `expiresUtc` (datetime): When the code expires
+  - `isUsed` (bool): Whether the code has been used
+  
+  ## Error Responses
+  - `401 Unauthorized`: Invalid or missing authentication token
+  - `403 Forbidden`: User is not an admin of this household
+  - `404 Not Found`: Household not found
+}

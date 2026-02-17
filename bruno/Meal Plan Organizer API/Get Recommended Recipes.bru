@@ -1,0 +1,40 @@
+meta {
+  name: Get Recommended Recipes
+  type: http
+  seq: 70
+}
+
+get {
+  url: {{baseUrl}}/api/recipes/recommended?code={{functionKey}}
+  body: none
+  auth: none
+}
+
+docs {
+  # Get Recommended Recipes
+  
+  Retrieves recipe recommendations based on household members' ratings and preferences.
+  Recommendations are weighted by each member's weight setting.
+  
+  ## Authentication
+  Requires a valid JWT token in the Authorization header (Bearer token).
+  
+  ## Response Fields
+  Array of recommended recipes:
+  - `id` (guid): Recipe identifier
+  - `title` (string): Recipe name
+  - `description` (string): Recipe description
+  - `cuisineType` (string): Type of cuisine
+  - `averageRating` (decimal): Average rating across all users
+  - `householdScore` (decimal): Weighted score based on household members' ratings
+  - `imageUrl` (string): URL to recipe image
+  
+  ## Algorithm
+  Recipes are scored based on:
+  1. Individual member ratings (weighted by member weight)
+  2. Cuisine preferences inferred from past ratings
+  3. Recency of last time the recipe was used
+  
+  ## Error Responses
+  - `401 Unauthorized`: Invalid or missing authentication token
+}

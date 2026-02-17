@@ -1,0 +1,33 @@
+meta {
+  name: Get Current User
+  type: http
+  seq: 21
+}
+
+get {
+  url: {{baseUrl}}/api/users/me?code={{functionKey}}
+  body: none
+  auth: none
+}
+
+docs {
+  # Get Current User
+  
+  Retrieves the current authenticated user's profile information.
+  
+  ## Authentication
+  Requires a valid JWT token in the Authorization header (Bearer token).
+  
+  ## Response Fields
+  - `id` (guid): Internal user identifier
+  - `externalIdObjectId` (string): Entra External ID object ID
+  - `email` (string): User's email address
+  - `displayName` (string): User's display name
+  - `householdId` (guid, optional): ID of household the user belongs to
+  - `householdName` (string, optional): Name of the household
+  - `isAdmin` (bool): Whether the user is an admin of their household
+  
+  ## Error Responses
+  - `401 Unauthorized`: Invalid or missing authentication token
+  - `404 Not Found`: User not registered in the system
+}

@@ -1,0 +1,40 @@
+meta {
+  name: Get Pending Ratings
+  type: http
+  seq: 60
+}
+
+get {
+  url: {{baseUrl}}/api/ratings/pending?code={{functionKey}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+docs {
+  # Get Pending Ratings
+  
+  Retrieves all pending rating requests for the authenticated user.
+  Pending ratings are created when a meal plan with recipes is completed.
+  
+  ## Authentication
+  Requires a valid JWT token in the Authorization header (Bearer token).
+  
+  ## Response Fields
+  Array of pending ratings:
+  - `id` (guid): Pending rating identifier
+  - `recipeId` (guid): The recipe to rate
+  - `recipeName` (string): Recipe title
+  - `mealPlanId` (guid): The meal plan that triggered this rating request
+  - `mealPlanName` (string): Meal plan name
+  - `day` (date): Day the recipe was planned for
+  - `status` (string): "Pending", "Completed", or "Dismissed"
+  - `createdUtc` (datetime): When the rating request was created
+  
+  ## Error Responses
+  - `401 Unauthorized`: Invalid or missing authentication token
+  - `404 Not Found`: User not registered
+}

@@ -1,0 +1,35 @@
+meta {
+  name: Revoke Invite Code
+  type: http
+  seq: 43
+}
+
+delete {
+  url: {{baseUrl}}/api/households/invites/{{inviteCode}}?code={{functionKey}}
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  inviteCode: ABC12345
+}
+
+docs {
+  # Revoke Invite Code
+  
+  Revokes an invite code so it can no longer be used. Only household admins can revoke codes.
+  
+  ## Authentication
+  Requires a valid JWT token in the Authorization header (Bearer token).
+  
+  ## Path Parameters
+  - `code` (string): The 8-character invite code to revoke
+  
+  ## Response
+  Returns 204 No Content on success.
+  
+  ## Error Responses
+  - `401 Unauthorized`: Invalid or missing authentication token
+  - `403 Forbidden`: User is not an admin of the code's household
+  - `404 Not Found`: Invite code not found
+}

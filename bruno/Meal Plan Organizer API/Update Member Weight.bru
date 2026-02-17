@@ -1,0 +1,50 @@
+meta {
+  name: Update Member Weight
+  type: http
+  seq: 34
+}
+
+patch {
+  url: {{baseUrl}}/api/households/{{householdId}}/members/{{memberId}}/weight?code={{functionKey}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "weight": 3
+  }
+}
+
+vars:pre-request {
+  householdId: 00000000-0000-0000-0000-000000000000
+  memberId: 00000000-0000-0000-0000-000000000000
+}
+
+docs {
+  # Update Member Weight
+  
+  Updates the weight (1-5) for a household member's ratings and preferences.
+  Only admins can update member weights.
+  
+  ## Authentication
+  Requires a valid JWT token in the Authorization header (Bearer token).
+  
+  ## Path Parameters
+  - `householdId` (guid): The unique identifier of the household
+  - `memberId` (guid): The unique identifier of the member
+  
+  ## Request Body
+  - `weight` (required): Integer between 1 and 5 representing the member's rating weight
+  
+  ## Response Fields
+  - `message`: Confirmation message
+  - `memberId`: The member's ID
+  - `newWeight`: The updated weight value
+  
+  ## Error Responses
+  - `400 Bad Request`: Weight must be between 1 and 5
+  - `401 Unauthorized`: Invalid or missing authentication token
+  - `403 Forbidden`: User is not an admin of this household
+  - `404 Not Found`: Household or member not found
+}

@@ -1,0 +1,46 @@
+meta {
+  name: Create Meal Plan
+  type: http
+  seq: 50
+}
+
+post {
+  url: {{baseUrl}}/api/mealplans?code={{functionKey}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "Week of Feb 17",
+    "startDate": "2026-02-17",
+    "endDate": "2026-02-23"
+  }
+}
+
+docs {
+  # Create Meal Plan
+  
+  Creates a new meal plan for a date range.
+  
+  ## Authentication
+  Requires a valid JWT token in the Authorization header (Bearer token).
+  
+  ## Request Body
+  - `name` (required): Name of the meal plan (e.g., "Week of Feb 17")
+  - `startDate` (required): Start date of the meal plan (YYYY-MM-DD)
+  - `endDate` (required): End date of the meal plan (YYYY-MM-DD)
+  
+  ## Response Fields
+  - `id` (guid): Meal plan identifier
+  - `name` (string): Meal plan name
+  - `startDate` (date): Start date
+  - `endDate` (date): End date
+  - `createdBy` (string): Creator's display name
+  - `createdUtc` (datetime): Creation timestamp
+  - `recipes` (array): Empty array (no recipes assigned yet)
+  
+  ## Error Responses
+  - `400 Bad Request`: Missing required fields or invalid date range
+  - `401 Unauthorized`: Invalid or missing authentication token
+}

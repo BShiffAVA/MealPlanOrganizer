@@ -1,0 +1,31 @@
+meta {
+  name: Get Timezones
+  type: http
+  seq: 90
+}
+
+get {
+  url: {{baseUrl}}/api/timezones
+  body: none
+  auth: none
+}
+
+docs {
+  # Get Timezones
+  
+  Retrieves a list of supported IANA timezone identifiers.
+  This endpoint does not require authentication (anonymous access).
+  
+  ## Authentication
+  None required (anonymous endpoint).
+  
+  ## Response Fields
+  Array of timezone objects:
+  - `id` (string): IANA timezone identifier (e.g., "America/New_York")
+  - `displayName` (string): Human-readable timezone name
+  - `offset` (string): Current UTC offset (e.g., "-05:00")
+  
+  ## Usage
+  Use these timezone IDs when updating household settings to configure
+  the local time for notification scheduling.
+}

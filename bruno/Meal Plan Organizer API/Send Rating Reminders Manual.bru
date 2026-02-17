@@ -1,0 +1,32 @@
+meta {
+  name: Send Rating Reminders Manual
+  type: http
+  seq: 100
+}
+
+post {
+  url: {{baseUrl}}/api/SendRatingRemindersManual?code={{functionKey}}
+  body: none
+  auth: none
+}
+
+docs {
+  # Send Rating Reminders Manual
+  
+  Manually triggers the rating reminder process for testing purposes.
+  This endpoint performs the same operations as the automated timer trigger:
+  1. Auto-dismisses pending ratings older than 24 hours
+  2. Creates pending ratings for households where it's currently 8pm
+  3. Sends push notifications to household members
+  
+  ## Authentication
+  Requires a function key (admin/test endpoint only).
+  
+  ## Response
+  Returns 200 OK when the process completes successfully.
+  
+  ## Notes
+  - This is primarily for testing the rating reminder logic
+  - The function uses household timezones to determine 8pm local time
+  - Notifications are sent to all household members with recipes served today
+}

@@ -30,6 +30,14 @@ public partial class PushNotificationService
         {
             _logger.LogInformation("Initializing Windows push notifications (WNS)");
 
+            // Check if running as packaged app (WNS requires package identity)
+            if (!IsPackagedApp())
+            {
+                _logger.LogInformation("WNS push notifications unavailable - app is running unpackaged (development mode). " +
+                    "Push notifications will work when the app is deployed as a packaged MSIX.");
+                return;
+            }
+
             // Request a push notification channel from WNS
             _channel = await PushNotificationChannelManager.CreatePushNotificationChannelForApplicationAsync();
             
@@ -150,6 +158,24 @@ public partial class PushNotificationService
             {
                 _logger.LogWarning(ex, "Error closing WNS channel");
             }
+        }
+    }
+
+    /// <summary>
+    /// Checks if the app is running as a packaged app (MSIX) with a valid package identity.
+    /// WNS push notifications require a packaged app with Store identity.
+    /// </summary>
+    private static bool IsPackagedApp()
+    {
+        try
+        {
+            // This will throw if not running as a packaged app
+            var package = Windows.ApplicationModel.Package.Current;
+            return package != null && !string.IsNullOrEmpty(package.Id?.FamilyName);
+        }
+        catch
+        {
+            return false;
         }
     }
 }

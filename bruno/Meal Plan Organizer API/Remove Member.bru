@@ -1,0 +1,39 @@
+meta {
+  name: Remove Member
+  type: http
+  seq: 33
+}
+
+delete {
+  url: {{baseUrl}}/api/households/{{householdId}}/members/{{memberId}}?code={{functionKey}}
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  householdId: 00000000-0000-0000-0000-000000000000
+  memberId: 00000000-0000-0000-0000-000000000000
+}
+
+docs {
+  # Remove Member
+  
+  Removes a member from a household. Only admins can remove members.
+  
+  ## Authentication
+  Requires a valid JWT token in the Authorization header (Bearer token).
+  
+  ## Path Parameters
+  - `householdId` (guid): The unique identifier of the household
+  - `memberId` (guid): The unique identifier of the member to remove
+  
+  ## Behavior
+  - Admins cannot remove themselves
+  - Cannot remove the last admin of a household
+  
+  ## Error Responses
+  - `401 Unauthorized`: Invalid or missing authentication token
+  - `403 Forbidden`: User is not an admin of this household
+  - `404 Not Found`: Household or member not found
+  - `400 Bad Request`: Cannot remove self or last admin
+}

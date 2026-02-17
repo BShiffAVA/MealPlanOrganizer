@@ -1,0 +1,50 @@
+meta {
+  name: Update Pending Rating
+  type: http
+  seq: 61
+}
+
+patch {
+  url: {{baseUrl}}/api/ratings/pending/{{pendingRatingId}}?code={{functionKey}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "status": "Completed",
+    "rating": 4,
+    "comments": "Everyone loved this recipe!"
+  }
+}
+
+vars:pre-request {
+  pendingRatingId: 00000000-0000-0000-0000-000000000000
+}
+
+docs {
+  # Update Pending Rating
+  
+  Updates the status of a pending rating (Complete with a rating, or Dismiss).
+  
+  ## Authentication
+  Requires a valid JWT token in the Authorization header (Bearer token).
+  
+  ## Path Parameters
+  - `id` (guid): The unique identifier of the pending rating
+  
+  ## Request Body
+  - `status` (required): "Completed" or "Dismissed"
+  - `rating` (required if status is "Completed"): Integer between 1 and 5
+  - `comments` (optional): Written review or comments (max 500 characters)
+  
+  ## Response Fields
+  - `message`: Confirmation message
+  - `id` (guid): Pending rating ID
+  - `status` (string): Updated status
+  
+  ## Error Responses
+  - `400 Bad Request`: Invalid status or missing rating for completion
+  - `401 Unauthorized`: Invalid or missing authentication token
+  - `404 Not Found`: Pending rating not found or does not belong to user
+}

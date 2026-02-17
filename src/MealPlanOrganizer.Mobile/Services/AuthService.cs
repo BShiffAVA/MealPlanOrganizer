@@ -196,6 +196,9 @@ public class AuthService : IAuthService
                 .WithPrompt(Prompt.SelectAccount)
                 .ExecuteAsync();
 
+
+            _logger.LogInformation($"TOKEN: {result.AccessToken}");
+
             _cachedAccount = result.Account;
             _logger.LogInformation("Login successful for user: {Username}", result.Account.Username);
             
@@ -256,7 +259,6 @@ public class AuthService : IAuthService
     {
         // First try silent acquisition
         var result = await GetAccessTokenSilentlyAsync();
-        
         if (result != null)
         {
             return result.AccessToken;

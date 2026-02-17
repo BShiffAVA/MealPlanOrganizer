@@ -1,0 +1,38 @@
+meta {
+  name: Unregister Device
+  type: http
+  seq: 81
+}
+
+delete {
+  url: {{baseUrl}}/api/devices/{{platform}}?code={{functionKey}}
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  platform: windows
+}
+
+docs {
+  # Unregister Device
+  
+  Unregisters a device from push notifications.
+  
+  ## Authentication
+  Requires a valid JWT token in the Authorization header (Bearer token).
+  
+  ## Path Parameters
+  - `platform` (string): Device platform ("windows", "ios", "android")
+  
+  ## Response
+  Returns 204 No Content on success.
+  
+  ## Behavior
+  - Removes the device registration for the specified platform
+  - The device will no longer receive push notifications
+  
+  ## Error Responses
+  - `401 Unauthorized`: Invalid or missing authentication token
+  - `404 Not Found`: User not registered or no device registered for this platform
+}

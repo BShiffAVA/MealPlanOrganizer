@@ -1,0 +1,44 @@
+meta {
+  name: Register Device
+  type: http
+  seq: 80
+}
+
+post {
+  url: {{baseUrl}}/api/devices/register?code={{functionKey}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "platform": "windows",
+    "pushToken": "your-push-notification-token-here"
+  }
+}
+
+docs {
+  # Register Device
+  
+  Registers a device for push notifications.
+  
+  ## Authentication
+  Requires a valid JWT token in the Authorization header (Bearer token).
+  
+  ## Request Body
+  - `platform` (required): Device platform ("windows", "ios", "android")
+  - `pushToken` (required): The push notification token from the device
+  
+  ## Response Fields
+  - `message`: Confirmation message
+  - `deviceId` (guid): The registered device ID
+  
+  ## Behavior
+  - If a device with the same platform is already registered for this user, the token is updated
+  - Tokens are used to send push notifications for rating reminders and other alerts
+  
+  ## Error Responses
+  - `400 Bad Request`: Missing platform or pushToken
+  - `401 Unauthorized`: Invalid or missing authentication token
+  - `404 Not Found`: User not registered
+}

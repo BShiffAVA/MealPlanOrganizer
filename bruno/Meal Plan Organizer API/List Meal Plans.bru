@@ -1,0 +1,33 @@
+meta {
+  name: List Meal Plans
+  type: http
+  seq: 52
+}
+
+get {
+  url: {{baseUrl}}/api/mealplans?code={{functionKey}}
+  body: none
+  auth: none
+}
+
+docs {
+  # List Meal Plans
+  
+  Retrieves all meal plans for the user's household, ordered by start date (most recent first).
+  
+  ## Authentication
+  Requires a valid JWT token in the Authorization header (Bearer token).
+  
+  ## Response Fields
+  Array of meal plans:
+  - `id` (guid): Meal plan identifier
+  - `name` (string): Meal plan name
+  - `startDate` (date): Start date
+  - `endDate` (date): End date
+  - `createdBy` (string): Creator's display name
+  - `createdUtc` (datetime): Creation timestamp
+  - `recipeCount` (int): Number of recipes assigned to this plan
+  
+  ## Error Responses
+  - `401 Unauthorized`: Invalid or missing authentication token
+}

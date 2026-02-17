@@ -1,0 +1,43 @@
+meta {
+  name: Generate Invite Code
+  type: http
+  seq: 40
+}
+
+post {
+  url: {{baseUrl}}/api/households/{{householdId}}/invites?code={{functionKey}}
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  householdId: 00000000-0000-0000-0000-000000000000
+}
+
+docs {
+  # Generate Invite Code
+  
+  Generates a new invite code for a household. Only admins can generate invite codes.
+  
+  ## Authentication
+  Requires a valid JWT token in the Authorization header (Bearer token).
+  
+  ## Path Parameters
+  - `householdId` (guid): The unique identifier of the household
+  
+  ## Response Fields
+  - `code` (string): 8-character invite code
+  - `householdId` (guid): The household ID
+  - `createdUtc` (datetime): When the code was created
+  - `expiresUtc` (datetime): When the code expires
+  - `isUsed` (bool): Whether the code has been used
+  
+  ## Behavior
+  - Invite codes are valid for 7 days by default
+  - Each code can only be used once
+  
+  ## Error Responses
+  - `401 Unauthorized`: Invalid or missing authentication token
+  - `403 Forbidden`: User is not an admin of this household
+  - `404 Not Found`: Household not found
+}

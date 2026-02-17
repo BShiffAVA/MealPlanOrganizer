@@ -1,0 +1,37 @@
+meta {
+  name: Register User
+  type: http
+  seq: 20
+}
+
+post {
+  url: {{baseUrl}}/api/users/register?code={{functionKey}}
+  body: none
+  auth: none
+}
+
+docs {
+  # Register User
+  
+  Registers a user in the local database after successful Entra External ID authentication.
+  Creates a new user record if one doesn't exist, or returns the existing user.
+  
+  ## Authentication
+  Requires a valid JWT token in the Authorization header (Bearer token).
+  
+  ## Request Body
+  No request body needed - user information is extracted from the JWT token.
+  
+  ## Response Fields
+  - `id` (guid): Internal user identifier
+  - `externalIdObjectId` (string): Entra External ID object ID
+  - `email` (string): User's email address
+  - `displayName` (string): User's display name
+  - `householdId` (guid, optional): ID of household the user belongs to
+  - `householdName` (string, optional): Name of the household
+  - `isAdmin` (bool): Whether the user is an admin of their household
+  
+  ## Error Responses
+  - `400 Bad Request`: Missing required claims in token
+  - `401 Unauthorized`: Invalid or missing authentication token
+}

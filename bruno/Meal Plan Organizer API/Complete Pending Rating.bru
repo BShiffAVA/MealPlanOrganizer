@@ -1,0 +1,50 @@
+meta {
+  name: Complete Pending Rating
+  type: http
+  seq: 62
+}
+
+put {
+  url: {{baseUrl}}/api/pending-ratings/{{pendingRatingId}}/complete?code={{functionKey}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "rating": 4,
+    "comments": "Great recipe, will make again!"
+  }
+}
+
+vars:pre-request {
+  pendingRatingId: 00000000-0000-0000-0000-000000000000
+}
+
+docs {
+  # Complete Pending Rating
+  
+  Completes a pending rating by providing a rating and optional comments.
+  This creates an actual rating record and marks the pending rating as completed.
+  
+  ## Authentication
+  Requires a valid JWT token in the Authorization header (Bearer token).
+  
+  ## Path Parameters
+  - `id` (guid): The unique identifier of the pending rating
+  
+  ## Request Body
+  - `rating` (required): Integer between 1 and 5
+  - `comments` (optional): Written review or comments (max 500 characters)
+  
+  ## Response Fields
+  - `message`: Confirmation message
+  - `ratingId` (guid): The created rating ID
+  - `recipeId` (guid): The rated recipe ID
+  - `rating` (int): The submitted rating value
+  
+  ## Error Responses
+  - `400 Bad Request`: Rating not between 1-5 or comments exceed limit
+  - `401 Unauthorized`: Invalid or missing authentication token
+  - `404 Not Found`: Pending rating not found or does not belong to user
+}

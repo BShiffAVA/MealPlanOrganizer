@@ -1,0 +1,41 @@
+meta {
+  name: Create Household
+  type: http
+  seq: 30
+}
+
+post {
+  url: {{baseUrl}}/api/households?code={{functionKey}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "Smith Family"
+  }
+}
+
+docs {
+  # Create Household
+  
+  Creates a new household and assigns the calling user as the admin.
+  
+  ## Authentication
+  Requires a valid JWT token in the Authorization header (Bearer token).
+  
+  ## Request Body
+  - `name` (required): Name of the household (e.g., "Smith Family")
+  
+  ## Response Fields
+  - `id` (guid): Household identifier
+  - `name` (string): Household name
+  - `timeZoneId` (string): IANA timezone identifier
+  - `createdUtc` (datetime): Creation timestamp
+  - `members` (array): List of household members
+  
+  ## Error Responses
+  - `401 Unauthorized`: Invalid or missing authentication token
+  - `404 Not Found`: User not registered (call POST /users/register first)
+  - `409 Conflict`: User already belongs to a household
+}

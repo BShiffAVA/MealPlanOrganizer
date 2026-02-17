@@ -1,0 +1,35 @@
+meta {
+  name: Remove Recipe from Meal Plan
+  type: http
+  seq: 54
+}
+
+delete {
+  url: {{baseUrl}}/api/mealplans/{{mealPlanId}}/recipes/{{day}}
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  mealPlanId: 00000000-0000-0000-0000-000000000000
+  day: 2026-02-18
+}
+
+docs {
+  # Remove Recipe from Meal Plan
+  
+  Removes a recipe from a specific day in a meal plan.
+  
+  ## Authentication
+  This endpoint uses anonymous authorization level.
+  
+  ## Path Parameters
+  - `id` (guid): The unique identifier of the meal plan
+  - `day` (date): The day to remove the recipe from (YYYY-MM-DD format)
+  
+  ## Response
+  Returns 204 No Content on success.
+  
+  ## Error Responses
+  - `404 Not Found`: Meal plan not found or no recipe assigned to that day
+}

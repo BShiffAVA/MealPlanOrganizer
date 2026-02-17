@@ -1,0 +1,43 @@
+meta {
+  name: Get Meal Plan
+  type: http
+  seq: 51
+}
+
+get {
+  url: {{baseUrl}}/api/mealplans/{{mealPlanId}}?code={{functionKey}}
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  mealPlanId: 00000000-0000-0000-0000-000000000000
+}
+
+docs {
+  # Get Meal Plan
+  
+  Retrieves the details of a specific meal plan including assigned recipes.
+  
+  ## Authentication
+  Requires a valid JWT token in the Authorization header (Bearer token).
+  
+  ## Path Parameters
+  - `id` (guid): The unique identifier of the meal plan
+  
+  ## Response Fields
+  - `id` (guid): Meal plan identifier
+  - `name` (string): Meal plan name
+  - `startDate` (date): Start date
+  - `endDate` (date): End date
+  - `createdBy` (string): Creator's display name
+  - `createdUtc` (datetime): Creation timestamp
+  - `recipes` (array): List of assigned recipes with:
+    - `recipeId` (guid): Recipe identifier
+    - `day` (date): Day the recipe is assigned to
+    - `recipeName` (string): Recipe title
+  
+  ## Error Responses
+  - `401 Unauthorized`: Invalid or missing authentication token
+  - `404 Not Found`: Meal plan not found
+}

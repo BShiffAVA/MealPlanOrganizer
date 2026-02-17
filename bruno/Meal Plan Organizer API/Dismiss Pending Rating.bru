@@ -1,0 +1,36 @@
+meta {
+  name: Dismiss Pending Rating
+  type: http
+  seq: 63
+}
+
+put {
+  url: {{baseUrl}}/api/pending-ratings/{{pendingRatingId}}/dismiss?code={{functionKey}}
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  pendingRatingId: 00000000-0000-0000-0000-000000000000
+}
+
+docs {
+  # Dismiss Pending Rating
+  
+  Dismisses a pending rating without providing a rating.
+  The pending rating is marked as dismissed and will no longer appear in the pending list.
+  
+  ## Authentication
+  Requires a valid JWT token in the Authorization header (Bearer token).
+  
+  ## Path Parameters
+  - `id` (guid): The unique identifier of the pending rating
+  
+  ## Response Fields
+  - `message`: Confirmation message
+  - `id` (guid): The dismissed pending rating ID
+  
+  ## Error Responses
+  - `401 Unauthorized`: Invalid or missing authentication token
+  - `404 Not Found`: Pending rating not found or does not belong to user
+}
