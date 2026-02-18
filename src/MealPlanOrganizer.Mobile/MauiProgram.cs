@@ -25,11 +25,16 @@ public static class MauiProgram
 
 		// Load configuration from appsettings files
 		// For MAUI, config files must be loaded from the app package
-		var config = new ConfigurationBuilder()
+		var configBuilder = new ConfigurationBuilder()
 			.AddJsonStream(FileSystem.OpenAppPackageFileAsync("appsettings.json").Result)
-			.AddJsonStream(FileSystem.OpenAppPackageFileAsync("appsettings.local.json").Result)
-			.Build();
+			.AddJsonStream(FileSystem.OpenAppPackageFileAsync("appsettings.local.json").Result);
 		
+		// Load platform-specific configuration
+#if __ANDROID__
+		configBuilder.AddJsonStream(FileSystem.OpenAppPackageFileAsync("appsettings.local.android.json").Result);
+#endif
+		
+		var config = configBuilder.Build();
 		builder.Configuration.AddConfiguration(config);
 
 		// Register services

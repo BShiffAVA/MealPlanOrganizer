@@ -5,6 +5,7 @@ using Android.OS;
 using MealPlanOrganizer.Mobile.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Identity.Client;
+using Microsoft.Maui.Controls;
 using Serilog;
 
 namespace MealPlanOrganizer.Mobile;
@@ -98,7 +99,7 @@ public class MainActivity : MauiAppCompatActivity
                 // Wait a brief moment for the app to fully initialize
                 await Task.Delay(500);
 
-                var services = Application.Current?.Handler?.MauiContext?.Services;
+                var services = Microsoft.Maui.Controls.Application.Current?.Handler?.MauiContext?.Services;
                 var deepLinkService = services?.GetService<IDeepLinkService>();
 
                 if (deepLinkService != null)
@@ -135,7 +136,7 @@ public class MainActivity : MauiAppCompatActivity
             {
                 await Task.Delay(500);
 
-                var services = Application.Current?.Handler?.MauiContext?.Services;
+                var services = Microsoft.Maui.Controls.Application.Current?.Handler?.MauiContext?.Services;
                 var deepLinkService = services?.GetService<IDeepLinkService>();
 
                 if (deepLinkService != null)

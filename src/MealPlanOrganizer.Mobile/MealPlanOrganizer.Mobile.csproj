@@ -71,6 +71,7 @@
 	<ItemGroup>
 		<MauiAsset Include="appsettings.json" />
 		<MauiAsset Include="appsettings.local.json" />
+		<MauiAsset Include="appsettings.local.android.json" />
 	</ItemGroup>
 
 </Project>
