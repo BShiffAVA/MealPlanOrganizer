@@ -1,0 +1,19 @@
+meta {
+  name: Check Notification Hub Installations
+  type: http
+  seq: 37
+}
+
+get {
+  url: https://ntfns-mealplan-prod-s4h3ztcsggfbs.servicebus.windows.net/ntf-mealplan-prod/installations/userId:4b58cd8a-5760-4903-ae6f-dbab802f6b64?api-version=2015-01
+  body: none
+  auth: inherit
+}
+
+params:query {
+  api-version: 2015-01
+}
+
+settings {
+  encodeUrl: true
+}

@@ -82,11 +82,10 @@ public class UnregisterDevice
 
             foreach (var registration in registrations)
             {
-                // Unregister from Azure Notification Hubs
-                if (!string.IsNullOrEmpty(registration.NotificationHubRegistrationId))
-                {
-                    await _notificationService.UnregisterDeviceAsync(registration.NotificationHubRegistrationId);
-                }
+                // Unregister from Azure Notification Hubs using Installation API
+                // Use the device registration Id as the installation ID
+                var installationId = registration.NotificationHubRegistrationId ?? registration.Id.ToString();
+                await _notificationService.UnregisterDeviceAsync(installationId);
 
                 // Mark as inactive (soft delete)
                 registration.IsActive = false;

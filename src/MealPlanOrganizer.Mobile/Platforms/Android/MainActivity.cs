@@ -7,6 +7,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Identity.Client;
 using Microsoft.Maui.Controls;
 using Serilog;
+using Firebase;
+
 
 namespace MealPlanOrganizer.Mobile;
 
@@ -24,7 +26,25 @@ public class MainActivity : MauiAppCompatActivity
     protected override void OnCreate(Bundle? savedInstanceState)
     {
         base.OnCreate(savedInstanceState);
-        
+
+
+		Log.Information("MainActivity.OnCreate() called");
+		
+		try
+		{
+			Log.Information("Attempting to initialize Firebase with context: {ContextType}", this.GetType().Name);
+			FirebaseApp.InitializeApp(this);
+			Log.Information("Firebase initialized successfully in MainApplication.OnCreate()");
+		}
+		catch (Java.Lang.IllegalStateException ex) when (ex.Message?.Contains("already") != null || ex.Message?.Contains("already been initialized") != null)
+		{
+			Log.Information("Firebase already initialized: {Message}", ex.Message);
+		}
+		catch (Exception ex)
+		{
+			Log.Error(ex, "Failed to initialize Firebase in MainApplication.OnCreate()");
+		}
+
         // Handle deep link if app was launched from notification tap
         HandleIntent(Intent);
     }

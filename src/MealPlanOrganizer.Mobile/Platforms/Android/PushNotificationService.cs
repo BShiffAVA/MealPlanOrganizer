@@ -1,6 +1,8 @@
 using Android.App;
 using Android.Content;
 using Microsoft.Extensions.Logging;
+using Plugin.Firebase.CloudMessaging;
+using Firebase;
 
 namespace MealPlanOrganizer.Mobile.Services;
 
@@ -9,59 +11,110 @@ namespace MealPlanOrganizer.Mobile.Services;
 /// Uses Firebase Cloud Messaging (FCM) for push notification delivery.
 /// </summary>
 /// <remarks>
-/// Prerequisites for FCM (not yet configured):
+/// Prerequisites for FCM:
 /// 1. Add google-services.json to Platforms/Android/
 /// 2. Install Xamarin.Firebase.Messaging NuGet package
 /// 3. Configure Firebase project in Firebase Console
-/// 4. Add the FirebaseMessagingService to handle messages
-/// 
-/// For now, this implementation provides a stub that can be extended when Firebase is configured.
+/// 4. Add the FirebaseMessagingService to handle messages (MealPlanFirebaseMessagingService.cs)
 /// </remarks>
 public partial class PushNotificationService
 {
     /// <inheritdoc/>
-    public Task InitializeAsync()
+    public async Task InitializeAsync()
     {
         if (!IsSupported)
         {
             _logger.LogWarning("Push notifications not supported on this platform");
-            return Task.CompletedTask;
+            return;
         }
 
         if (!IsEnabled)
         {
             _logger.LogInformation("Push notifications disabled by user");
-            return Task.CompletedTask;
+            return;
         }
 
         try
         {
             _logger.LogInformation("Initializing Android push notifications (FCM)");
             
-            // TODO: When Firebase is configured, get the FCM token here:
-            // var token = await FirebaseMessaging.Instance.GetToken();
-            // SetPushToken(token.ToString());
-            
-            // For now, check if there's a previously stored token
-            var existingToken = CurrentPushToken;
-            if (!string.IsNullOrEmpty(existingToken))
+            // Get the current FCM token using Plugin.Firebase
+            // Note: Firebase must be initialized before this point (see MainApplication.OnCreate)
+            var token = await CrossFirebaseCloudMessaging.Current.GetTokenAsync();
+            if (!string.IsNullOrEmpty(token))
             {
-                _logger.LogInformation("Using existing FCM token from preferences");
+                _logger.LogInformation("FCM token obtained successfully: {Token}", token);
+                SetPushToken(token);
             }
             else
             {
-                _logger.LogWarning("FCM not configured - add Firebase packages and google-services.json");
-                _logger.LogInformation("See Platforms/Android/PushNotificationService.cs for setup instructions");
+                _logger.LogWarning("Failed to obtain FCM token - token is empty");
             }
             
             _logger.LogInformation("Android push notification initialization complete");
+        }
+        catch (Java.Lang.IllegalStateException ex) when (ex.Message?.Contains("Default FirebaseApp") == true)
+        {
+            _logger.LogError(ex, "Firebase not initialized. Attempting delayed initialization...");
+            // Try to initialize Firebase here as a fallback
+            try
+            {
+                // Try to get a proper Android context - use the platform's context
+                var context = Android.App.Application.Context ?? 
+                             (Android.Content.Context)Microsoft.Maui.Controls.Application.Current?.Handler?.MauiContext?.Context;
+                
+                if (context == null)
+                {
+                    _logger.LogError("Cannot obtain Android context - Firebase initialization failed");
+                    return;
+                }
+                
+                _logger.LogInformation("Initializing Firebase with context type: {ContextType}", context.GetType().Name);
+                
+                try
+                {
+                    // Clear any existing incomplete initialization
+                    FirebaseApp.InitializeApp(context);
+                }
+                catch
+                {
+                    // If initialization throws, it might already be initialized
+                    _logger.LogInformation("Firebase.InitializeApp threw an exception, checking if already initialized...");
+                }
+                
+                // Give Firebase initialization time to complete
+                await Task.Delay(1000);
+                
+                _logger.LogInformation("Firebase initialization attempt complete");
+                
+                // Retry getting token after initialization
+                try
+                {
+                    var token = await CrossFirebaseCloudMessaging.Current.GetTokenAsync();
+                    if (!string.IsNullOrEmpty(token))
+                    {
+                        _logger.LogInformation("FCM token obtained after fallback initialization");
+                        SetPushToken(token);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Failed to obtain FCM token after fallback initialization");
+                    }
+                }
+                catch (Java.Lang.IllegalStateException tokenEx)
+                {
+                    _logger.LogError(tokenEx, "Still cannot get token - Firebase may not be properly initialized");
+                }
+            }
+            catch (Exception initEx)
+            {
+                _logger.LogError(initEx, "Failed to initialize Firebase via fallback method");
+            }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to initialize Android push notifications");
         }
-        
-        return Task.CompletedTask;
     }
 
     /// <summary>

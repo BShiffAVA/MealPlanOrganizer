@@ -22,20 +22,19 @@
 		<ApplicationTitle>MealPlanOrganizer.Mobile</ApplicationTitle>
 
 		<!-- App Identifier -->
-		<ApplicationId>com.companyname.mealplanorganizer.mobile</ApplicationId>
-
-		<!-- Versions -->
-		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
-		<ApplicationVersion>1</ApplicationVersion>
+		<ApplicationId>com.shiffmania.mealplanorganizer.mobile</ApplicationId>
 
 		<!-- To develop, package, and publish an app to the Microsoft Store, see: https://aka.ms/MauiTemplateUnpackaged -->
 		<WindowsPackageType>None</WindowsPackageType>
 
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">15.0</SupportedOSPlatformVersion>
-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
+		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">23.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
 		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
+		<!-- Disable R8 obfuscation to work around Compose dependency conflicts -->
+		<PublishTrimmed Condition="$(TargetFramework.Contains('-android'))">false</PublishTrimmed>
+		<EnableProguard Condition="$(TargetFramework.Contains('-android'))">false</EnableProguard>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -72,6 +71,17 @@
 		<MauiAsset Include="appsettings.json" />
 		<MauiAsset Include="appsettings.local.json" />
 		<MauiAsset Include="appsettings.local.android.json" />
+	</ItemGroup>
+
+	<ItemGroup Condition="$(TargetFramework.Contains('-android'))">
+    	<GoogleServicesJson Include="Platforms\Android\google-services.json" />
+	</ItemGroup>
+
+	<ItemGroup Condition="$(TargetFramework.Contains('-android'))">
+    	<!-- Using Plugin.Firebase instead of Xamarin bindings to avoid dependency conflicts -->
+    	<PackageReference Include="Plugin.Firebase" Version="3.1.1" />
+    	<PackageReference Include="Plugin.Firebase.Crashlytics" Version="3.1.0" />
+    	<PackageReference Include="Plugin.Firebase.CloudMessaging" Version="3.1.1" />
 	</ItemGroup>
 
 </Project>

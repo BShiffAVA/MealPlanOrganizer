@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "386264900590",
+    "project_id": "meal-plan-organizer",
+    "storage_bucket": "meal-plan-organizer.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:386264900590:android:023c1f4b382be8b006e4ff",
+        "android_client_info": {
+          "package_name": "com.shiffmania.mealplanorganizer.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDfHpRHYTycMgyzO3nTXjROCf2dPTS7SYM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

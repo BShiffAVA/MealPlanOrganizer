@@ -5,6 +5,7 @@ using MealPlanOrganizer.Functions.Data.Entities;
 using MealPlanOrganizer.Functions.Services;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.Azure.NotificationHubs;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -82,7 +83,7 @@ public class RegisterDevice
                 return badRequest;
             }
 
-            // Validate platform
+           // Validate platform
             var validPlatforms = new[] { "ios", "android", "windows" };
             if (!validPlatforms.Contains(request.Platform.ToLowerInvariant()))
             {
@@ -91,34 +92,35 @@ public class RegisterDevice
                 return badRequest;
             }
 
-            // Register with Azure Notification Hubs
-            var hubRegistrationId = await _notificationService.RegisterDeviceAsync(
-                user.Id, request.Platform.ToLowerInvariant(), request.PushToken);
 
-            // Check if this device is already registered
+            // Check if this device is already registered (by user + platform + token)
             var existingRegistration = await _context.DeviceRegistrations
                 .FirstOrDefaultAsync(d => 
                     d.UserId == user.Id && 
                     d.Platform == request.Platform.ToLowerInvariant() && 
                     d.PushToken == request.PushToken);
 
+            string installationId;
             if (existingRegistration != null)
             {
-                // Update existing registration
-                existingRegistration.NotificationHubRegistrationId = hubRegistrationId;
+                // Use existing registration ID as installation ID
+                installationId = existingRegistration.Id.ToString();
                 existingRegistration.UpdatedUtc = DateTime.UtcNow;
                 existingRegistration.IsActive = true;
             }
             else
             {
-                // Create new registration
+                // Create new registration with a new ID that will be used as installation ID
+                var newId = Guid.NewGuid();
+                installationId = newId.ToString();
+                
                 var deviceRegistration = new DeviceRegistration
                 {
-                    Id = Guid.NewGuid(),
+                    Id = newId,
                     UserId = user.Id,
                     Platform = request.Platform.ToLowerInvariant(),
                     PushToken = request.PushToken,
-                    NotificationHubRegistrationId = hubRegistrationId,
+                    NotificationHubRegistrationId = installationId, // Store installationId
                     CreatedUtc = DateTime.UtcNow,
                     IsActive = true
                 };
@@ -126,17 +128,27 @@ public class RegisterDevice
                 _context.DeviceRegistrations.Add(deviceRegistration);
             }
 
+            // Register with Azure Notification Hubs using Installation API
+            var hubInstallationId = await _notificationService.RegisterDeviceAsync(
+                installationId, user.Id, request.Platform.ToLowerInvariant(), request.PushToken);
+
+            // Update the NotificationHubRegistrationId if needed
+            if (existingRegistration != null)
+            {
+                existingRegistration.NotificationHubRegistrationId = hubInstallationId;
+            }
+
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Device registered successfully for user {UserId}, platform {Platform}", 
-                user.Id, request.Platform);
+            _logger.LogInformation("Device registered successfully for user {UserId}, platform {Platform}, installationId {InstallationId}", 
+                user.Id, request.Platform, installationId);
 
             var response = req.CreateResponse(HttpStatusCode.OK);
             await response.WriteAsJsonAsync(new
             {
                 message = "Device registered successfully",
                 platform = request.Platform.ToLowerInvariant(),
-                registrationId = hubRegistrationId
+                registrationId = installationId
             });
             return response;
         }
