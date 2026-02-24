@@ -13,6 +13,12 @@ public interface IDeepLinkService
     DeepLinkAction? PendingAction { get; set; }
 
     /// <summary>
+    /// Gets whether a deep link is currently being processed.
+    /// Used to suppress other actions (like pending ratings check) during deep link navigation.
+    /// </summary>
+    bool IsProcessingDeepLink { get; }
+
+    /// <summary>
     /// Processes a deep link action and navigates to the appropriate page.
     /// Should be called after the user is authenticated.
     /// </summary>

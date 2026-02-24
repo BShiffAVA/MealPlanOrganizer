@@ -67,8 +67,34 @@ public partial class AppShell : Shell
 		Navigating += OnNavigating;
 		Navigated += OnNavigated;
 
+		// Subscribe to window lifecycle events for pending ratings check on resume
+		var window = Application.Current?.Windows.FirstOrDefault();
+		if (window != null)
+		{
+			window.Resumed += OnShellResumed;
+			window.Stopped += OnShellStopped;
+		}
+
 		// Process any pending deep link actions after Shell is fully loaded
 		Loaded += OnShellLoaded;
+	}
+
+	/// <summary>
+	/// Handles window stopped event (app going to background).
+	/// </summary>
+	private void OnShellStopped(object? sender, EventArgs e)
+	{
+		Log.Information("Shell going to background");
+		
+		try
+		{
+			// Reset the startup check flag for next resume
+			_appStartupService.HasPerformedStartupCheck = false;
+		}
+		catch (Exception ex)
+		{
+			Log.Error(ex, "Error handling shell stop");
+		}
 	}
 
 	/// <summary>
@@ -83,8 +109,11 @@ public partial class AppShell : Shell
 			await Task.Delay(100);
 			
 			// Process any pending deep link action from cold start or pre-auth notification
-			// If there was a pending action, don't prompt for ratings (user came from notification)
-			var hadPendingAction = _deepLinkService.PendingAction != null;
+			// Check both instance-level pending action and static flag (set by Android intent handler)
+			var hadPendingAction = _deepLinkService.PendingAction != null 
+				|| DeepLinkService.HasPendingDeepLinkNotification 
+				|| _deepLinkService.IsProcessingDeepLink;
+				
 			await _deepLinkService.ProcessPendingActionAsync();
 			
 			// Check for pending ratings on app startup (Step 8 of rate recipes feature)
@@ -97,6 +126,41 @@ public partial class AppShell : Shell
 		catch (Exception ex)
 		{
 			Log.Error(ex, "Error in shell loaded handler");
+		}
+	}
+
+	/// <summary>
+	/// Handles Shell resumed event to check for pending ratings when app comes back from background.
+	/// Coordinates with deep links to avoid showing ratings popup when user arrives via deep link.
+	/// </summary>
+	private async void OnShellResumed(object? sender, EventArgs e)
+	{
+		Log.Information("Shell resumed from background");
+
+		try
+		{
+			// Wait for Android intent handling to complete - OnNewIntent runs after Window.Resumed
+			// so we need to give it time to set the deep link flags
+			await Task.Delay(700);
+			
+			// Check if there's a pending deep link action from a notification click
+			// Check both instance-level pending action and static flag (set by Android intent handler)
+			var hadPendingAction = _deepLinkService.PendingAction != null 
+				|| DeepLinkService.HasPendingDeepLinkNotification 
+				|| _deepLinkService.IsProcessingDeepLink;
+			
+			// Process any pending deep link
+			await _deepLinkService.ProcessPendingActionAsync();
+			
+			// Only check for pending ratings if the user wasn't navigated by a deep link
+			if (!hadPendingAction)
+			{
+				await _appStartupService.CheckPendingRatingsAsync();
+			}
+		}
+		catch (Exception ex)
+		{
+			Log.Error(ex, "Error in shell resumed handler");
 		}
 	}
 

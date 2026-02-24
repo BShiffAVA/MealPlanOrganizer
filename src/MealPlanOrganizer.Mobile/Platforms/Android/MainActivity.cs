@@ -111,6 +111,9 @@ public class MainActivity : MauiAppCompatActivity
 
     private void ProcessDeepLinkData(Dictionary<string, string> data)
     {
+        // Set static flag immediately to prevent race conditions with pending ratings check
+        DeepLinkService.HasPendingDeepLinkNotification = true;
+
         // Get the deep link service and process the notification data
         MainThread.BeginInvokeOnMainThread(async () =>
         {
@@ -150,6 +153,9 @@ public class MainActivity : MauiAppCompatActivity
 
     private void ProcessDeepLinkUri(string uri)
     {
+        // Set static flag immediately to prevent race conditions with pending ratings check
+        DeepLinkService.HasPendingDeepLinkNotification = true;
+
         MainThread.BeginInvokeOnMainThread(async () =>
         {
             try

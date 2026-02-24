@@ -1,8 +1,7 @@
-using Android.App;
-using Android.Content;
 using Microsoft.Extensions.Logging;
 using Plugin.Firebase.CloudMessaging;
 using Firebase;
+using MealPlanOrganizer.Mobile.Platforms.Android;
 
 namespace MealPlanOrganizer.Mobile.Services;
 
@@ -27,6 +26,8 @@ public partial class PushNotificationService
             _logger.LogWarning("Push notifications not supported on this platform");
             return;
         }
+
+        EnablePushNotifications();
 
         if (!IsEnabled)
         {
@@ -115,6 +116,21 @@ public partial class PushNotificationService
         {
             _logger.LogError(ex, "Failed to initialize Android push notifications");
         }
+    }
+
+    private async Task EnablePushNotifications()
+    {
+
+        var granted = await NotificationPermission.EnsureAsync();
+        if (!granted)
+        {
+            await Shell.Current.DisplayAlert(
+                "Notifications disabled",
+                "You can enable notifications anytime in Settings > Apps > Meal Plan Organizer > Notifications.",
+                "OK");
+            return;
+        }
+
     }
 
     /// <summary>

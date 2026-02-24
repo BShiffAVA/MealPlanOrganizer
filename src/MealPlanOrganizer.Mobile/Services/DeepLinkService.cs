@@ -18,8 +18,17 @@ public class DeepLinkService : IDeepLinkService
     /// </summary>
     public const string UriScheme = "mealplanorganizer";
 
+    /// <summary>
+    /// Static flag set immediately when a deep link notification is received.
+    /// This allows checking for deep link processing before the service instance is available.
+    /// </summary>
+    public static bool HasPendingDeepLinkNotification { get; set; }
+
     /// <inheritdoc/>
     public DeepLinkAction? PendingAction { get; set; }
+
+    /// <inheritdoc/>
+    public bool IsProcessingDeepLink { get; private set; }
 
     public DeepLinkService(ILogger<DeepLinkService> logger, INavigationService navigationService)
     {
@@ -32,6 +41,7 @@ public class DeepLinkService : IDeepLinkService
     {
         try
         {
+            IsProcessingDeepLink = true;
             _logger.LogInformation("Processing deep link action: {ActionType}", action.Type);
 
             switch (action.Type)
@@ -67,6 +77,16 @@ public class DeepLinkService : IDeepLinkService
         {
             _logger.LogError(ex, "Error processing deep link action: {ActionType}", action.Type);
             return false;
+        }
+        finally
+        {
+            // Clear flags after processing completes (with a small delay to allow navigation to settle)
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(1000);
+                IsProcessingDeepLink = false;
+                HasPendingDeepLinkNotification = false;
+            });
         }
     }
 

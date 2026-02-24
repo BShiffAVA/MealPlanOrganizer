@@ -92,7 +92,9 @@ public partial class App : Application
 			if (appStartupService != null)
 			{
 				await appStartupService.OnAppResumedAsync();
-				await appStartupService.CheckPendingRatingsAsync();
+				// Note: Do NOT call CheckPendingRatingsAsync() here.
+				// AppShell.OnShellLoaded handles this coordination with deep links to avoid
+				// displaying the ratings popup when resuming from a deep link notification.
 			}
 		}
 		catch (Exception ex)
