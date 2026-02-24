@@ -316,6 +316,14 @@ public static class TestUsers
         Email = "admin@test.com",
         Roles = new[] { "Admin" }
     };
+    
+    public static readonly TestUser NonHouseholdUser = new()
+    {
+        UserId = Guid.NewGuid().ToString(),
+        HouseholdId = Guid.NewGuid().ToString(),
+        DisplayName = "No Household User",
+        Email = "nohousehold@test.com"
+    };
 }
 
 /// <summary>

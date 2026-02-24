@@ -113,7 +113,7 @@ public class NotificationServiceTests
         var service = new NotificationService(configuration, _loggerMock.Object);
 
         // Act
-        var result = await service.RegisterDeviceAsync(Guid.NewGuid(), "ios", "test-token");
+        var result = await service.RegisterDeviceAsync("installationId",Guid.NewGuid(), "ios", "test-token");
 
         // Assert
         result.Should().BeNull();
@@ -138,7 +138,7 @@ public class NotificationServiceTests
         var service = new NotificationService(configuration, _loggerMock.Object);
 
         // Act
-        var result = await service.RegisterDeviceAsync(Guid.NewGuid(), platform, "test-token");
+        var result = await service.RegisterDeviceAsync("installationIdNOTFOUND", Guid.NewGuid(), platform, "test-token");
 
         // Assert
         result.Should().BeNull();

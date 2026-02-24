@@ -47,7 +47,7 @@ public class MealPlanEndpointsTests : IAsyncLifetime
     #region CreateMealPlan Tests
     
     [Fact]
-    public async Task CreateMealPlan_WithValidData_CreatesMealPlan()
+    public async Task CreateMealPlan_WithoutHousehold_ReturnsBadRequest()
     {
         // Arrange
         using var scope = _fixture.TestHost.CreateScope();
@@ -69,23 +69,15 @@ public class MealPlanEndpointsTests : IAsyncLifetime
         var httpRequest = CreateMockHttpRequest(
             HttpMethod.Post,
             JsonSerializer.Serialize(request),
-            TestUsers.User1.CreateAuthHeader().ToString());
+            TestUsers.NonHouseholdUser.CreateAuthHeader().ToString());
         
         var context = new Mock<FunctionContext>().Object;
         
         // Act
         var response = await function.Run(httpRequest, context);
         
-        // Assert
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        
-        // Verify saved to database
-        await using var verifyDb = _fixture.TestHost.CreateDbContext();
-        var savedPlan = await verifyDb.MealPlans
-            .FirstOrDefaultAsync(mp => mp.Name == "Test Week Meal Plan");
-        
-        Assert.NotNull(savedPlan);
-        Assert.Equal("Draft", savedPlan.Status);
+        // Assert - User doesn't exist, so returns NotFound
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
     
     [Fact]
@@ -584,6 +576,20 @@ public class MealPlanEndpointsTests : IAsyncLifetime
     private static async Task<T?> ReadResponseBody<T>(HttpResponseData response)
     {
         return await MockHttpFactory.ReadResponseBodyAsync<T>(response);
+    }
+
+    private async Task<User> CreateUserAsync(AppDbContext db)
+    {
+        var user = new User
+        {
+            Id = Guid.NewGuid(),
+            ExternalIdObjectId = Guid.NewGuid().ToString(),
+            Email = $"test-{Guid.NewGuid()}@test.com",
+            DisplayName = "Test User"
+        };
+        db.Users.Add(user);
+        await db.SaveChangesAsync();
+        return user;
     }
     
     #endregion

@@ -57,7 +57,7 @@ public class DeviceRegistrationEndpointsTests : IAsyncLifetime
         var logger = loggerFactory.CreateLogger<RegisterDevice>();
 
         _notificationServiceMock
-            .Setup(x => x.RegisterDeviceAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>()))
+            .Setup(x => x.RegisterDeviceAsync("installationId", It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync("test-registration-id");
 
         var function = new RegisterDevice(logger, db, authHelper, _notificationServiceMock.Object);
@@ -100,7 +100,7 @@ public class DeviceRegistrationEndpointsTests : IAsyncLifetime
         var logger = loggerFactory.CreateLogger<RegisterDevice>();
 
         _notificationServiceMock
-            .Setup(x => x.RegisterDeviceAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>()))
+            .Setup(x => x.RegisterDeviceAsync("installationId", It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync("test-registration-id");
 
         var function = new RegisterDevice(logger, db, authHelper, _notificationServiceMock.Object);
@@ -240,12 +240,6 @@ public class DeviceRegistrationEndpointsTests : IAsyncLifetime
         var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
         var logger = loggerFactory.CreateLogger<RegisterDevice>();
 
-        _notificationServiceMock
-            .Setup(x => x.RegisterDeviceAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>()))
-            .ReturnsAsync("updated-registration-id");
-
-        var function = new RegisterDevice(logger, db, authHelper, _notificationServiceMock.Object);
-
         var user = await CreateUserAsync(db);
 
         // Create existing registration
@@ -262,7 +256,15 @@ public class DeviceRegistrationEndpointsTests : IAsyncLifetime
         db.DeviceRegistrations.Add(existingDevice);
         await db.SaveChangesAsync();
 
-        // Register same device with new token
+        // Mock should accept the existing device ID as installation ID
+        var existingDeviceIdStr = existingDevice.Id.ToString();
+        _notificationServiceMock
+            .Setup(x => x.RegisterDeviceAsync(existingDeviceIdStr, user.Id, "ios", "old-token"))
+            .ReturnsAsync("updated-registration-id");
+
+        var function = new RegisterDevice(logger, db, authHelper, _notificationServiceMock.Object);
+
+        // Register same device (should update existing registration)
         var request = new { platform = "ios", pushToken = "old-token" }; // Same token
         var token = TestAuthHandler.CreateToken(user.ExternalIdObjectId);
         var httpRequest = CreateMockHttpRequest(
@@ -292,13 +294,14 @@ public class DeviceRegistrationEndpointsTests : IAsyncLifetime
         var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
         var logger = loggerFactory.CreateLogger<RegisterDevice>();
 
+        var user = await CreateUserAsync(db);
+
+        // Mock will be called with a dynamically generated installation ID, so we use It.IsAny
         _notificationServiceMock
-            .Setup(x => x.RegisterDeviceAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>()))
+            .Setup(x => x.RegisterDeviceAsync(It.IsAny<string>(), user.Id, "android", "fcm-token-12345"))
             .ReturnsAsync("test-registration-id");
 
         var function = new RegisterDevice(logger, db, authHelper, _notificationServiceMock.Object);
-
-        var user = await CreateUserAsync(db);
 
         var request = new { platform = "android", pushToken = "fcm-token-12345" };
         var token = TestAuthHandler.CreateToken(user.ExternalIdObjectId);
@@ -312,7 +315,7 @@ public class DeviceRegistrationEndpointsTests : IAsyncLifetime
 
         // Assert
         _notificationServiceMock.Verify(
-            x => x.RegisterDeviceAsync(user.Id, "android", "fcm-token-12345"),
+            x => x.RegisterDeviceAsync(It.IsAny<string>(), user.Id, "android", "fcm-token-12345"),
             Times.Once);
     }
 
