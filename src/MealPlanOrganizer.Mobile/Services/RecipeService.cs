@@ -336,7 +336,7 @@ public class RecipeService : IRecipeService
         }
     }
 
-    public async Task<RateRecipeResult> RateRecipeAsync(Guid recipeId, int rating, string? comments, string? frequencyPreference)
+    public async Task<RateRecipeResult> RateRecipeAsync(Guid recipeId, int rating, string? comments, string? nextTimePreference)
     {
         try
         {
@@ -350,7 +350,7 @@ public class RecipeService : IRecipeService
             {
                 Rating = rating,
                 Comments = comments,
-                FrequencyPreference = frequencyPreference
+                NextTimePreference = nextTimePreference
             };
 
             var json = JsonSerializer.Serialize(request);

@@ -151,7 +151,7 @@
                                 <Label Text="{Binding UserRatingStars}" FontSize="16" TextColor="White"/>
                                 <Label Text="{Binding UserRatingDate}" FontSize="12" TextColor="{StaticResource Gray400}" VerticalOptions="Center"/>
                             </HorizontalStackLayout>
-                            <Label Text="{Binding UserRatingFrequency}" FontSize="12" TextColor="{StaticResource Gray400}" IsVisible="{Binding HasUserRatingFrequency}"/>
+                            <Label Text="{Binding UserNextTimePreference}" FontSize="12" TextColor="{StaticResource Gray400}" IsVisible="{Binding HasUserNextTimePreference}"/>
                             <Label Text="{Binding UserRatingComments}" FontSize="13" TextColor="White" LineBreakMode="WordWrap" IsVisible="{Binding HasUserRatingComments}"/>
                         </VerticalStackLayout>
                     </Frame>
@@ -194,14 +194,14 @@
                             
                             <!-- Frequency Preference Picker -->
                             <VerticalStackLayout Spacing="4">
-                                <Label Text="How often would you like this recipe?" 
-                                       FontSize="14" 
-                                       TextColor="{StaticResource Gray400}"/>
-                                <Picker Title="Select frequency (optional)"
-                                        ItemsSource="{Binding FrequencyOptions}"
-                                        SelectedItem="{Binding SelectedFrequency}"
-                                        TextColor="White"
-                                        TitleColor="{StaticResource Gray400}"/>
+                                <Label Text="When would you next like to eat this meal?" 
+                                    FontSize="14" 
+                                    TextColor="{StaticResource Gray400}"/>
+                                <Picker Title="Select next time (optional)"
+                                     ItemsSource="{Binding NextTimePreferenceOptions}"
+                                     SelectedItem="{Binding SelectedNextTimePreference}"
+                                     TextColor="White"
+                                     TitleColor="{StaticResource Gray400}"/>
                             </VerticalStackLayout>
                             
                             <!-- Comments Entry -->

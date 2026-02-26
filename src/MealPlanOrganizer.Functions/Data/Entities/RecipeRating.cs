@@ -7,7 +7,10 @@ public class RecipeRating
     public string UserId { get; set; } = string.Empty;
     public int Rating { get; set; } // 1-5 stars
     public string? Comments { get; set; }
-    public string? FrequencyPreference { get; set; } // OnceAWeek, OnceAMonth, AFewTimesAYear, Yearly, Never
+    /// <summary>
+    /// When would you next like to eat this meal? Options: RightAway, In2Weeks, NextMonth, NextYear, Never
+    /// </summary>
+    public string? NextTimePreference { get; set; }
     public DateTime RatedUtc { get; set; }
 
     // Navigation property

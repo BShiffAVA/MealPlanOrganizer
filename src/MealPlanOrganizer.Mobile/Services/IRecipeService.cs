@@ -134,18 +134,18 @@ public class RecipeRatingDto
     public string UserId { get; set; } = string.Empty;
     public int Rating { get; set; }
     public string? Comments { get; set; }
-    public string? FrequencyPreference { get; set; }
+    public string? NextTimePreference { get; set; }
     public DateTime RatedUtc { get; set; }
     
     /// <summary>
     /// Returns a display-friendly version of the frequency preference.
     /// </summary>
-    public string FrequencyDisplay => FrequencyPreference switch
+    public string NextTimePreferenceDisplay => NextTimePreference switch
     {
-        "OnceAWeek" => "Once a week",
-        "OnceAMonth" => "Once a month",
-        "AFewTimesAYear" => "A few times a year",
-        "Yearly" => "Yearly",
+        "RightAway" => "Right away",
+        "In2Weeks" => "In 2 weeks",
+        "NextMonth" => "Next month",
+        "NextYear" => "Next year",
         "Never" => "Never",
         _ => ""
     };
@@ -158,7 +158,7 @@ public class RateRecipeRequestDto
 {
     public int Rating { get; set; }
     public string? Comments { get; set; }
-    public string? FrequencyPreference { get; set; }
+    public string? NextTimePreference { get; set; }
 }
 
 /// <summary>
@@ -193,7 +193,7 @@ public class UserPersonalRatingDto
     public Guid RatingId { get; set; }
     public int Rating { get; set; }
     public string? Comments { get; set; }
-    public string? FrequencyPreference { get; set; }
+    public string? NextTimePreference { get; set; }
     public DateTime RatedUtc { get; set; }
 }
 
@@ -235,7 +235,7 @@ public class RecommendedRecipeDto
     public double AverageRating { get; set; }
     public int RatingCount { get; set; }
     public string? LastCookedDate { get; set; }
-    public string? FrequencyPreference { get; set; }
+    public string? NextTimePreference { get; set; }
     public List<string> ReasonCodes { get; set; } = new();
 }
 

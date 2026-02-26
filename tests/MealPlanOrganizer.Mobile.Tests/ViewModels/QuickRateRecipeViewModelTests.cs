@@ -209,7 +209,7 @@ public class QuickRateRecipeViewModelTests
         await SetupWithPendingRating();
         _viewModel.SelectRating(4);
         _viewModel.Comments = "Great recipe!";
-        _viewModel.SelectedFrequency = "Once a week";
+        _viewModel.SelectedNextTimePreference = "Right away";
 
         // Act
         await _viewModel.SubmitRatingAsync();
@@ -219,7 +219,7 @@ public class QuickRateRecipeViewModelTests
         var call = _mockRecipeService.RateRecipeCalls[0];
         call.Rating.Should().Be(4);
         call.Comments.Should().Be("Great recipe!");
-        call.FrequencyPreference.Should().Be("OnceAWeek");
+        call.NextTimePreference.Should().Be("RightAway");
     }
 
     [Fact]
@@ -311,18 +311,18 @@ public class QuickRateRecipeViewModelTests
     [InlineData("A few times a year", "AFewTimesAYear")]
     [InlineData("Yearly", "Yearly")]
     [InlineData("Never", "Never")]
-    public async Task SubmitRating_ConvertsFrequencyCorrectly(string displayFrequency, string expectedApiFrequency)
+    public async Task SubmitRating_ConvertsNextTimeCorrectly(string displayNextTime, string expectedApiNextTime)
     {
         // Arrange
         await SetupWithPendingRating();
         _viewModel.SelectRating(3);
-        _viewModel.SelectedFrequency = displayFrequency;
+        _viewModel.SelectedNextTimePreference = displayNextTime;
 
         // Act
         await _viewModel.SubmitRatingAsync();
 
         // Assert
-        _mockRecipeService.RateRecipeCalls[0].FrequencyPreference.Should().Be(expectedApiFrequency);
+        _mockRecipeService.RateRecipeCalls[0].NextTimePreference.Should().Be(expectedApiNextTime);
     }
 
     #endregion
@@ -377,7 +377,7 @@ public class QuickRateRecipeViewModelTests
         await SetupWithPendingRatings(2);
         _viewModel.SelectRating(4);
         _viewModel.Comments = "Some comment";
-        _viewModel.SelectedFrequency = "Once a week";
+        _viewModel.SelectedNextTimePreference = "Right away";
 
         // Act
         await _viewModel.SkipAsync();
@@ -385,7 +385,7 @@ public class QuickRateRecipeViewModelTests
         // Assert
         _viewModel.SelectedRating.Should().Be(0);
         _viewModel.Comments.Should().BeEmpty();
-        _viewModel.SelectedFrequency.Should().BeNull();
+        _viewModel.SelectedNextTimePreference.Should().BeNull();
     }
 
     #endregion
@@ -444,7 +444,7 @@ public class QuickRateRecipeViewModelTests
         await SetupWithPendingRatings(2);
         _viewModel.SelectRating(5);
         _viewModel.Comments = "Amazing!";
-        _viewModel.SelectedFrequency = "Once a week";
+        _viewModel.SelectedNextTimePreference = "Right away";
 
         // Act
         await _viewModel.SubmitRatingAsync();
@@ -452,7 +452,7 @@ public class QuickRateRecipeViewModelTests
         // Assert
         _viewModel.SelectedRating.Should().Be(0);
         _viewModel.Comments.Should().BeEmpty();
-        _viewModel.SelectedFrequency.Should().BeNull();
+        _viewModel.SelectedNextTimePreference.Should().BeNull();
         _viewModel.CanSubmitRating.Should().BeFalse();
     }
 
@@ -518,7 +518,7 @@ public partial class TestableQuickRateRecipeViewModel : ObservableObject
     [ObservableProperty] private int _selectedRating;
     [ObservableProperty] private string _selectedRatingText = "Tap a star to rate";
     [ObservableProperty] private string _comments = string.Empty;
-    [ObservableProperty] private string? _selectedFrequency;
+    [ObservableProperty] private string? _selectedNextTimePreference;
     [ObservableProperty] private bool _canSubmitRating;
     [ObservableProperty] private string _statusMessage = string.Empty;
     [ObservableProperty] private bool _showStatus;
@@ -590,7 +590,7 @@ public partial class TestableQuickRateRecipeViewModel : ObservableObject
     {
         SelectedRating = 0;
         Comments = string.Empty;
-        SelectedFrequency = null;
+        SelectedNextTimePreference = null;
         ShowStatus = false;
         CanSubmitRating = false;
         UpdateStarColors();
@@ -636,12 +636,12 @@ public partial class TestableQuickRateRecipeViewModel : ObservableObject
 
         try
         {
-            string? frequencyPreference = SelectedFrequency switch
+            string? nextTimePreference = SelectedNextTimePreference switch
             {
-                "Once a week" => "OnceAWeek",
-                "Once a month" => "OnceAMonth",
-                "A few times a year" => "AFewTimesAYear",
-                "Yearly" => "Yearly",
+                "Right away" => "RightAway",
+                "In 2 weeks" => "In2Weeks",
+                "Next month" => "NextMonth",
+                "Next year" => "NextYear",
                 "Never" => "Never",
                 _ => null
             };
@@ -652,7 +652,7 @@ public partial class TestableQuickRateRecipeViewModel : ObservableObject
                 CurrentRating.RecipeId,
                 SelectedRating,
                 comments,
-                frequencyPreference);
+                nextTimePreference);
 
             if (result.Success)
             {
@@ -738,7 +738,7 @@ public class MockRecipeServiceForViewModel
     
     public List<Guid> CompletedPendingRatingIds { get; } = new();
     public List<Guid> DismissedPendingRatingIds { get; } = new();
-    public List<(Guid RecipeId, int Rating, string? Comments, string? FrequencyPreference)> RateRecipeCalls { get; } = new();
+    public List<(Guid RecipeId, int Rating, string? Comments, string? NextTimePreference)> RateRecipeCalls { get; } = new();
 
     public Task<List<PendingRatingData>> GetPendingRatingsAsync()
     {
@@ -762,12 +762,12 @@ public class MockRecipeServiceForViewModel
         return Task.FromResult(true);
     }
 
-    public Task<RateRecipeResultData> RateRecipeAsync(Guid recipeId, int rating, string? comments, string? frequencyPreference)
+    public Task<RateRecipeResultData> RateRecipeAsync(Guid recipeId, int rating, string? comments, string? nextTimePreference)
     {
         if (ShouldThrowOnRateRecipe)
             throw new Exception("Mock rate error");
             
-        RateRecipeCalls.Add((recipeId, rating, comments, frequencyPreference));
+        RateRecipeCalls.Add((recipeId, rating, comments, nextTimePreference));
         return Task.FromResult(RateRecipeResultToReturn);
     }
 }

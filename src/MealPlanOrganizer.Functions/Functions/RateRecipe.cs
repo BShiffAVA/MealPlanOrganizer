@@ -91,14 +91,15 @@ public class RateRecipe
             return badResponse;
         }
 
-        // Validate frequency preference if provided
-        if (!string.IsNullOrEmpty(rateRequest.FrequencyPreference) &&
-            !RateRecipeRequest.ValidFrequencies.Contains(rateRequest.FrequencyPreference))
+
+        // Validate next time preference if provided
+        if (!string.IsNullOrEmpty(rateRequest.NextTimePreference) &&
+            !RateRecipeRequest.ValidNextTimePreferences.Contains(rateRequest.NextTimePreference))
         {
             var badResponse = req.CreateResponse(HttpStatusCode.BadRequest);
-            await badResponse.WriteAsJsonAsync(new 
-            { 
-                message = $"Invalid frequency preference. Valid values: {string.Join(", ", RateRecipeRequest.ValidFrequencies)}" 
+            await badResponse.WriteAsJsonAsync(new
+            {
+                message = $"Invalid next time preference. Valid values: {string.Join(", ", RateRecipeRequest.ValidNextTimePreferences)}"
             });
             return badResponse;
         }
@@ -121,7 +122,7 @@ public class RateRecipe
                 {
                     rating = existingRatingToday.Rating,
                     comments = existingRatingToday.Comments,
-                    frequencyPreference = existingRatingToday.FrequencyPreference,
+                    validNextTimePreference = existingRatingToday.NextTimePreference,
                     ratedUtc = existingRatingToday.RatedUtc
                 }
             });
@@ -136,7 +137,7 @@ public class RateRecipe
             UserId = userId,
             Rating = rateRequest.Rating,
             Comments = rateRequest.Comments,
-            FrequencyPreference = rateRequest.FrequencyPreference,
+            NextTimePreference = rateRequest.NextTimePreference,
             RatedUtc = DateTime.UtcNow
         };
         _context.RecipeRatings.Add(newRating);
@@ -160,7 +161,7 @@ public class RateRecipe
             message = "Rating submitted successfully",
             ratingId = newRating.Id,
             rating = rateRequest.Rating,
-            frequencyPreference = rateRequest.FrequencyPreference,
+            nextTimePreference = rateRequest.NextTimePreference,
             averageRating = averageRating,
             totalRatings = allRatings.Count
         });

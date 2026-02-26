@@ -456,7 +456,7 @@ Properties:
 - `Recipe` (RecipeDetailDto)
 - `IsLoading`
 - `SelectedRating` (1-5)
-- `Comments`, `SelectedFrequency`
+- `Comments`, `SelectedNextTimePreference`
 - `IsSubmittingRating`
 - `RatingStatusMessage`, `RatingStatusColor`
 - Computed: `Star1Color` through `Star5Color`

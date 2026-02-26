@@ -18,13 +18,13 @@ public class RecipeRecommendationService : IRecipeRecommendationService
     private const double FrequencyWeight = 40.0;   // 40% - Match frequency preference
     private const double RecencyWeight = 30.0;     // 30% - Penalty for recently cooked
 
-    // Frequency preference to ideal days between cooking
-    private static readonly Dictionary<string, int> FrequencyToDays = new()
+    // Next time preference to ideal days between meals
+    private static readonly Dictionary<string, int> NextTimePreferenceToDays = new()
     {
-        { "OnceAWeek", 7 },
-        { "OnceAMonth", 30 },
-        { "AFewTimesAYear", 90 },
-        { "Yearly", 365 },
+        { "RightAway", 0 },
+        { "In2Weeks", 14 },
+        { "NextMonth", 30 },
+        { "NextYear", 365 },
         { "Never", 5000 }
     };
 
@@ -102,17 +102,18 @@ public class RecipeRecommendationService : IRecipeRecommendationService
                 result.LastCookedDate = lastCooked;
             }
 
-            // Calculate weighted average frequency (in days) using HouseholdMember.Weight
-            var weightedIdealDays = CalculateWeightedFrequencyDays(recipe.Ratings, userWeights);
+            // Calculate weighted average next time preference (in days) using HouseholdMember.Weight
+            var weightedNextTimeDays = CalculateWeightedNextTimeDays(recipe.Ratings, userWeights);
             
-            // Set display frequency preference based on weighted average
-            result.FrequencyPreference = GetFrequencyPreferenceFromDays(weightedIdealDays);
+
+
+            result.NextTimePreference = GetNextTimePreferenceFromDays(weightedNextTimeDays);
 
             // Calculate score
             result.Score = CalculateScore(
                 result.AverageRating,
                 result.RatingCount,
-                weightedIdealDays,
+                weightedNextTimeDays,
                 result.LastCookedDate,
                 weekStartDate,
                 result.ReasonCodes
@@ -132,53 +133,52 @@ public class RecipeRecommendationService : IRecipeRecommendationService
     }
 
     /// <summary>
-    /// Calculates a weighted average of frequency preferences (in days) using HouseholdMember.Weight.
-    /// Formula: sum(frequencyDays × weight) / sum(weight)
+    /// Calculates a weighted average of next time preferences (in days) using HouseholdMember.Weight.
+    /// Formula: sum(nextTimeDays × weight) / sum(weight)
     /// </summary>
-    private static int? CalculateWeightedFrequencyDays(
+    private static int? CalculateWeightedNextTimeDays(
         ICollection<Data.Entities.RecipeRating>? ratings,
         Dictionary<string, int> userWeights)
     {
         if (ratings == null || ratings.Count == 0)
             return null;
 
-        var ratingsWithFrequency = ratings
-            .Where(r => !string.IsNullOrEmpty(r.FrequencyPreference) && FrequencyToDays.ContainsKey(r.FrequencyPreference!))
+        var ratingsWithNextTime = ratings
+            .Where(r => !string.IsNullOrEmpty(r.NextTimePreference) && NextTimePreferenceToDays.ContainsKey(r.NextTimePreference!))
             .ToList();
 
-        if (ratingsWithFrequency.Count == 0)
+        if (ratingsWithNextTime.Count == 0)
             return null;
 
         var weightedSum = 0.0;
         var totalWeight = 0;
 
-        foreach (var rating in ratingsWithFrequency)
+        foreach (var rating in ratingsWithNextTime)
         {
             var weight = userWeights.GetValueOrDefault(rating.UserId, 3); // Default weight 3
-            var frequencyDays = FrequencyToDays[rating.FrequencyPreference!];
-            weightedSum += frequencyDays * weight;
+            var nextTimeDays = NextTimePreferenceToDays[rating.NextTimePreference!];
+            weightedSum += nextTimeDays * weight;
             totalWeight += weight;
         }
 
-        return totalWeight > 0 ? (int)Math.Round(weightedSum / totalWeight) : null;
+        return totalWeight > 0 ? (int)Math.Round(weightedSum / totalWeight) : 0;
     }
 
     /// <summary>
-    /// Converts weighted average days back to a frequency preference string for display.
+    /// Converts weighted average days back to a next time preference string for display.
     /// </summary>
-    private static string? GetFrequencyPreferenceFromDays(int? weightedDays)
+    private static string? GetNextTimePreferenceFromDays(int? weightedDays)
     {
         if (!weightedDays.HasValue)
             return null;
 
         var days = weightedDays.Value;
-        
-        // Map to closest frequency preference
-        if (days >= 2500) return "Never"; // Threshold: >= 2500 days is effectively "Never"
-        if (days >= 250) return "Yearly";
-        if (days >= 45) return "AFewTimesAYear";
-        if (days >= 15) return "OnceAMonth";
-        return "OnceAWeek";
+        // Map to closest next time preference
+        if (days >= 2500) return "Never";
+        if (days >= 300) return "NextYear";
+        if (days >= 22) return "NextMonth";
+        if (days >= 7) return "In2Weeks";
+        return "RightAway";
     }
 
     private double CalculateScore(

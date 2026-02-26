@@ -71,12 +71,12 @@ tests/
 
 #### RecipeRecommendationServiceTests
 
-Tests the smart recipe scoring algorithm (30% rating, 40% frequency preference, 30% recency penalty).
+Tests the smart recipe scoring algorithm (30% rating, 40% next time preference, 30% recency penalty).
 
 | Test Case | Description | Expected Result |
 |-----------|-------------|-----------------|
 | `ScoreRecipe_HighRating_ReturnsHighScore` | Recipe with 5-star average | Score reflects 30% weight for rating |
-| `ScoreRecipe_FrequencyOnceAWeek_BoostsScore` | Recipe marked "once a week" | 40% frequency weight applied |
+| `ScoreRecipe_NextTimeRightAway_BoostsScore` | Recipe marked "right away" | 40% next time weight applied |
 | `ScoreRecipe_RecentlyUsed_AppliesPenalty` | Recipe used in last 7 days | Recency penalty reduces score |
 | `ScoreRecipe_NoRatings_UsesDefaultScore` | Recipe with no ratings | Returns baseline score |
 | `ScoreRecipe_MultipleUserRatings_AveragesCorrectly` | 4 family members rated | Correctly averages all ratings |
@@ -233,7 +233,7 @@ Integration tests use Testcontainers for SQL Server and Azurite for blob storage
 | `POST_Rating_UpdatesRecipeAverage` | avgRating recalculated |
 | `GET_Ratings_FiltersByRecipe` | Only ratings for specified recipe |
 | `GET_UserHistory_PaginatesCorrectly` | Respects page/pageSize |
-| `POST_Rating_WithFrequency_SavesPreference` | frequencyPreference stored |
+| `POST_Rating_WithNextTime_SavesPreference` | nextTimePreference stored |
 
 #### PendingRatingsEndpointsTests
 
@@ -470,13 +470,13 @@ Tests the QuickRateRecipeViewModel state management and business logic for ratin
 | `SelectRating_EnablesSubmitButton` | Select 1-5 stars | CanSubmitRating=true |
 | `SelectRating_WhenZero_DisablesSubmitButton` | Deselect rating | CanSubmitRating=false |
 | `SelectRating_UpdatesStarColorsCorrectly` | Select 3 stars | Stars 1-3 highlighted, 4-5 unlit |
-| `SubmitRating_CallsRateRecipeWithCorrectParameters` | Submit rating | API called with rating, comments, frequency |
+| `SubmitRating_CallsRateRecipeWithCorrectParameters` | Submit rating | API called with rating, comments, nextTimePreference |
 | `SubmitRating_WhenSuccessful_MarksCompleteAndAdvances` | API success | CompletePendingRating called, advances to next |
 | `SubmitRating_WhenLastRating_SetsIsCompleteTrue` | Last rating submitted | IsComplete=true, HasPendingRatings=false |
 | `SubmitRating_WhenNoRatingSelected_ShowsError` | No stars selected | ShowStatus=true, error message shown |
 | `SubmitRating_WhenAlreadyRatedToday_SkipsToNext` | AlreadyRatedToday=true | Advances to next rating |
 | `SubmitRating_WhenServiceFails_ShowsError` | Service exception | Error message displayed |
-| `SubmitRating_ConvertsFrequencyCorrectly` | "Once a week" selected | Converts to "OnceAWeek" for API |
+| `SubmitRating_ConvertsNextTimeCorrectly` | "Right away" selected | Converts to "RightAway" for API |
 | `Skip_DismissesPendingRating` | User skips | DismissPendingRating called |
 | `Skip_AdvancesToNextRating` | User skips | CurrentIndex incremented, ProgressText updated |
 | `Skip_WhenLastRating_SetsIsCompleteTrue` | Skip last rating | IsComplete=true |
@@ -591,7 +591,7 @@ public class MockAuthService : IAuthService
 | Show Ingredients | Scroll to ingredients | Lists all ingredients |
 | Show Steps | Scroll to steps | Lists numbered steps |
 | Rate Recipe | Tap rating stars | Rating submits |
-| Set Frequency | Select frequency option | Preference saved |
+| Set Next Time | Select next time option | Preference saved |
 | Edit Recipe | Tap Edit button | Opens EditRecipePage |
 | Add to Meal Plan | Tap "Add to Plan" | Shows plan picker |
 
@@ -700,7 +700,7 @@ public class MealPlanBuilder
 | EmptyHousehold | User with no recipes/plans | Empty state testing |
 | StarterHousehold | 5 recipes, 2 ratings each | Basic functionality |
 | FullHousehold | 50 recipes, 200 ratings, 10 plans | Performance/pagination |
-| RecommendationTestSet | Recipes with varied ratings/frequency | Algorithm testing |
+| RecommendationTestSet | Recipes with varied ratings/next time preference | Algorithm testing |
 
 ---
 

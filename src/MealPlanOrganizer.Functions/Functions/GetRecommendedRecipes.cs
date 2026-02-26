@@ -81,7 +81,7 @@ public class GetRecommendedRecipes
                     averageRating = r.AverageRating,
                     ratingCount = r.RatingCount,
                     lastCookedDate = r.LastCookedDate?.ToString("yyyy-MM-dd"),
-                    frequencyPreference = r.FrequencyPreference,
+                    nextTimePreference = r.NextTimePreference,
                     reasonCodes = r.ReasonCodes
                 });
             }

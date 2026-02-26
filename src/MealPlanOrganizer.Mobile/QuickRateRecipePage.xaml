@@ -194,12 +194,12 @@
 
                         <!-- Frequency Preference -->
                         <VerticalStackLayout Spacing="4">
-                            <Label Text="How often would you like this?"
+                            <Label Text="When would you next like to eat this meal?"
                                    FontSize="14"
                                    TextColor="{StaticResource Gray400}"/>
-                            <Picker Title="Select frequency (optional)"
-                                    ItemsSource="{Binding FrequencyOptions}"
-                                    SelectedItem="{Binding SelectedFrequency}"
+                            <Picker Title="Select next time (optional)"
+                                    ItemsSource="{Binding NextTimePreferenceOptions}"
+                                    SelectedItem="{Binding SelectedNextTimePreference}"
                                     TextColor="White"
                                     TitleColor="{StaticResource Gray600}"/>
                         </VerticalStackLayout>

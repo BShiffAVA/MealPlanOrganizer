@@ -76,7 +76,7 @@ public class GetRecipeRatings
                     ratingId = userRating.Id,
                     rating = userRating.Rating,
                     comments = userRating.Comments,
-                    frequencyPreference = userRating.FrequencyPreference,
+                    nextTimePreference = userRating.NextTimePreference,
                     ratedUtc = userRating.RatedUtc
                 };
             }
@@ -96,7 +96,7 @@ public class GetRecipeRatings
                 userId = r.UserId,
                 rating = r.Rating,
                 comments = r.Comments,
-                frequencyPreference = r.FrequencyPreference,
+                nextTimePreference = r.NextTimePreference,
                 ratedUtc = r.RatedUtc
             }).ToList()
         });

@@ -67,7 +67,7 @@ public class GetUserRatingHistory
                 recipeName = r.Recipe?.Title,
                 rating = r.Rating,
                 comments = r.Comments,
-                frequencyPreference = r.FrequencyPreference,
+                nextTimePreference = r.NextTimePreference,
                 ratedUtc = r.RatedUtc
             }).ToList()
         });

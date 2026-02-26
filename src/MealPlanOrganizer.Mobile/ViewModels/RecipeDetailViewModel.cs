@@ -109,10 +109,10 @@ public partial class RecipeDetailViewModel : ObservableObject
     private string _userRatingDate = string.Empty;
 
     [ObservableProperty]
-    private string? _userRatingFrequency;
+    private string? _userNextTimePreference;
 
     [ObservableProperty]
-    private bool _hasUserRatingFrequency;
+    private bool _hasUserNextTimePreference;
 
     [ObservableProperty]
     private string? _userRatingComments;
@@ -137,7 +137,7 @@ public partial class RecipeDetailViewModel : ObservableObject
     private int _commentsLength;
 
     [ObservableProperty]
-    private string? _selectedFrequency;
+    private string? _selectedNextTimePreference;
 
     [ObservableProperty]
     private bool _isSubmittingRating;
@@ -183,12 +183,12 @@ public partial class RecipeDetailViewModel : ObservableObject
     [ObservableProperty]
     private ObservableCollection<RecipeRatingDto> _ratings = new();
 
-    public List<string> FrequencyOptions { get; } = new()
+    public List<string> NextTimePreferenceOptions { get; } = new()
     {
-        "Once a week",
-        "Once a month",
-        "A few times a year",
-        "Yearly",
+        "Right away",
+        "In 2 weeks",
+        "Next month",
+        "Next year",
         "Never"
     };
 
@@ -313,7 +313,7 @@ public partial class RecipeDetailViewModel : ObservableObject
         // Reset rating form
         SelectedRating = 0;
         Comments = string.Empty;
-        SelectedFrequency = null;
+        SelectedNextTimePreference = null;
         ShowRatingStatus = false;
     }
 
@@ -362,23 +362,23 @@ public partial class RecipeDetailViewModel : ObservableObject
             UserRatingStars = new string('★', userRating.Rating) + new string('☆', 5 - userRating.Rating);
             UserRatingDate = userRating.RatedUtc.ToString("MMM d, yyyy");
 
-            if (!string.IsNullOrEmpty(userRating.FrequencyPreference))
+            if (!string.IsNullOrEmpty(userRating.NextTimePreference))
             {
-                var displayFreq = userRating.FrequencyPreference switch
+                var displayPref = userRating.NextTimePreference switch
                 {
-                    "OnceAWeek" => "Once a week",
-                    "OnceAMonth" => "Once a month",
-                    "AFewTimesAYear" => "A few times a year",
-                    "Yearly" => "Yearly",
+                    "RightAway" => "Right away",
+                    "In2Weeks" => "In 2 weeks",
+                    "NextMonth" => "Next month",
+                    "NextYear" => "Next year",
                     "Never" => "Never",
-                    _ => userRating.FrequencyPreference
+                    _ => userRating.NextTimePreference
                 };
-                UserRatingFrequency = $"Frequency: {displayFreq}";
-                HasUserRatingFrequency = true;
+                UserNextTimePreference = $"Next time: {displayPref}";
+                HasUserNextTimePreference = true;
             }
             else
             {
-                HasUserRatingFrequency = false;
+                HasUserNextTimePreference = false;
             }
 
             UserRatingComments = userRating.Comments;
@@ -420,15 +420,16 @@ public partial class RecipeDetailViewModel : ObservableObject
 
         try
         {
-            string? frequencyPreference = null;
-            if (!string.IsNullOrEmpty(SelectedFrequency))
+
+            string? nextTimePreference = null;
+            if (!string.IsNullOrEmpty(SelectedNextTimePreference))
             {
-                frequencyPreference = SelectedFrequency switch
+                nextTimePreference = SelectedNextTimePreference switch
                 {
-                    "Once a week" => "OnceAWeek",
-                    "Once a month" => "OnceAMonth",
-                    "A few times a year" => "AFewTimesAYear",
-                    "Yearly" => "Yearly",
+                    "Right away" => "RightAway",
+                    "In 2 weeks" => "In2Weeks",
+                    "Next month" => "NextMonth",
+                    "Next year" => "NextYear",
                     "Never" => "Never",
                     _ => null
                 };
@@ -436,7 +437,7 @@ public partial class RecipeDetailViewModel : ObservableObject
 
             var comments = string.IsNullOrWhiteSpace(Comments) ? null : Comments.Trim();
 
-            var result = await _recipeService.RateRecipeAsync(RecipeId, SelectedRating, comments, frequencyPreference);
+            var result = await _recipeService.RateRecipeAsync(RecipeId, SelectedRating, comments, nextTimePreference);
 
             if (result.Success)
             {
@@ -447,7 +448,7 @@ public partial class RecipeDetailViewModel : ObservableObject
                 // Reset form
                 SelectedRating = 0;
                 Comments = string.Empty;
-                SelectedFrequency = null;
+                SelectedNextTimePreference = null;
 
                 // Reload recipe to show updated ratings
                 await LoadRecipeAsync();

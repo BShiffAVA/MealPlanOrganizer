@@ -1,0 +1,39 @@
+using Microsoft.EntityFrameworkCore.Migrations;
+
+#nullable disable
+
+namespace MealPlanOrganizer_Functions.Migrations
+{
+    public partial class ReplaceFrequencyWithNextTimePreference : Migration
+    {
+        protected override void Up(MigrationBuilder migrationBuilder)
+        {
+            // Remove old FrequencyPreference column
+            migrationBuilder.DropColumn(
+                name: "FrequencyPreference",
+                table: "RecipeRatings");
+
+            // Add new NextTimePreference column
+            migrationBuilder.AddColumn<string>(
+                name: "NextTimePreference",
+                table: "RecipeRatings",
+                type: "nvarchar(50)",
+                maxLength: 50,
+                nullable: true);
+        }
+
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.DropColumn(
+                name: "NextTimePreference",
+                table: "RecipeRatings");
+
+            migrationBuilder.AddColumn<string>(
+                name: "FrequencyPreference",
+                table: "RecipeRatings",
+                type: "nvarchar(50)",
+                maxLength: 50,
+                nullable: true);
+        }
+    }
+}

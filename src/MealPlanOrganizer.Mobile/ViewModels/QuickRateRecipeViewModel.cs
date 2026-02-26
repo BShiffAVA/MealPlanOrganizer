@@ -86,7 +86,7 @@ public partial class QuickRateRecipeViewModel : ObservableObject
     private int _commentsLength;
 
     [ObservableProperty]
-    private string? _selectedFrequency;
+    private string? _selectedNextTimePreference;
 
     [ObservableProperty]
     private bool _isSubmittingRating;
@@ -125,12 +125,12 @@ public partial class QuickRateRecipeViewModel : ObservableObject
 
     #endregion
 
-    public List<string> FrequencyOptions { get; } = new()
+    public List<string> NextTimePreferenceOptions { get; } = new()
     {
-        "Once a week",
-        "Once a month",
-        "A few times a year",
-        "Yearly",
+        "Right away",
+        "In 2 weeks",
+        "Next month",
+        "Next year",
         "Never"
     };
 
@@ -208,7 +208,7 @@ public partial class QuickRateRecipeViewModel : ObservableObject
     {
         SelectedRating = 0;
         Comments = string.Empty;
-        SelectedFrequency = null;
+        SelectedNextTimePreference = null;
         ShowStatus = false;
         CanSubmitRating = false;
         SubmitButtonText = "Submit Rating";
@@ -276,13 +276,14 @@ public partial class QuickRateRecipeViewModel : ObservableObject
 
         try
         {
-            // Convert frequency to API format
-            string? frequencyPreference = SelectedFrequency switch
+
+            // Convert next time preference to API format
+            string? nextTimePreference = SelectedNextTimePreference switch
             {
-                "Once a week" => "OnceAWeek",
-                "Once a month" => "OnceAMonth",
-                "A few times a year" => "AFewTimesAYear",
-                "Yearly" => "Yearly",
+                "Right away" => "RightAway",
+                "In 2 weeks" => "In2Weeks",
+                "Next month" => "NextMonth",
+                "Next year" => "NextYear",
                 "Never" => "Never",
                 _ => null
             };
@@ -294,7 +295,7 @@ public partial class QuickRateRecipeViewModel : ObservableObject
                 CurrentRating.RecipeId,
                 SelectedRating,
                 comments,
-                frequencyPreference);
+                nextTimePreference);
 
             if (result.Success)
             {

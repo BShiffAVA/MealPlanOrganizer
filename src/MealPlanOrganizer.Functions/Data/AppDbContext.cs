@@ -189,7 +189,7 @@ namespace MealPlanOrganizer.Functions.Data
                 b.HasKey(x => x.Id);
                 b.Property(x => x.UserId).IsRequired().HasMaxLength(200);
                 b.Property(x => x.Comments).HasMaxLength(500);
-                b.Property(x => x.FrequencyPreference).HasMaxLength(50);
+                b.Property(x => x.NextTimePreference).HasMaxLength(50);
                 
                 if (isSqlServer)
                 {

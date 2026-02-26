@@ -33,9 +33,9 @@ public class RecommendedRecipe
     public DateTime? LastCookedDate { get; set; }
     
     /// <summary>
-    /// Most common frequency preference from family members.
+    /// Weighted value of next time preference from family members.
     /// </summary>
-    public string? FrequencyPreference { get; set; }
+    public string? NextTimePreference { get; set; }
     
     /// <summary>
     /// List of reasons this recipe is recommended.

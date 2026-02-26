@@ -5,12 +5,12 @@ public class RateRecipeRequest
     public int Rating { get; set; } // 1-5
     public string? Comments { get; set; }
     /// <summary>
-    /// Optional frequency preference: OnceAWeek, OnceAMonth, AFewTimesAYear, Yearly, Never
+    /// When would you next like to eat this meal? Options: RightAway, In2Weeks, NextMonth, NextYear, Never
     /// </summary>
-    public string? FrequencyPreference { get; set; }
+    public string? NextTimePreference { get; set; }
 
-    public static readonly string[] ValidFrequencies = 
+    public static readonly string[] ValidNextTimePreferences =
     {
-        "OnceAWeek", "OnceAMonth", "AFewTimesAYear", "Yearly", "Never"
+        "RightAway", "In2Weeks", "NextMonth", "NextYear", "Never"
     };
 }
