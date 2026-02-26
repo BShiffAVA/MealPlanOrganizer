@@ -198,7 +198,7 @@ public class RecipeRatingBuilder
     private string _userId = TestData.User1Id.ToString();
     private int _rating = 4;
     private string? _comments;
-    private string? _frequencyPreference;
+    private string? _nextTimePreference;
     private DateTime _ratedUtc = DateTime.UtcNow;
 
     public static RecipeRatingBuilder Create() => new();
@@ -233,17 +233,17 @@ public class RecipeRatingBuilder
         return this;
     }
 
-    public RecipeRatingBuilder WithFrequencyPreference(string? preference)
+    public RecipeRatingBuilder WithNextTimePreference(string? preference)
     {
-        _frequencyPreference = preference;
+        _nextTimePreference = preference;
         return this;
     }
 
-    public RecipeRatingBuilder PreferOnceAWeek() => WithFrequencyPreference("OnceAWeek");
-    public RecipeRatingBuilder PreferOnceAMonth() => WithFrequencyPreference("OnceAMonth");
-    public RecipeRatingBuilder PreferAFewTimesAYear() => WithFrequencyPreference("AFewTimesAYear");
-    public RecipeRatingBuilder PreferYearly() => WithFrequencyPreference("Yearly");
-    public RecipeRatingBuilder PreferNever() => WithFrequencyPreference("Never");
+    public RecipeRatingBuilder PreferOnceAWeek() => WithNextTimePreference("OnceAWeek");
+    public RecipeRatingBuilder PreferOnceAMonth() => WithNextTimePreference("OnceAMonth");
+    public RecipeRatingBuilder PreferAFewTimesAYear() => WithNextTimePreference("AFewTimesAYear");
+    public RecipeRatingBuilder PreferYearly() => WithNextTimePreference("Yearly");
+    public RecipeRatingBuilder PreferNever() => WithNextTimePreference("Never");
 
     public RecipeRatingBuilder WithRatedUtc(DateTime ratedUtc)
     {
@@ -280,7 +280,7 @@ public class RecipeRatingBuilder
             UserId = _userId,
             Rating = _rating,
             Comments = _comments,
-            FrequencyPreference = _frequencyPreference,
+            NextTimePreference = _nextTimePreference,
             RatedUtc = _ratedUtc
         };
     }

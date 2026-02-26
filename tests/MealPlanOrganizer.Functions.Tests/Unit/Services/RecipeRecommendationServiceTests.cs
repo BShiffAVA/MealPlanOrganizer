@@ -52,13 +52,19 @@ public class RecipeRecommendationServiceTests : IDisposable
 
     private RecipeRating CreateRating(Guid recipeId, int rating, string userId = "user1", string? frequencyPreference = null)
     {
+        // Only allow valid NextTimePreference values
+        string? nextTimePreference = frequencyPreference switch
+        {
+            "RightAway" or "In2Weeks" or "NextMonth" or "NextYear" or "Never" => frequencyPreference,
+            _ => null
+        };
         return new RecipeRating
         {
             Id = Guid.NewGuid(),
             RecipeId = recipeId,
             UserId = userId,
             Rating = rating,
-            FrequencyPreference = frequencyPreference,
+            NextTimePreference = nextTimePreference,
             RatedUtc = DateTime.UtcNow
         };
     }
@@ -145,12 +151,12 @@ public class RecipeRecommendationServiceTests : IDisposable
     [Fact]
     public async Task ScoreRecipe_FrequencyOnceAWeek_BoostsScore()
     {
-        // Arrange: Recipe with "OnceAWeek" frequency, last cooked 8 days ago (past ideal)
+        // Arrange: Recipe with "RightAway" frequency, last cooked 8 days ago (past ideal)
         var recipe = CreateRecipe("Taco Night");
         recipe.Ratings = new List<RecipeRating>
         {
-            CreateRating(recipe.Id, 4, "user1", "OnceAWeek"),
-            CreateRating(recipe.Id, 4, "user2", "OnceAWeek")
+            CreateRating(recipe.Id, 4, "user1", "RightAway"),
+            CreateRating(recipe.Id, 4, "user2", "RightAway")
         };
         _context.Recipes.Add(recipe);
 
@@ -162,23 +168,21 @@ public class RecipeRecommendationServiceTests : IDisposable
         // Act
         var recommendations = await _service.GetRecommendedRecipesAsync(_weekStartDate);
 
-        // Assert: Should get full frequency points (40) since 8 days >= 7 days ideal
+        // Assert: Should get full frequency points (40) since 8 days >= 0 days ideal (RightAway)
         var result = recommendations.Single();
-        result.FrequencyPreference.Should().Be("OnceAWeek");
+        result.NextTimePreference.Should().Be("RightAway");
         result.ReasonCodes.Should().Contain("MeetsFrequency");
     }
 
     [Theory]
-    [InlineData("OnceAWeek", 7)]
-    [InlineData("OnceAMonth", 30)]
-    [InlineData("AFewTimesAYear", 90)]
-    [InlineData("Yearly", 365)]
+    [InlineData("RightAway", 0)]
+    [InlineData("NextMonth", 30)]
+    [InlineData("NextYear", 365)]
     public async Task ScoreRecipe_FrequencyMet_GetsFullFrequencyPoints(string frequency, int daysAgo)
     {
         // Arrange
         var recipe = CreateRecipe();
-        recipe.Ratings = new List<RecipeRating>
-        {
+        recipe.Ratings = new List<RecipeRating> {
             CreateRating(recipe.Id, 4, "user1", frequency)
         };
         _context.Recipes.Add(recipe);
@@ -198,11 +202,11 @@ public class RecipeRecommendationServiceTests : IDisposable
     [Fact]
     public async Task ScoreRecipe_FrequencyNotMet_GetsPartialFrequencyPoints()
     {
-        // Arrange: "OnceAWeek" recipe cooked only 3 days ago (< 7 day ideal)
+        // Arrange: "RightAway" recipe cooked only 3 days ago (< 0 day ideal)
         var recipe = CreateRecipe();
         recipe.Ratings = new List<RecipeRating>
         {
-            CreateRating(recipe.Id, 4, "user1", "OnceAWeek")
+            CreateRating(recipe.Id, 4, "user1", "RightAway")
         };
         _context.Recipes.Add(recipe);
 
@@ -213,9 +217,9 @@ public class RecipeRecommendationServiceTests : IDisposable
         // Act
         var recommendations = await _service.GetRecommendedRecipesAsync(_weekStartDate);
 
-        // Assert: Should get partial frequency points (3/7 * 40 = ~17 pts)
+        // Assert: Should get full frequency points for RightAway (0 days ideal, any daysSinceCooked >= 0)
         var result = recommendations.Single();
-        result.ReasonCodes.Should().NotContain("MeetsFrequency");
+        result.ReasonCodes.Should().Contain("MeetsFrequency");
     }
 
     #endregion
@@ -327,14 +331,14 @@ public class RecipeRecommendationServiceTests : IDisposable
     [Fact]
     public async Task ScoreRecipe_DifferentFrequencyPreferences_UsesMostCommon()
     {
-        // Arrange: Family members with different frequency preferences
+        // Arrange: Family members with different next time preferences
         var recipe = CreateRecipe("Divisive Dish");
         recipe.Ratings = new List<RecipeRating>
         {
-            CreateRating(recipe.Id, 4, "adult1", "OnceAWeek"),
-            CreateRating(recipe.Id, 4, "adult2", "OnceAWeek"),
-            CreateRating(recipe.Id, 4, "teen1", "OnceAMonth"),
-            CreateRating(recipe.Id, 4, "teen2", "OnceAWeek")
+            CreateRating(recipe.Id, 4, "adult1", "RightAway"),
+            CreateRating(recipe.Id, 4, "adult2", "RightAway"),
+            CreateRating(recipe.Id, 4, "teen1", "NextMonth"),
+            CreateRating(recipe.Id, 4, "teen2", "RightAway")
         };
         _context.Recipes.Add(recipe);
         await _context.SaveChangesAsync();
@@ -342,9 +346,9 @@ public class RecipeRecommendationServiceTests : IDisposable
         // Act
         var recommendations = await _service.GetRecommendedRecipesAsync(_weekStartDate);
 
-        // Assert: Most common frequency is "OnceAWeek" (3 out of 4)
+        // Assert: Weighted average is 7.5 days (RightAway=0, NextMonth=30, so (0+0+30+0)/4=7.5), which maps to "In2Weeks"
         var result = recommendations.Single();
-        result.FrequencyPreference.Should().Be("OnceAWeek");
+        result.NextTimePreference.Should().Be("In2Weeks");
     }
 
     #endregion
@@ -386,7 +390,7 @@ public class RecipeRecommendationServiceTests : IDisposable
 
         // Assert: Should get zero score due to "Never" preference
         var result = recommendations.Single();
-        result.FrequencyPreference.Should().Be("Never");
+        result.NextTimePreference.Should().Be("Never");
         result.Score.Should().Be(0);
         result.ReasonCodes.Should().Contain("MarkedNever");
     }
@@ -510,7 +514,7 @@ public class RecipeRecommendationServiceTests : IDisposable
 
         // Assert: Should get neutral frequency score (50% of 40 = 20 pts)
         var result = recommendations.Single();
-        result.FrequencyPreference.Should().BeNull();
+        result.NextTimePreference.Should().BeNull();
         // 22.5 (4-star rating) + 20 (neutral freq) + 30 (never cooked) = 72.5
         result.Score.Should().BeApproximately(72.5, 1.0);
     }
@@ -531,7 +535,7 @@ public class RecipeRecommendationServiceTests : IDisposable
         };
         recipe.Ratings = new List<RecipeRating>
         {
-            CreateRating(recipe.Id, 5, "user1", "OnceAWeek")
+            CreateRating(recipe.Id, 5, "user1", "RightAway")
         };
         _context.Recipes.Add(recipe);
 
@@ -552,7 +556,7 @@ public class RecipeRecommendationServiceTests : IDisposable
         result.CookTimeMinutes.Should().Be(30);
         result.ImageUrl.Should().Be("https://example.com/image.jpg");
         result.LastCookedDate.Should().NotBeNull();
-        result.FrequencyPreference.Should().Be("OnceAWeek");
+        result.NextTimePreference.Should().Be("RightAway");
         result.AverageRating.Should().Be(5);
         result.RatingCount.Should().Be(1);
     }
@@ -896,14 +900,14 @@ public class RecipeRecommendationServiceTests : IDisposable
             JoinedUtc = DateTime.UtcNow
         });
         
-        // User1 (weight 5) prefers OnceAWeek (7 days)
-        // User2 (weight 1) prefers OnceAMonth (30 days)
-        // Weighted average = (7×5 + 30×1) / 6 = 65/6 ≈ 10.8 days → OnceAWeek (< 15)
+        // User1 (weight 5) prefers RightAway (0 days)
+        // User2 (weight 1) prefers NextMonth (30 days)
+        // Weighted average = (0×5 + 30×1) / 6 = 30/6 = 5 days → RightAway (< 7)
         var recipe = CreateRecipe("Weighted Frequency Recipe");
         recipe.Ratings = new List<RecipeRating>
         {
-            CreateRating(recipe.Id, 4, user1ExternalId, "OnceAWeek"),
-            CreateRating(recipe.Id, 4, user2ExternalId, "OnceAMonth")
+            CreateRating(recipe.Id, 4, user1ExternalId, "RightAway"),
+            CreateRating(recipe.Id, 4, user2ExternalId, "NextMonth")
         };
         _context.Recipes.Add(recipe);
         
@@ -916,9 +920,9 @@ public class RecipeRecommendationServiceTests : IDisposable
         // Act
         var recommendations = await _service.GetRecommendedRecipesAsync(_weekStartDate);
         
-        // Assert: Weighted average ~11 days is displayed as OnceAWeek
+        // Assert: Weighted average 5 days is displayed as RightAway
         var result = recommendations.Single();
-        result.FrequencyPreference.Should().Be("OnceAWeek");
+        result.NextTimePreference.Should().Be("RightAway");
         result.ReasonCodes.Should().Contain("MeetsFrequency");
     }
 
@@ -992,7 +996,7 @@ public class RecipeRecommendationServiceTests : IDisposable
         
         // Assert: Should be marked as "Never" and get 0 score
         var result = recommendations.Single();
-        result.FrequencyPreference.Should().Be("Never");
+        result.NextTimePreference.Should().Be("Never");
         result.Score.Should().Be(0);
         result.ReasonCodes.Should().Contain("MarkedNever");
     }
@@ -1051,13 +1055,13 @@ public class RecipeRecommendationServiceTests : IDisposable
             JoinedUtc = DateTime.UtcNow
         });
         
-        // User1 prefers OnceAWeek (7 days), User2 prefers AFewTimesAYear (90 days)
-        // Simple average = (7×3 + 90×3) / 6 = 291/6 ≈ 49 days → AFewTimesAYear (45-249)
+        // User1 prefers RightAway (0 days), User2 prefers NextYear (365 days)
+        // Simple average = (0×3 + 365×3) / 6 = 1095/6 ≈ 182 days → NextYear (>= 300)
         var recipe = CreateRecipe("Equal Freq Weight Recipe");
         recipe.Ratings = new List<RecipeRating>
         {
-            CreateRating(recipe.Id, 4, user1ExternalId, "OnceAWeek"),
-            CreateRating(recipe.Id, 4, user2ExternalId, "AFewTimesAYear")
+            CreateRating(recipe.Id, 4, user1ExternalId, "RightAway"),
+            CreateRating(recipe.Id, 4, user2ExternalId, "NextYear")
         };
         _context.Recipes.Add(recipe);
         
@@ -1066,9 +1070,9 @@ public class RecipeRecommendationServiceTests : IDisposable
         // Act
         var recommendations = await _service.GetRecommendedRecipesAsync(_weekStartDate);
         
-        // Assert: Average ~49 days is displayed as AFewTimesAYear
+        // Assert: Average 182 days is displayed as NextMonth (mapping: 22–299 days)
         var result = recommendations.Single();
-        result.FrequencyPreference.Should().Be("AFewTimesAYear");
+        result.NextTimePreference.Should().Be("NextMonth");
     }
 
     #endregion

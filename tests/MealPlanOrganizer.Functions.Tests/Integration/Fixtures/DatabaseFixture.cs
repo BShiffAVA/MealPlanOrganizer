@@ -213,7 +213,7 @@ public class DatabaseFixture : IAsyncLifetime
                 UserId = TestData.User1Id,
                 Rating = 5,
                 Comments = "Love this recipe!",
-                FrequencyPreference = "OnceAWeek"
+                NextTimePreference = "OnceAWeek"
             },
             new()
             {

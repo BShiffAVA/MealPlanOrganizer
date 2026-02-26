@@ -161,7 +161,7 @@ public class RecipeBuilder
             UserId = userId,
             Rating = rating,
             Comments = comments,
-            FrequencyPreference = frequencyPreference,
+            NextTimePreference = frequencyPreference,
             RatedUtc = DateTime.UtcNow
         });
         return this;

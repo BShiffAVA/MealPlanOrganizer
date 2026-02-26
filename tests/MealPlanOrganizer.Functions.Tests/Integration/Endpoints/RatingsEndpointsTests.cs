@@ -70,7 +70,7 @@ public class RatingsEndpointsTests : IAsyncLifetime
         {
             rating = 5,
             comments = "Excellent recipe!",
-            frequencyPreference = "OnceAWeek"
+            nextTimePreference = "RightAway"
         };
         
         var httpRequest = CreateMockHttpRequest(
@@ -94,7 +94,7 @@ public class RatingsEndpointsTests : IAsyncLifetime
         Assert.NotNull(savedRating);
         Assert.Equal(5, savedRating.Rating);
         Assert.Equal("Excellent recipe!", savedRating.Comments);
-        Assert.Equal("OnceAWeek", savedRating.FrequencyPreference);
+        Assert.Equal("RightAway", savedRating.NextTimePreference);
     }
     
     [Fact]

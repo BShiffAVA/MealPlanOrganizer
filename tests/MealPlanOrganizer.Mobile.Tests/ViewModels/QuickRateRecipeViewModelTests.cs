@@ -306,10 +306,10 @@ public class QuickRateRecipeViewModelTests
     }
 
     [Theory]
-    [InlineData("Once a week", "OnceAWeek")]
-    [InlineData("Once a month", "OnceAMonth")]
-    [InlineData("A few times a year", "AFewTimesAYear")]
-    [InlineData("Yearly", "Yearly")]
+    [InlineData("Right away", "RightAway")]
+    [InlineData("In 2 weeks", "In2Weeks")]
+    [InlineData("Next month", "NextMonth")]
+    [InlineData("Next year", "NextYear")]
     [InlineData("Never", "Never")]
     public async Task SubmitRating_ConvertsNextTimeCorrectly(string displayNextTime, string expectedApiNextTime)
     {
