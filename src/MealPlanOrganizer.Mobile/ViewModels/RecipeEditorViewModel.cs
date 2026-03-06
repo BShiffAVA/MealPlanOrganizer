@@ -308,9 +308,20 @@ public partial class RecipeEditorViewModel : ObservableObject
     {
         try
         {
-            var photos = await MediaPicker.Default.PickPhotosAsync();
+            var photos = await MediaPicker.Default.PickPhotosAsync(new MediaPickerOptions
+            {
+                Title = "Select a recipe image"
+            });
             var photo = photos?.FirstOrDefault();
             await SetPhotoAsync(photo);
+        }
+        catch (FeatureNotSupportedException)
+        {
+            ErrorMessage = "Photo selection is not supported on this device.";
+        }
+        catch (PermissionException)
+        {
+            ErrorMessage = "Photo library permission was not granted. Please enable it in Settings.";
         }
         catch (Exception ex)
         {
