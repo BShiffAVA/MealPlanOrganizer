@@ -71,18 +71,11 @@ public partial class CreateMealPlanViewModel : ObservableObject
 
     partial void OnStartDateChanged(DateTime value)
     {
-        // Ensure end date is not before start date
-        if (EndDate < value)
-        {
-            EndDate = value.AddDays(6);
-        }
+        EndDate = value.AddDays(6);
 
         // Auto-update plan name if it still matches "Week of" or "Two Weeks from" pattern
         var currentName = PlanName?.Trim() ?? "";
-        if (currentName.StartsWith("Week of ") || currentName.StartsWith("Two Weeks from ") || string.IsNullOrEmpty(currentName))
-        {
-            PlanName = $"Week of {value:MMMM d}";
-        }
+        PlanName = $"Week of {value:MMMM d}";
 
         OnPropertyChanged(nameof(SummaryIsError));
         OnPropertyChanged(nameof(CanCreate));
@@ -133,20 +126,6 @@ public partial class CreateMealPlanViewModel : ObservableObject
         PlanName = $"Week of {nextMonday:MMMM d}";
     }
 
-    [RelayCommand]
-    private void SelectNext2Weeks()
-    {
-        var today = DateTime.Today;
-        var daysUntilMonday = ((int)DayOfWeek.Monday - (int)today.DayOfWeek + 7) % 7;
-        if (daysUntilMonday == 0) daysUntilMonday = 7;
-
-        var nextMonday = today.AddDays(daysUntilMonday);
-        var twoWeeksSunday = nextMonday.AddDays(13);
-
-        StartDate = nextMonday;
-        EndDate = twoWeeksSunday;
-        PlanName = $"Two Weeks from {nextMonday:MMMM d}";
-    }
 
     [RelayCommand]
     private async Task CreateAsync()

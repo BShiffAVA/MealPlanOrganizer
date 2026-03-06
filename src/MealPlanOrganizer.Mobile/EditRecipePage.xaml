@@ -129,16 +129,17 @@
                             <Frame Padding="8"
                                    CornerRadius="8"
                                    BorderColor="#E0E0E0"
+                                   BackgroundColor="Black"
                                    HasShadow="False"
                                    Margin="0,4">
                                 <Grid ColumnDefinitions="*, Auto, Auto" ColumnSpacing="8">
-                                    <VerticalStackLayout Spacing="4">
+                                    <VerticalStackLayout Spacing="4" >
                                         <Entry Text="{Binding Name}"
                                                Placeholder="Ingredient name"
-                                               PlaceholderColor="#999999" />
+                                               PlaceholderColor="#999999"/>
                                         <Entry Text="{Binding Quantity}"
                                                Placeholder="Quantity"
-                                               PlaceholderColor="#999999" />
+                                               PlaceholderColor="#999999"/>
                                     </VerticalStackLayout>
                                     <Button Grid.Column="2"
                                             Text="✕"
@@ -172,6 +173,7 @@
                             <Frame Padding="8"
                                    CornerRadius="8"
                                    BorderColor="#E0E0E0"
+                                   BackgroundColor="Black"
                                    HasShadow="False"
                                    Margin="0,4">
                                 <Grid ColumnDefinitions="Auto, *, Auto, Auto, Auto" ColumnSpacing="8">
