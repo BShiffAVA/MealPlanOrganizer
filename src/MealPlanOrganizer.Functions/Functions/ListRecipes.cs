@@ -3,6 +3,7 @@ using System.Net;
 using System.Text.Json;
 using System.Threading.Tasks;
 using MealPlanOrganizer.Functions.Data;
+using MealPlanOrganizer.Functions.Services;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.EntityFrameworkCore;
@@ -14,11 +15,13 @@ namespace MealPlanOrganizer.Functions.Functions
     {
         private readonly ILogger _logger;
         private readonly AppDbContext _db;
+        private readonly IBlobUrlService _blobUrlService;
 
-        public ListRecipes(ILoggerFactory loggerFactory, AppDbContext db)
+        public ListRecipes(ILoggerFactory loggerFactory, AppDbContext db, IBlobUrlService blobUrlService)
         {
             _logger = loggerFactory.CreateLogger<ListRecipes>();
             _db = db;
+            _blobUrlService = blobUrlService;
         }
 
         [Function("ListRecipes")]
@@ -39,13 +42,32 @@ namespace MealPlanOrganizer.Functions.Functions
                     prepTimeMinutes = r.PrepTimeMinutes,
                     averageRating = r.Ratings.Count > 0 ? r.Ratings.Average(rt => rt.Rating) : 0.0,
                     createdBy = r.CreatedBy,
-                    createdUtc = r.CreatedUtc
+                    createdUtc = r.CreatedUtc,
+                    imageUrl = r.ImageUrl
                 })
                 .Take(50)
                 .ToListAsync();
 
+            var normalizedRecipes = new List<object>(recipes.Count);
+            foreach (var r in recipes)
+            {
+                var normalizedUrl = await _blobUrlService.NormalizeImageUrlAsync(r.imageUrl);
+                normalizedRecipes.Add(new
+                {
+                    r.id,
+                    r.title,
+                    r.description,
+                    r.cuisineType,
+                    r.prepTimeMinutes,
+                    r.averageRating,
+                    r.createdBy,
+                    r.createdUtc,
+                    imageUrl = normalizedUrl
+                });
+            }
+
             var res = req.CreateResponse(HttpStatusCode.OK);
-            await res.WriteStringAsync(JsonSerializer.Serialize(recipes));
+            await res.WriteStringAsync(JsonSerializer.Serialize(normalizedRecipes));
             return res;
         }
     }

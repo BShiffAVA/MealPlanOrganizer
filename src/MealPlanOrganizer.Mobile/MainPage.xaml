@@ -4,103 +4,109 @@
              x:Class="MealPlanOrganizer.Mobile.MainPage"
              Title="Meal Plan Organizer">
 
-    <Grid RowDefinitions="Auto,Auto,*"
-          Padding="16"
-          RowSpacing="12">
-        <HorizontalStackLayout Spacing="12" HorizontalOptions="FillAndExpand">
-            <VerticalStackLayout Spacing="4" HorizontalOptions="FillAndExpand">
-                <Label
-                    Text="Recipes"
-                    Style="{StaticResource Headline}"
-                    SemanticProperties.HeadingLevel="Level1" />
-                <Label
-                    Text="Family favorites and recent additions"
-                    Style="{StaticResource SubHeadline}"
-                    SemanticProperties.HeadingLevel="Level2" />
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="12">
+            <HorizontalStackLayout Spacing="12" HorizontalOptions="FillAndExpand">
+                <VerticalStackLayout Spacing="4" HorizontalOptions="FillAndExpand">
+                    <Label
+                        Text="Recipes"
+                        Style="{StaticResource Headline}"
+                        SemanticProperties.HeadingLevel="Level1" />
+                    <Label
+                        Text="Family favorites and recent additions"
+                        Style="{StaticResource SubHeadline}"
+                        SemanticProperties.HeadingLevel="Level2" />
+                </VerticalStackLayout>
+                <Button
+                    Text="📷 Import"
+                    Clicked="OnImportRecipeClicked"
+                    BackgroundColor="#6C63FF"
+                    TextColor="White"
+                    VerticalOptions="End"
+                    Padding="12,8"
+                    CornerRadius="8" />
+                <Button
+                    Text="+ Add"
+                    Clicked="OnAddRecipeClicked"
+                    BackgroundColor="#4CAF50"
+                    TextColor="White"
+                    VerticalOptions="End"
+                    Padding="16,8"
+                    CornerRadius="8" />
+            </HorizontalStackLayout>
+
+            <VerticalStackLayout Spacing="10">
+                <SearchBar x:Name="SearchBar"
+                           Placeholder="Search recipes"
+                           TextChanged="OnSearchTextChanged" />
+
+                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="10">
+                    <Picker x:Name="CuisinePicker"
+                            Title="Cuisine"
+                            Grid.Row="0"
+                            Grid.Column="0"
+                            ItemsSource="{Binding CuisineOptions}"
+                            SelectedItem="{Binding SelectedCuisine}" />
+                    <Picker x:Name="PrepTimePicker"
+                            Title="Prep Time"
+                            Grid.Row="0"
+                            Grid.Column="1"
+                            ItemsSource="{Binding PrepTimeOptions}"
+                            SelectedItem="{Binding SelectedPrepTime}" />
+                    <Picker x:Name="RatingPicker"
+                            Title="Rating"
+                            Grid.Row="1"
+                            Grid.Column="0"
+                            ItemsSource="{Binding RatingOptions}"
+                            SelectedItem="{Binding SelectedRating}" />
+                    <Picker x:Name="CreatorPicker"
+                            Title="Creator"
+                            Grid.Row="1"
+                            Grid.Column="1"
+                            ItemsSource="{Binding CreatorOptions}"
+                            SelectedItem="{Binding SelectedCreator}" />
+                </Grid>
             </VerticalStackLayout>
-            <Button
-                Text="📷 Import"
-                Clicked="OnImportRecipeClicked"
-                BackgroundColor="#6C63FF"
-                TextColor="White"
-                VerticalOptions="End"
-                Padding="12,8"
-                CornerRadius="8" />
-            <Button
-                Text="+ Add"
-                Clicked="OnAddRecipeClicked"
-                BackgroundColor="#4CAF50"
-                TextColor="White"
-                VerticalOptions="End"
-                Padding="16,8"
-                CornerRadius="8" />
-        </HorizontalStackLayout>
 
-        <VerticalStackLayout Grid.Row="1" Spacing="10">
-            <SearchBar x:Name="SearchBar"
-                       Placeholder="Search recipes"
-                       TextChanged="OnSearchTextChanged" />
-
-            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="10">
-                <Picker x:Name="CuisinePicker"
-                        Title="Cuisine"
-                        Grid.Row="0"
-                        Grid.Column="0"
-                        ItemsSource="{Binding CuisineOptions}"
-                        SelectedItem="{Binding SelectedCuisine}" />
-                <Picker x:Name="PrepTimePicker"
-                        Title="Prep Time"
-                        Grid.Row="0"
-                        Grid.Column="1"
-                        ItemsSource="{Binding PrepTimeOptions}"
-                        SelectedItem="{Binding SelectedPrepTime}" />
-                <Picker x:Name="RatingPicker"
-                        Title="Rating"
-                        Grid.Row="1"
-                        Grid.Column="0"
-                        ItemsSource="{Binding RatingOptions}"
-                        SelectedItem="{Binding SelectedRating}" />
-                <Picker x:Name="CreatorPicker"
-                        Title="Creator"
-                        Grid.Row="1"
-                        Grid.Column="1"
-                        ItemsSource="{Binding CreatorOptions}"
-                        SelectedItem="{Binding SelectedCreator}" />
-            </Grid>
+            <VerticalStackLayout
+                BindableLayout.ItemsSource="{Binding Recipes}"
+                Spacing="12">
+                <BindableLayout.ItemTemplate>
+                    <DataTemplate>
+                        <Border
+                            Padding="12"
+                            Stroke="MediumPurple"
+                            BackgroundColor="Black">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="12" />
+                            </Border.StrokeShape>
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnRecipeTapped" />
+                            </Border.GestureRecognizers>
+                            <VerticalStackLayout Spacing="8">
+                                <Image
+                                    Source="{Binding ImageUrl}"
+                                    Aspect="AspectFill"
+                                    HeightRequest="200"
+                                    WidthRequest="340" />
+                                <Label
+                                    Text="{Binding Title}"
+                                    FontSize="18"
+                                    TextColor="White"
+                                    FontAttributes="Bold" />
+                                <HorizontalStackLayout Spacing="12">
+                                    <Label Text="{Binding CuisineType}" FontSize="14" TextColor="#666666" />
+                                    <Label Text="•" FontSize="14" TextColor="#666666" />
+                                    <Label Text="{Binding PrepTimeDisplay}" FontSize="14" TextColor="#666666" />
+                                    <Label Text="•" FontSize="14" TextColor="#666666" />
+                                    <Label Text="{Binding RatingDisplay}" FontSize="14" TextColor="#666666" />
+                                </HorizontalStackLayout>
+                            </VerticalStackLayout>
+                        </Border>
+                    </DataTemplate>
+                </BindableLayout.ItemTemplate>
+            </VerticalStackLayout>
         </VerticalStackLayout>
-
-        <CollectionView
-            Grid.Row="2"
-            ItemsSource="{Binding Recipes}"
-            SelectionMode="None">
-            <CollectionView.ItemTemplate>
-                <DataTemplate>
-                    <Frame
-                        Margin="0,0,0,12"
-                        Padding="12"
-                        CornerRadius="12"
-                        BorderColor="#FFE0E0E0"
-                        HasShadow="False">
-                        <Frame.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="OnRecipeTapped" />
-                        </Frame.GestureRecognizers>
-                        <VerticalStackLayout Spacing="8">
-                            <Label
-                                Text="{Binding Title}"
-                                FontSize="18"
-                                FontAttributes="Bold" />
-                            <HorizontalStackLayout Spacing="12">
-                                <Label Text="{Binding CuisineType}" FontSize="14" TextColor="#666666" />
-                                <Label Text="•" FontSize="14" TextColor="#666666" />
-                                <Label Text="{Binding PrepTimeDisplay}" FontSize="14" TextColor="#666666" />
-                                <Label Text="•" FontSize="14" TextColor="#666666" />
-                                <Label Text="{Binding RatingDisplay}" FontSize="14" TextColor="#666666" />
-                            </HorizontalStackLayout>
-                        </VerticalStackLayout>
-                    </Frame>
-                </DataTemplate>
-            </CollectionView.ItemTemplate>
-        </CollectionView>
-    </Grid>
+    </ScrollView>
 
 </ContentPage>

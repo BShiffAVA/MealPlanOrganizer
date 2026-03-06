@@ -83,6 +83,7 @@ public class RecipeDto
     public int? PrepTimeMinutes { get; set; }
     public double AverageRating { get; set; }
     public string? CreatedBy { get; set; }
+    public string? ImageUrl { get; set; }
 }
 
 public class RecipeDetailDto

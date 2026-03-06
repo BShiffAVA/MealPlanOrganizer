@@ -327,7 +327,7 @@
                                        Margin="0,5" 
                                        CornerRadius="10"
                                        BackgroundColor="#1A1A1A">
-                                    <HorizontalStackLayout Spacing="15">
+                                    <HorizontalStackLayout Spacing="15" VerticalOptions="Start">
                                         <Frame BackgroundColor="{StaticResource Primary}" 
                                                Padding="10" 
                                                CornerRadius="20" 
@@ -343,7 +343,7 @@
                                         </Frame>
                                         <Label Text="{Binding Instruction}" 
                                                FontSize="15" 
-                                               VerticalOptions="Center" 
+                                               VerticalOptions="StartAndExpand" 
                                                LineBreakMode="WordWrap"
                                                TextColor="White"
                                                HorizontalOptions="FillAndExpand"/>

@@ -95,7 +95,8 @@ public partial class MainViewModel : ObservableObject
                     recipe.CuisineType ?? "Unknown",
                     recipe.PrepTimeMinutes ?? 0,
                     recipe.AverageRating,
-                    recipe.CreatedBy ?? "Unknown"
+                    recipe.CreatedBy ?? "Unknown",
+                    recipe.ImageUrl ?? ""
                 ));
             }
 

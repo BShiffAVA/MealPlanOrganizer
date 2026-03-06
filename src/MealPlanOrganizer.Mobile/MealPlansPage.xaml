@@ -99,6 +99,7 @@
                             <!-- Meal Plan Name -->
                             <Label
                                 Text="{Binding Name}"
+                                TextColor="Black"
                                 FontSize="18"
                                 FontAttributes="Bold"
                                 Grid.Column="0" />

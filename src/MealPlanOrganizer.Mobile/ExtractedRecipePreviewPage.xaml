@@ -127,10 +127,12 @@
                                 <Grid ColumnDefinitions="80,*,40" ColumnSpacing="8">
                                     <Entry Text="{Binding QuantityWithUnit, Mode=TwoWay}"
                                            Placeholder="e.g., 2 cups"
+                                           TextColor="Black"
                                            FontSize="14" />
                                     <Entry Grid.Column="1"
                                            Text="{Binding Name}"
                                            Placeholder="Ingredient name"
+                                           TextColor="Black"
                                            FontSize="14" />
                                     <Button Grid.Column="2"
                                             Text="✕"
@@ -190,6 +192,7 @@
                                     <Editor Grid.Column="1"
                                             Text="{Binding Instruction}"
                                             Placeholder="Enter instruction"
+                                            TextColor="Black"
                                             FontSize="14"
                                             AutoSize="TextChanges"
                                             MinimumHeightRequest="40" />

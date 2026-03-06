@@ -2,6 +2,7 @@
 using MealPlanOrganizer.Mobile.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Identity.Client;
+using Microsoft.Maui.Platform;
 using Serilog;
 using UIKit;
 using UserNotifications;
@@ -142,7 +143,7 @@ public class AppDelegate : MauiUIApplicationDelegate, IUNUserNotificationCenterD
 			{
 				await Task.Delay(500);
 
-				var services = Application.Current?.Handler?.MauiContext?.Services;
+				var services = IPlatformApplication.Current?.Services;
 				var deepLinkService = services?.GetService<IDeepLinkService>();
 
 				if (deepLinkService != null)
@@ -177,7 +178,7 @@ public class AppDelegate : MauiUIApplicationDelegate, IUNUserNotificationCenterD
 			{
 				await Task.Delay(500);
 
-				var services = Application.Current?.Handler?.MauiContext?.Services;
+				var services = IPlatformApplication.Current?.Services;
 				var deepLinkService = services?.GetService<IDeepLinkService>();
 
 				if (deepLinkService != null)
@@ -203,16 +204,5 @@ public class AppDelegate : MauiUIApplicationDelegate, IUNUserNotificationCenterD
 			}
 		});
 	}
-
-	// Handle APNs device token registration
-	public override void RegisteredForRemoteNotifications(UIApplication application, NSData deviceToken)
-	{
-		PushNotificationService.Instance?.OnRegisteredForRemoteNotifications(deviceToken);
-	}
-
-	// Handle APNs registration failure
-	public override void FailedToRegisterForRemoteNotifications(UIApplication application, NSError error)
-	{
-		PushNotificationService.Instance?.OnFailedToRegisterForRemoteNotifications(error);
-	}
 }
+

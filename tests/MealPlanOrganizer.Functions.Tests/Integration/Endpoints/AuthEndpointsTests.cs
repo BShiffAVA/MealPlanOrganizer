@@ -389,8 +389,9 @@ public class AuthEndpointsTests : IAsyncLifetime
         using var scope = _fixture.TestHost.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
+        var blobUrlService = scope.ServiceProvider.GetRequiredService<IBlobUrlService>();
         
-        var function = new ListRecipes(loggerFactory, db);
+        var function = new ListRecipes(loggerFactory, db, blobUrlService);
         
         var httpRequest = CreateMockHttpRequest(HttpMethod.Get, authHeader: null);
         
