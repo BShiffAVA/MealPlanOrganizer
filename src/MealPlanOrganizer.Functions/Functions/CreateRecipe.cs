@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text.Json;
@@ -141,6 +142,26 @@ namespace MealPlanOrganizer.Functions.Functions
                 _db.Recipes.Add(recipe);
                 await _db.SaveChangesAsync();
                 _logger.LogInformation("Recipe saved with ID: {RecipeId}", recipe.Id);
+
+                // Upsert tags
+                var normalizedTags = TagHelper.NormalizeAll(model.Tags);
+                foreach (var tagName in normalizedTags)
+                {
+                    var tag = await _db.RecipeTags.FirstOrDefaultAsync(t => t.Name == tagName);
+                    if (tag == null)
+                    {
+                        tag = new RecipeTag { Name = tagName };
+                        _db.RecipeTags.Add(tag);
+                        await _db.SaveChangesAsync();
+                    }
+                    _db.RecipeTagAssignments.Add(new RecipeTagAssignment
+                    {
+                        RecipeId = recipe.Id,
+                        TagId = tag.Id
+                    });
+                }
+                if (normalizedTags.Count > 0)
+                    await _db.SaveChangesAsync();
 
                 var created = req.CreateResponse(HttpStatusCode.Created);
                 created.Headers.Add("Location", $"/api/recipes/{recipe.Id}");

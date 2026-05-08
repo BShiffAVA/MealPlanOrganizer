@@ -219,6 +219,68 @@
                         TextColor="White" />
             </VerticalStackLayout>
 
+            <!-- Tags Section -->
+            <VerticalStackLayout Spacing="8" Margin="0,12,0,0">
+                <Label Text="Tags" FontAttributes="Bold" FontSize="16" />
+                <Label Text="Add hashtags to help find this recipe (e.g. quick, vegetarian, italian)"
+                       FontSize="12" TextColor="#888888" />
+
+                <!-- Current Tags -->
+                <FlexLayout BindableLayout.ItemsSource="{Binding Tags}"
+                            Wrap="Wrap" Direction="Row" JustifyContent="Start">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="{x:Type x:String}">
+                            <Border BackgroundColor="#6C63FF" Padding="10,4" Margin="0,0,6,6">
+                                <Border.StrokeShape><RoundRectangle CornerRadius="14"/></Border.StrokeShape>
+                                <HorizontalStackLayout Spacing="4">
+                                    <Label Text="{Binding ., StringFormat='#{0}'}" TextColor="White" FontSize="13"/>
+                                    <Label Text="✕" TextColor="White" FontSize="11">
+                                        <Label.GestureRecognizers>
+                                            <TapGestureRecognizer
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:RecipeEditorViewModel}}, Path=RemoveTagCommand}"
+                                                CommandParameter="{Binding .}"/>
+                                        </Label.GestureRecognizers>
+                                    </Label>
+                                </HorizontalStackLayout>
+                            </Border>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </FlexLayout>
+
+                <!-- Tag Input -->
+                <Grid ColumnDefinitions="*, Auto" ColumnSpacing="8">
+                    <Entry Grid.Column="0"
+                           Text="{Binding TagInput}"
+                           Placeholder="Add a tag..."
+                           PlaceholderColor="#999999"
+                           ReturnCommand="{Binding AddTagCommand}" />
+                    <Button Grid.Column="1" Text="Add"
+                            Command="{Binding AddTagCommand}"
+                            BackgroundColor="#6C63FF"
+                            TextColor="White" />
+                </Grid>
+
+                <!-- Suggestions -->
+                <CollectionView ItemsSource="{Binding TagSuggestions}"
+                                IsVisible="{Binding HasTagSuggestions}"
+                                SelectionMode="None"
+                                MaximumHeightRequest="150">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="{x:Type x:String}">
+                            <Label Text="{Binding ., StringFormat='#{0}'}"
+                                   Padding="12,8"
+                                   FontSize="14">
+                                <Label.GestureRecognizers>
+                                    <TapGestureRecognizer
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:RecipeEditorViewModel}}, Path=SelectSuggestionCommand}"
+                                        CommandParameter="{Binding .}"/>
+                                </Label.GestureRecognizers>
+                            </Label>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </VerticalStackLayout>
+
             <!-- Save Button -->
             <Button Text="Save Recipe"
                     Command="{Binding SaveCommand}"

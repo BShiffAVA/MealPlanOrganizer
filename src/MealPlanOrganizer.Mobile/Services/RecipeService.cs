@@ -874,4 +874,34 @@ public class RecipeService : IRecipeService
             return false;
         }
     }
+
+    /// <inheritdoc/>
+    public async Task<List<string>> GetTagSuggestionsAsync(string prefix)
+    {
+        try
+        {
+            _logger.LogInformation("Getting tag suggestions for prefix: {Prefix}", prefix);
+
+            await AttachBearerTokenAsync();
+
+            var encodedPrefix = Uri.EscapeDataString(prefix);
+            var url = $"{_baseUrl}/tags?search={encodedPrefix}&code={_functionKey}";
+            var response = await _httpClient.GetAsync(url);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError("Failed to get tag suggestions: {StatusCode}", response.StatusCode);
+                return new List<string>();
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            return JsonSerializer.Deserialize<List<string>>(content, options) ?? new List<string>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception getting tag suggestions");
+            return new List<string>();
+        }
+    }
 }

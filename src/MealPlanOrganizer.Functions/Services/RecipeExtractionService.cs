@@ -38,6 +38,7 @@ Return a JSON object with the following structure:
   ""cookMinutes"": number or null,
   ""servings"": number or null,
   ""confidence"": number between 0.0 and 1.0 indicating extraction quality,
+  ""suggestedTags"": [""tag1"", ""tag2""],
   ""ingredients"": [
     { ""name"": ""ingredient name"", ""quantity"": number or null, ""unit"": ""unit or null"" }
   ],
@@ -52,6 +53,7 @@ Guidelines:
 - Use common unit abbreviations (cups, tbsp, tsp, oz, lb, g, ml)
 - If information is unclear, use null
 - Set confidence based on how complete and clear the extraction is (1.0 = perfect, 0.5 = partial, 0.0 = failed)
+- For suggestedTags: infer 2-5 relevant tags from the recipe (e.g., ""vegetarian"", ""quick"", ""italian"", ""pasta"", ""gluten-free""). Use lowercase, no spaces (use hyphens), no # prefix.
 - Return valid JSON only, no markdown formatting";
 
         public RecipeExtractionService(
@@ -357,7 +359,8 @@ Guidelines:
                     CookMinutes = extractedData.CookMinutes,
                     Servings = extractedData.Servings,
                     Ingredients = extractedData.Ingredients ?? new List<ExtractedIngredient>(),
-                    Steps = extractedData.Steps ?? new List<ExtractedStep>()
+                    Steps = extractedData.Steps ?? new List<ExtractedStep>(),
+                    SuggestedTags = extractedData.SuggestedTags ?? new List<string>()
                 };
 
                 var confidence = extractedData.Confidence ?? CalculateConfidence(extractedRecipe);
@@ -522,6 +525,7 @@ Guidelines:
             public int? CookMinutes { get; set; }
             public int? Servings { get; set; }
             public decimal? Confidence { get; set; }
+            public List<string>? SuggestedTags { get; set; }
             public List<ExtractedIngredient>? Ingredients { get; set; }
             public List<ExtractedStep>? Steps { get; set; }
         }

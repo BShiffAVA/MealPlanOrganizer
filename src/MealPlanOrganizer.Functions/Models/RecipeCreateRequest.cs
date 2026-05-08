@@ -13,6 +13,7 @@ namespace MealPlanOrganizer.Functions.Models
         public IList<IngredientInput>? Ingredients { get; set; }
         public IList<string>? Steps { get; set; }
         public string? ImageUrl { get; set; }
+        public List<string>? Tags { get; set; }
     }
 
     public class IngredientInput

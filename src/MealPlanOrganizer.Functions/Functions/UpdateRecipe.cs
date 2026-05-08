@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text.Json;
@@ -83,6 +84,7 @@ namespace MealPlanOrganizer.Functions.Functions
                 var recipe = await _context.Recipes
                     .Include(r => r.Ingredients)
                     .Include(r => r.Steps)
+                    .Include(r => r.TagAssignments)
                     .FirstOrDefaultAsync(r => r.Id == recipeGuid);
 
                 if (recipe == null)
@@ -171,9 +173,42 @@ namespace MealPlanOrganizer.Functions.Functions
                     }
                 }
 
+                // Update tags - delete old assignments and re-add
+                if (updateRequest.Tags != null)
+                {
+                    await _context.RecipeTagAssignments
+                        .Where(ta => ta.RecipeId == recipe.Id)
+                        .ExecuteDeleteAsync();
+
+                    var normalizedTags = TagHelper.NormalizeAll(updateRequest.Tags);
+                    foreach (var tagName in normalizedTags)
+                    {
+                        var tag = await _context.RecipeTags.FirstOrDefaultAsync(t => t.Name == tagName);
+                        if (tag == null)
+                        {
+                            tag = new RecipeTag { Name = tagName };
+                            _context.RecipeTags.Add(tag);
+                            await _context.SaveChangesAsync();
+                        }
+                        _context.RecipeTagAssignments.Add(new RecipeTagAssignment
+                        {
+                            RecipeId = recipe.Id,
+                            TagId = tag.Id
+                        });
+                    }
+                }
+
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation("Successfully updated recipe: {RecipeId}", recipeId);
+
+                // Reload tags for response
+                var tags = await _context.RecipeTagAssignments
+                    .Where(ta => ta.RecipeId == recipe.Id)
+                    .Include(ta => ta.Tag)
+                    .Select(ta => ta.Tag.Name)
+                    .OrderBy(n => n)
+                    .ToListAsync();
 
                 // Return updated recipe
                 var response = req.CreateResponse(HttpStatusCode.OK);
@@ -190,7 +225,8 @@ namespace MealPlanOrganizer.Functions.Functions
                     imageUrl = recipe.ImageUrl,
                     createdBy = recipe.CreatedBy,
                     createdUtc = recipe.CreatedUtc,
-                    updatedUtc = recipe.UpdatedUtc
+                    updatedUtc = recipe.UpdatedUtc,
+                    tags
                 }));
 
                 return response;
@@ -219,6 +255,7 @@ namespace MealPlanOrganizer.Functions.Functions
             public string? ImageUrl { get; set; }
             public List<IngredientInput>? Ingredients { get; set; }
             public List<string>? Steps { get; set; }
+            public List<string>? Tags { get; set; }
         }
 
         private class IngredientInput

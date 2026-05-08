@@ -46,5 +46,10 @@ namespace MealPlanOrganizer.Functions.Models
         /// List of cooking steps/instructions
         /// </summary>
         public List<ExtractedStep> Steps { get; set; } = new();
+
+        /// <summary>
+        /// Suggested hashtags inferred from the recipe content.
+        /// </summary>
+        public List<string> SuggestedTags { get; set; } = new();
     }
 }

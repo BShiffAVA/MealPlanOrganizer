@@ -76,6 +76,17 @@ public partial class RecipeEditorViewModel : ObservableObject
     [ObservableProperty]
     private Guid? _recipeId;
 
+    [ObservableProperty]
+    private ObservableCollection<string> _tags = new();
+
+    [ObservableProperty]
+    private string _tagInput = string.Empty;
+
+    [ObservableProperty]
+    private ObservableCollection<string> _tagSuggestions = new();
+
+    public bool HasTagSuggestions => TagSuggestions.Count > 0;
+
     #endregion
 
     public RecipeEditorViewModel(
@@ -86,6 +97,7 @@ public partial class RecipeEditorViewModel : ObservableObject
         _recipeService = recipeService;
         _navigationService = navigationService;
         _logger = logger;
+        TagSuggestions.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasTagSuggestions));
     }
 
     #region Initialization
@@ -129,6 +141,9 @@ public partial class RecipeEditorViewModel : ObservableObject
 
         Ingredients.Clear();
         Steps.Clear();
+        Tags.Clear();
+        TagInput = string.Empty;
+        TagSuggestions.Clear();
     }
 
     [RelayCommand]
@@ -192,6 +207,15 @@ public partial class RecipeEditorViewModel : ObservableObject
             {
                 Steps.Add(new StepFormItem(1, string.Empty));
             }
+
+            Tags.Clear();
+            if (recipe.Tags != null)
+            {
+                foreach (var tag in recipe.Tags)
+                {
+                    Tags.Add(tag);
+                }
+            }
         }
         catch (Exception ex)
         {
@@ -221,6 +245,76 @@ public partial class RecipeEditorViewModel : ObservableObject
         {
             Ingredients.Remove(ingredient);
         }
+    }
+
+    #endregion
+
+    #region Tag Commands
+
+    [RelayCommand]
+    private void AddTag()
+    {
+        var normalized = TagInput.Trim().TrimStart('#').ToLowerInvariant()
+            .Replace(' ', '-');
+        normalized = System.Text.RegularExpressions.Regex.Replace(normalized, @"[^a-z0-9-]", "");
+        if (normalized.Length > 50) normalized = normalized[..50];
+
+        if (string.IsNullOrEmpty(normalized)) return;
+        if (Tags.Contains(normalized)) { TagInput = string.Empty; TagSuggestions.Clear(); return; }
+
+        Tags.Add(normalized);
+        TagInput = string.Empty;
+        TagSuggestions.Clear();
+    }
+
+    [RelayCommand]
+    private void RemoveTag(string? tag)
+    {
+        if (tag != null)
+            Tags.Remove(tag);
+    }
+
+    [RelayCommand]
+    private async Task GetTagSuggestionsAsync()
+    {
+        var input = TagInput.Trim();
+        if (input.Length < 1)
+        {
+            TagSuggestions.Clear();
+            return;
+        }
+
+        try
+        {
+            var suggestions = await _recipeService.GetTagSuggestionsAsync(input);
+            TagSuggestions.Clear();
+            foreach (var s in suggestions.Where(s => !Tags.Contains(s)))
+                TagSuggestions.Add(s);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to fetch tag suggestions");
+        }
+    }
+
+    [RelayCommand]
+    private void SelectSuggestion(string? suggestion)
+    {
+        if (suggestion == null) return;
+        if (!Tags.Contains(suggestion))
+            Tags.Add(suggestion);
+        TagInput = string.Empty;
+        TagSuggestions.Clear();
+    }
+
+    partial void OnTagInputChanged(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            TagSuggestions.Clear();
+            return;
+        }
+        GetTagSuggestionsCommand.Execute(null);
     }
 
     #endregion
@@ -414,7 +508,8 @@ public partial class RecipeEditorViewModel : ObservableObject
             Steps = Steps
                 .Where(x => !string.IsNullOrWhiteSpace(x.Instruction))
                 .Select(x => x.Instruction.Trim())
-                .ToList()
+                .ToList(),
+            Tags = Tags.ToList()
         };
 
         if (_selectedPhoto != null)
@@ -447,7 +542,8 @@ public partial class RecipeEditorViewModel : ObservableObject
                     Servings = recipe.Servings,
                     ImageUrl = imageUrl,
                     Ingredients = recipe.Ingredients,
-                    Steps = recipe.Steps
+                    Steps = recipe.Steps,
+                    Tags = recipe.Tags
                 };
 
                 await _recipeService.UpdateRecipeAsync(recipeId.Value, updateDto);
@@ -525,7 +621,8 @@ public partial class RecipeEditorViewModel : ObservableObject
             Steps = Steps
                 .Where(x => !string.IsNullOrWhiteSpace(x.Instruction))
                 .Select(x => x.Instruction.Trim())
-                .ToList()
+                .ToList(),
+            Tags = Tags.ToList()
         };
 
         var success = await _recipeService.UpdateRecipeAsync(RecipeId.Value, updateDto);

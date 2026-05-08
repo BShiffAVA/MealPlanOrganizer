@@ -15,6 +15,7 @@ public class ExtractedRecipe
     public int? PrepMinutes { get; set; }
     public int? CookMinutes { get; set; }
     public int? Servings { get; set; }
+    public List<string> SuggestedTags { get; set; } = new();
     public ObservableCollection<ExtractedIngredient> Ingredients { get; set; } = new();
     public ObservableCollection<ExtractedStep> Steps { get; set; } = new();
 }

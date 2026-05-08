@@ -72,6 +72,11 @@ public interface IRecipeService
     /// Dismiss a pending rating (user chose not to rate).
     /// </summary>
     Task<bool> DismissPendingRatingAsync(Guid pendingRatingId);
+
+    /// <summary>
+    /// Get tag autocomplete suggestions for a prefix.
+    /// </summary>
+    Task<List<string>> GetTagSuggestionsAsync(string prefix);
 }
 
 public class RecipeDto
@@ -84,6 +89,7 @@ public class RecipeDto
     public double AverageRating { get; set; }
     public string? CreatedBy { get; set; }
     public string? ImageUrl { get; set; }
+    public List<string> Tags { get; set; } = new();
 }
 
 public class RecipeDetailDto
@@ -103,6 +109,7 @@ public class RecipeDetailDto
     public List<RecipeIngredientDto> Ingredients { get; set; } = new();
     public List<RecipeStepDto> Steps { get; set; } = new();
     public List<RecipeRatingDto> Ratings { get; set; } = new();
+    public List<string> Tags { get; set; } = new();
     public double AverageRating { get; set; }
     public int RatingCount { get; set; }
     
@@ -209,6 +216,7 @@ public class CreateRecipeDto
     public string? ImageUrl { get; set; }
     public List<IngredientInput> Ingredients { get; set; } = new();
     public List<string> Steps { get; set; } = new();
+    public List<string> Tags { get; set; } = new();
 }
 
 public class IngredientInput

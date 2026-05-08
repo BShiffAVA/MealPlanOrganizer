@@ -19,6 +19,8 @@ namespace MealPlanOrganizer.Functions.Data
         public DbSet<InviteCode> InviteCodes => Set<InviteCode>();
         public DbSet<PendingRating> PendingRatings => Set<PendingRating>();
         public DbSet<DeviceRegistration> DeviceRegistrations => Set<DeviceRegistration>();
+        public DbSet<RecipeTag> RecipeTags => Set<RecipeTag>();
+        public DbSet<RecipeTagAssignment> RecipeTagAssignments => Set<RecipeTagAssignment>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -318,6 +320,37 @@ namespace MealPlanOrganizer.Functions.Data
                 b.HasIndex(x => x.UserId);
                 // Unique constraint: one registration per user per platform per token
                 b.HasIndex(x => new { x.UserId, x.Platform, x.PushToken }).IsUnique();
+            });
+
+            modelBuilder.Entity<RecipeTag>(b =>
+            {
+                b.ToTable("RecipeTags");
+                b.HasKey(x => x.Id);
+                b.Property(x => x.Name).IsRequired().HasMaxLength(50);
+
+                if (isSqlServer)
+                {
+                    b.Property(x => x.CreatedUtc).HasDefaultValueSql("GETUTCDATE()");
+                }
+
+                // Tag names are globally unique (no household scope)
+                b.HasIndex(x => x.Name).IsUnique();
+            });
+
+            modelBuilder.Entity<RecipeTagAssignment>(b =>
+            {
+                b.ToTable("RecipeTagAssignments");
+                b.HasKey(x => new { x.RecipeId, x.TagId });
+
+                b.HasOne(x => x.Recipe)
+                    .WithMany(x => x.TagAssignments)
+                    .HasForeignKey(x => x.RecipeId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                b.HasOne(x => x.Tag)
+                    .WithMany(x => x.Assignments)
+                    .HasForeignKey(x => x.TagId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             // Seed sample data via HasData

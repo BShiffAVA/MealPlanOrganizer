@@ -50,6 +50,9 @@ public partial class RecipeDetailViewModel : ObservableObject
     private bool _hasImage;
 
     [ObservableProperty]
+    private bool _hasTags;
+
+    [ObservableProperty]
     private bool _isCurrentUserCreator;
 
     [ObservableProperty]
@@ -183,6 +186,9 @@ public partial class RecipeDetailViewModel : ObservableObject
     [ObservableProperty]
     private ObservableCollection<RecipeRatingDto> _ratings = new();
 
+    [ObservableProperty]
+    private ObservableCollection<string> _tags = new();
+
     public List<string> NextTimePreferenceOptions { get; } = new()
     {
         "Right away",
@@ -309,6 +315,8 @@ public partial class RecipeDetailViewModel : ObservableObject
         Ingredients = new ObservableCollection<RecipeIngredientDto>(recipe.Ingredients ?? new List<RecipeIngredientDto>());
         Steps = new ObservableCollection<RecipeStepDto>(recipe.Steps ?? new List<RecipeStepDto>());
         Ratings = new ObservableCollection<RecipeRatingDto>(recipe.Ratings ?? new List<RecipeRatingDto>());
+        Tags = new ObservableCollection<string>(recipe.Tags ?? new List<string>());
+        HasTags = Tags.Count > 0;
 
         // Reset rating form
         SelectedRating = 0;

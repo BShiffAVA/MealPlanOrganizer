@@ -51,5 +51,6 @@ namespace MealPlanOrganizer.Functions.Data.Entities
         public ICollection<RecipeIngredient> Ingredients { get; set; } = new List<RecipeIngredient>();
         public ICollection<RecipeStep> Steps { get; set; } = new List<RecipeStep>();
         public ICollection<RecipeRating> Ratings { get; set; } = new List<RecipeRating>();
+        public ICollection<RecipeTagAssignment> TagAssignments { get; set; } = new List<RecipeTagAssignment>();
     }
 }

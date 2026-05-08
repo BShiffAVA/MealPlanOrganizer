@@ -11,4 +11,5 @@ public class UpdateRecipeDto
     public string? ImageUrl { get; set; }
     public List<IngredientInput> Ingredients { get; set; } = new();
     public List<string> Steps { get; set; } = new();
+    public List<string> Tags { get; set; } = new();
 }

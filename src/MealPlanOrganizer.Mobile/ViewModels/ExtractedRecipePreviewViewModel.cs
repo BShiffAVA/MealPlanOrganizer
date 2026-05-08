@@ -42,6 +42,9 @@ public partial class ExtractedRecipePreviewViewModel : ObservableObject
     private ObservableCollection<ExtractedStep> _steps = new();
 
     [ObservableProperty]
+    private ObservableCollection<string> _suggestedTags = new();
+
+    [ObservableProperty]
     private bool _isLoading;
 
     [ObservableProperty]
@@ -132,6 +135,15 @@ public partial class ExtractedRecipePreviewViewModel : ObservableObject
             }
         }
 
+        SuggestedTags.Clear();
+        if (recipe.SuggestedTags != null)
+        {
+            foreach (var tag in recipe.SuggestedTags)
+            {
+                SuggestedTags.Add(tag);
+            }
+        }
+
         _logger.LogInformation("Populated form with recipe: {Name}, {IngredientCount} ingredients, {StepCount} steps",
             recipe.Name, Ingredients.Count, Steps.Count);
     }
@@ -165,6 +177,13 @@ public partial class ExtractedRecipePreviewViewModel : ObservableObject
             ConfidenceBorderColor = "#F44336";
             ConfidenceTextColor = "#C62828";
         }
+    }
+
+    [RelayCommand]
+    private void RemoveSuggestedTag(string? tag)
+    {
+        if (tag != null)
+            SuggestedTags.Remove(tag);
     }
 
     [RelayCommand]
@@ -307,7 +326,8 @@ public partial class ExtractedRecipePreviewViewModel : ObservableObject
                 Steps = Steps
                     .Where(s => !string.IsNullOrWhiteSpace(s.Instruction))
                     .Select(s => s.Instruction?.Trim() ?? string.Empty)
-                    .ToList()
+                    .ToList(),
+                Tags = SuggestedTags.ToList()
             };
 
             var savedRecipeId = await _recipeService.CreateRecipeAsync(recipe);

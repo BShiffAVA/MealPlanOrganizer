@@ -50,6 +50,9 @@ public partial class MainViewModel : ObservableObject
     private string _selectedCreator = "All";
 
     [ObservableProperty]
+    private string _selectedTag = "All";
+
+    [ObservableProperty]
     private ObservableCollection<string> _cuisineOptions = new() { "All" };
 
     [ObservableProperty]
@@ -60,6 +63,9 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private ObservableCollection<string> _creatorOptions = new() { "All" };
+
+    [ObservableProperty]
+    private ObservableCollection<string> _tagOptions = new() { "All" };
 
     [ObservableProperty]
     private bool _isLoading;
@@ -96,7 +102,8 @@ public partial class MainViewModel : ObservableObject
                     recipe.PrepTimeMinutes ?? 0,
                     recipe.AverageRating,
                     recipe.CreatedBy ?? "Unknown",
-                    recipe.ImageUrl ?? ""
+                    recipe.ImageUrl ?? "",
+                    recipe.Tags
                 ));
             }
 
@@ -158,14 +165,23 @@ public partial class MainViewModel : ObservableObject
             .ToList();
         creators.Insert(0, "All");
 
+        var tags = _allRecipes
+            .SelectMany(r => r.Tags)
+            .Distinct()
+            .OrderBy(t => t)
+            .ToList();
+        tags.Insert(0, "All");
+
         CuisineOptions = new ObservableCollection<string>(cuisines);
         CreatorOptions = new ObservableCollection<string>(creators);
+        TagOptions = new ObservableCollection<string>(tags);
 
         // Reset selections to default
         SelectedCuisine = "All";
         SelectedPrepTime = "All";
         SelectedRating = "All";
         SelectedCreator = "All";
+        SelectedTag = "All";
     }
 
     private void ApplyFilters()
@@ -208,6 +224,12 @@ public partial class MainViewModel : ObservableObject
             filtered = filtered.Where(r => r.CreatedBy.Equals(SelectedCreator, StringComparison.OrdinalIgnoreCase));
         }
 
+        // Tag filter
+        if (SelectedTag != "All")
+        {
+            filtered = filtered.Where(r => r.Tags.Contains(SelectedTag, StringComparer.OrdinalIgnoreCase));
+        }
+
         Recipes = new ObservableCollection<RecipeCard>(filtered);
     }
 
@@ -217,4 +239,5 @@ public partial class MainViewModel : ObservableObject
     partial void OnSelectedPrepTimeChanged(string value) => ApplyFilters();
     partial void OnSelectedRatingChanged(string value) => ApplyFilters();
     partial void OnSelectedCreatorChanged(string value) => ApplyFilters();
+    partial void OnSelectedTagChanged(string value) => ApplyFilters();
 }

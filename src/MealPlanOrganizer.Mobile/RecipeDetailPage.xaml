@@ -99,6 +99,30 @@
                     </Grid>
                 </Frame>
 
+                <!-- Tags -->
+                <VerticalStackLayout Spacing="8" IsVisible="{Binding HasTags}">
+                    <Label Text="Tags" FontSize="18" FontAttributes="Bold"/>
+                    <FlexLayout BindableLayout.ItemsSource="{Binding Tags}"
+                                Wrap="Wrap"
+                                Direction="Row"
+                                JustifyContent="Start">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="{x:Type x:String}">
+                                <Border BackgroundColor="#6C63FF"
+                                        Padding="10,4"
+                                        Margin="0,0,6,6">
+                                    <Border.StrokeShape>
+                                        <RoundRectangle CornerRadius="14"/>
+                                    </Border.StrokeShape>
+                                    <Label Text="{Binding ., StringFormat='#{0}'}"
+                                           TextColor="White"
+                                           FontSize="13"/>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </FlexLayout>
+                </VerticalStackLayout>
+
                 <!-- Ratings Summary -->
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Ratings" 

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text.Json;
@@ -30,10 +31,30 @@ namespace MealPlanOrganizer.Functions.Functions
         {
             _logger.LogInformation("Listing recipes");
 
-            var recipes = await _db.Recipes
+            var query = _db.Recipes
                 .Include(r => r.Ratings)
+                .Include(r => r.TagAssignments).ThenInclude(ta => ta.Tag)
                 .OrderByDescending(r => r.CreatedUtc)
-                .Select(r => new
+                .AsQueryable();
+
+            var tagFilter = req.Query["tag"];
+            if (!string.IsNullOrWhiteSpace(tagFilter))
+            {
+                var normalizedTag = TagHelper.Normalize(tagFilter);
+                if (normalizedTag != null)
+                {
+                    _logger.LogInformation("Filtering by tag: {Tag}", normalizedTag);
+                    query = query.Where(r => r.TagAssignments.Any(ta => ta.Tag.Name == normalizedTag));
+                }
+            }
+
+            var recipes = await query.Take(50).ToListAsync();
+
+            var normalizedRecipes = new List<object>(recipes.Count);
+            foreach (var r in recipes)
+            {
+                var normalizedUrl = await _blobUrlService.NormalizeImageUrlAsync(r.ImageUrl);
+                normalizedRecipes.Add(new
                 {
                     id = r.Id,
                     title = r.Title,
@@ -43,26 +64,8 @@ namespace MealPlanOrganizer.Functions.Functions
                     averageRating = r.Ratings.Count > 0 ? r.Ratings.Average(rt => rt.Rating) : 0.0,
                     createdBy = r.CreatedBy,
                     createdUtc = r.CreatedUtc,
-                    imageUrl = r.ImageUrl
-                })
-                .Take(50)
-                .ToListAsync();
-
-            var normalizedRecipes = new List<object>(recipes.Count);
-            foreach (var r in recipes)
-            {
-                var normalizedUrl = await _blobUrlService.NormalizeImageUrlAsync(r.imageUrl);
-                normalizedRecipes.Add(new
-                {
-                    r.id,
-                    r.title,
-                    r.description,
-                    r.cuisineType,
-                    r.prepTimeMinutes,
-                    r.averageRating,
-                    r.createdBy,
-                    r.createdUtc,
-                    imageUrl = normalizedUrl
+                    imageUrl = normalizedUrl,
+                    tags = r.TagAssignments.Select(ta => ta.Tag.Name).OrderBy(n => n).ToList()
                 });
             }
 

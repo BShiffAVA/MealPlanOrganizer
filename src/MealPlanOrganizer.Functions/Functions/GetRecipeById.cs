@@ -56,6 +56,7 @@ public class GetRecipeById
             .Include(r => r.Ingredients.OrderBy(i => i.Id))
             .Include(r => r.Steps.OrderBy(s => s.StepNumber))
             .Include(r => r.Ratings)
+            .Include(r => r.TagAssignments).ThenInclude(ta => ta.Tag)
             .FirstOrDefaultAsync(r => r.Id == id);
 
         if (recipe == null)
@@ -107,7 +108,8 @@ public class GetRecipeById
             {
                 stepNumber = s.StepNumber,
                 instruction = s.Instruction
-            }).ToList()
+            }).ToList(),
+            tags = recipe.TagAssignments.Select(ta => ta.Tag.Name).OrderBy(n => n).ToList()
         });
 
         return response;

@@ -1,3 +1,5 @@
+using System.Linq;
+
 namespace MealPlanOrganizer.Mobile.Models;
 
 /// <summary>
@@ -5,7 +7,7 @@ namespace MealPlanOrganizer.Mobile.Models;
 /// </summary>
 public sealed class RecipeCard
 {
-    public RecipeCard(Guid id, string title, string cuisineType, int prepTimeMinutes, double rating, string createdBy, string imageUrl = "")
+    public RecipeCard(Guid id, string title, string cuisineType, int prepTimeMinutes, double rating, string createdBy, string imageUrl = "", IEnumerable<string>? tags = null)
     {
         Id = id;
         Title = title;
@@ -14,6 +16,7 @@ public sealed class RecipeCard
         Rating = rating;
         CreatedBy = createdBy;
         ImageUrl = imageUrl;
+        Tags = tags?.ToList() ?? new List<string>();
     }
 
     public Guid Id { get; }
@@ -23,7 +26,9 @@ public sealed class RecipeCard
     public double Rating { get; }
     public string CreatedBy { get; }
     public string ImageUrl { get; }
+    public List<string> Tags { get; }
 
     public string PrepTimeDisplay => $"Prep {PrepTimeMinutes} min";
     public string RatingDisplay => $"★ {Rating:0.0}";
+    public string TagsDisplay => Tags.Count > 0 ? string.Join(" ", Tags.Select(t => $"#{t}")) : string.Empty;
 }

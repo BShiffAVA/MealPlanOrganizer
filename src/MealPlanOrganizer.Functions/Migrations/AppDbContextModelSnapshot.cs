@@ -394,7 +394,7 @@ namespace MealPlanOrganizer_Functions.Migrations
                         new
                         {
                             Id = new Guid("b3f9a1b6-7c1b-4b33-b17b-0d2f9b2a5e01"),
-                            CreatedUtc = new DateTime(2026, 2, 26, 14, 36, 24, 405, DateTimeKind.Utc).AddTicks(3505),
+                            CreatedUtc = new DateTime(2026, 5, 8, 14, 33, 31, 0, DateTimeKind.Utc),
                             Description = "Classic lasagna with noodles and sauce",
                             IsExtracted = false,
                             Title = "Sample Lasagna"
@@ -484,6 +484,45 @@ namespace MealPlanOrganizer_Functions.Migrations
                     b.HasIndex("RecipeId", "UserId");
 
                     b.ToTable("RecipeRatings", (string)null);
+                });
+
+            modelBuilder.Entity("MealPlanOrganizer.Functions.Data.Entities.RecipeTag", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("RecipeTags", (string)null);
+                });
+
+            modelBuilder.Entity("MealPlanOrganizer.Functions.Data.Entities.RecipeTagAssignment", b =>
+                {
+                    b.Property<Guid>("RecipeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TagId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("RecipeId", "TagId");
+
+                    b.HasIndex("TagId");
+
+                    b.ToTable("RecipeTagAssignments", (string)null);
                 });
 
             modelBuilder.Entity("MealPlanOrganizer.Functions.Data.Entities.RecipeStep", b =>
@@ -753,6 +792,25 @@ namespace MealPlanOrganizer_Functions.Migrations
                     b.Navigation("Recipe");
                 });
 
+            modelBuilder.Entity("MealPlanOrganizer.Functions.Data.Entities.RecipeTagAssignment", b =>
+                {
+                    b.HasOne("MealPlanOrganizer.Functions.Data.Entities.Recipe", "Recipe")
+                        .WithMany("TagAssignments")
+                        .HasForeignKey("RecipeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MealPlanOrganizer.Functions.Data.Entities.RecipeTag", "Tag")
+                        .WithMany("Assignments")
+                        .HasForeignKey("TagId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Recipe");
+
+                    b.Navigation("Tag");
+                });
+
             modelBuilder.Entity("MealPlanOrganizer.Functions.Data.Entities.RecipeStep", b =>
                 {
                     b.HasOne("MealPlanOrganizer.Functions.Data.Entities.Recipe", "Recipe")
@@ -785,6 +843,13 @@ namespace MealPlanOrganizer_Functions.Migrations
                     b.Navigation("Ratings");
 
                     b.Navigation("Steps");
+
+                    b.Navigation("TagAssignments");
+                });
+
+            modelBuilder.Entity("MealPlanOrganizer.Functions.Data.Entities.RecipeTag", b =>
+                {
+                    b.Navigation("Assignments");
                 });
 
             modelBuilder.Entity("MealPlanOrganizer.Functions.Data.Entities.User", b =>
