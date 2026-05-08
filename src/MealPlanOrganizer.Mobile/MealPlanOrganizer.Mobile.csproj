@@ -4,6 +4,8 @@
 		<TargetFrameworks>net10.0-android;net10.0-ios;net10.0-maccatalyst</TargetFrameworks>
 		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net10.0-windows10.0.19041.0</TargetFrameworks>
 
+  		<InvariantGlobalization>false</InvariantGlobalization>
+
 		<!-- Note for MacCatalyst:
 		The default runtime is maccatalyst-x64, except in Release config, in which case the default is maccatalyst-x64;maccatalyst-arm64.
 		When specifying both architectures, use the plural <RuntimeIdentifiers> instead of the singular <RuntimeIdentifier>.
@@ -35,6 +37,9 @@
 		<!-- Disable R8 obfuscation to work around Compose dependency conflicts -->
 		<PublishTrimmed Condition="$(TargetFramework.Contains('-android'))">false</PublishTrimmed>
 		<EnableProguard Condition="$(TargetFramework.Contains('-android'))">false</EnableProguard>
+
+		<SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+
 	</PropertyGroup>
 
 

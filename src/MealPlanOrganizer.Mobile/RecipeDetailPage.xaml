@@ -327,13 +327,15 @@
                                        Margin="0,5" 
                                        CornerRadius="10"
                                        BackgroundColor="#1A1A1A">
-                                    <HorizontalStackLayout Spacing="15" VerticalOptions="Start">
-                                        <Frame BackgroundColor="{StaticResource Primary}" 
+                                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="15" VerticalOptions="Start">
+                                        <Frame Grid.Column="0"
+                                               BackgroundColor="{StaticResource Primary}" 
                                                Padding="10" 
                                                CornerRadius="20" 
                                                WidthRequest="40" 
                                                HeightRequest="40"
-                                               HasShadow="False">
+                                               HasShadow="False"
+                                               VerticalOptions="Start">
                                             <Label Text="{Binding StepNumber}" 
                                                    FontSize="16" 
                                                    FontAttributes="Bold" 
@@ -341,13 +343,13 @@
                                                    HorizontalOptions="Center" 
                                                    VerticalOptions="Center"/>
                                         </Frame>
-                                        <Label Text="{Binding Instruction}" 
+                                        <Label Grid.Column="1"
+                                               Text="{Binding Instruction}" 
                                                FontSize="15" 
-                                               VerticalOptions="StartAndExpand" 
+                                               VerticalOptions="Start" 
                                                LineBreakMode="WordWrap"
-                                               TextColor="White"
-                                               HorizontalOptions="FillAndExpand"/>
-                                    </HorizontalStackLayout>
+                                               TextColor="White"/>
+                                    </Grid>
                                 </Frame>
                             </DataTemplate>
                         </CollectionView.ItemTemplate>
